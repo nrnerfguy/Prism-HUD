@@ -4,238 +4,181 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>OpticOS HUD</title>
     <style>
-        /* CORE PHYSICS & AESTHETICS */
+        :root {
+            --accent-color: #ffffff;
+            --clock-size: 8rem;
+            --weather-size: 2.5rem;
+        }
+
         body {
-            background-color: #000000; /* Pure Black for OLED transparency */
-            color: #ffffff;
-            font-family: "Courier New", Courier, monospace; /* Techy Monospace Font */
+            background-color: #000000;
+            color: var(--accent-color);
+            font-family: 'Lemon Milk', sans-serif, "Arial Black"; /* Fallback to geometric sans */
             margin: 0;
             height: 100vh;
-            overflow: hidden; /* Prevents scrolling */
+            overflow: hidden;
             display: flex;
-            flex-direction: column;
             justify-content: center;
             align-items: center;
-            /* MIRROR FLIP: This makes it readable on the glass */
-            transform: scaleX(-1); 
+            transform: scaleX(-1); /* Mirror for HUD */
         }
 
-        /* THE HUD CONTAINER */
         #hud-container {
             text-align: center;
-            transition: transform 1s ease-in-out; /* Smooth shifting for anti-burn-in */
+            transition: transform 1s ease-in-out;
             will-change: transform;
+            font-style: italic;
+            font-weight: 800;
         }
 
-        /* CLOCK WIDGET */
         #clock {
-            font-size: 8rem; /* Massive size for readability */
-            font-weight: bold;
-            letter-spacing: -4px;
-            line-height: 0.9;
-            text-shadow: 0 0 10px rgba(255, 255, 255, 0.4); /* Slight glow */
+            font-size: var(--clock-size);
+            line-height: 1;
+            margin-bottom: 0.5rem;
         }
 
-        /* WEATHER WIDGET */
-        #weather {
-            margin-top: 10px;
-            font-size: 1.5rem;
-            opacity: 0.8;
-            text-transform: uppercase;
-        }
-        
-        #location-label {
-            font-size: 0.8rem;
-            opacity: 0.5;
-            margin-top: 5px;
+        #weather-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            font-size: var(--weather-size);
         }
 
-        /* SETTINGS PANEL (Un-mirrored for easier typing) */
+        .weather-icon {
+            width: 50px;
+            height: 50px;
+            fill: currentColor;
+        }
+
+        /* SUBTLE SETTINGS BUTTON */
+        #settings-trigger {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            width: 30px;
+            height: 30px;
+            opacity: 0.1; /* Almost invisible */
+            cursor: pointer;
+        }
+
+        /* SETTINGS PANEL */
         #settings-panel {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(10, 10, 10, 0.95);
-            display: flex;
+            background: rgba(15, 15, 15, 0.98);
+            width: 80%;
+            max-width: 400px;
+            padding: 20px;
+            border-radius: 15px;
+            transform: scaleX(-1); /* Un-mirror for reading */
+            display: none;
             flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            /* We un-flip this so you can read it normally while typing */
-            transform: scaleX(-1); 
-            display: none; /* Hidden by default */
+            gap: 15px;
+            z-index: 1000;
+            border: 1px solid #333;
         }
 
-        input {
-            background: #222;
-            border: 1px solid #444;
-            color: white;
-            padding: 10px;
-            font-size: 1.2rem;
-            text-align: center;
-            margin-bottom: 20px;
-            border-radius: 5px;
-        }
-
-        button {
-            background: white;
-            color: black;
-            border: none;
-            padding: 10px 20px;
-            font-size: 1rem;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        /* HINT TEXT */
-        #hint {
-            position: absolute;
-            bottom: 20px;
-            font-size: 0.7rem;
-            opacity: 0.3;
-        }
+        label { font-size: 0.8rem; opacity: 0.7; }
+        input { background: #222; border: 1px solid #444; color: white; padding: 8px; border-radius: 5px; }
+        .close-btn { align-self: flex-end; cursor: pointer; color: red; }
     </style>
 </head>
 <body>
 
     <div id="hud-container">
         <div id="clock">00:00</div>
-        <div id="weather">LOADING...</div>
-        <div id="location-label">Tap to set location</div>
+        <div id="weather-box">
+            <div id="icon-container"></div>
+            <span id="temp">--°</span>
+        </div>
     </div>
 
-    <div id="hint">TAP SCREEN TO WAKE & CONFIGURE</div>
+    <div id="settings-trigger" onclick="toggleSettings()">▢</div>
 
-    <div id="settings-panel">
-        <h2>SYSTEM CONFIG</h2>
-        <p>Enter your city:</p>
-        <input type="text" id="city-input" placeholder="e.g. Calgary">
-        <button onclick="saveLocation()">INITIALIZE</button>
+    <div id="settings-panel" id="panel">
+        <div class="close-btn" onclick="toggleSettings()">CLOSE [X]</div>
+        <h3>PRISM CONFIG</h3>
+        
+        <label>CITY</label>
+        <input type="text" id="city-in" placeholder="Calgary">
+        
+        <label>ACCENT COLOR</label>
+        <input type="color" id="color-in" value="#ffffff">
+
+        <label>CLOCK SIZE</label>
+        <input type="range" id="size-in" min="5" max="15" value="8">
+
+        <button onclick="applySettings()" style="margin-top:10px; padding:10px; cursor:pointer;">APPLY CHANGES</button>
     </div>
 
     <script>
-        // --- 1. CLOCK ENGINE ---
+        // --- WEATHER ICONS (SVG) ---
+        const icons = {
+            clear: `<svg class="weather-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>`,
+            cloudy: `<svg class="weather-icon" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>`,
+            rain: `<svg class="weather-icon" viewBox="0 0 24 24"><path d="M16 13l-2 5M10 13l-2 5M13 15l-2 5M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/></svg>`,
+            snow: `<svg class="weather-icon" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20M5 5l14 14M19 5L5 14"/></svg>`
+        };
+
+        // --- CORE LOGIC ---
         function updateClock() {
             const now = new Date();
-            const hours = String(now.getHours()).padStart(2, '0');
-            const minutes = String(now.getMinutes()).padStart(2, '0');
-            document.getElementById('clock').innerText = `${hours}:${minutes}`;
+            document.getElementById('clock').innerText = 
+                String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
         }
-        setInterval(updateClock, 1000);
-        updateClock(); // Run immediately
 
-        // --- 2. WEATHER ENGINE (Open-Meteo API) ---
-        let city = localStorage.getItem('optic_city') || 'Calgary'; // Default
-        
-        async function fetchWeather(cityName) {
+        async function fetchWeather() {
+            const city = localStorage.getItem('optic_city') || 'Calgary';
             try {
-                // Step A: Geocoding (Get Lat/Lon from City Name)
-                const geoUrl = `https://geocoding-api.open-meteo.com/v1/search?name=${cityName}&count=1&language=en&format=json`;
-                const geoRes = await fetch(geoUrl);
-                const geoData = await geoRes.json();
-
-                if (!geoData.results) {
-                    document.getElementById('weather').innerText = "CITY NOT FOUND";
-                    return;
-                }
-
-                const lat = geoData.results[0].latitude;
-                const lon = geoData.results[0].longitude;
-                const actualName = geoData.results[0].name;
-
-                // Step B: Get Weather
-                const weatherUrl = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code&timezone=auto`;
-                const weatherRes = await fetch(weatherUrl);
-                const weatherData = await weatherRes.json();
-
-                // Step C: Update UI
-                const temp = Math.round(weatherData.current.temperature_2m);
-                const code = weatherData.current.weather_code;
-                const condition = getWeatherCondition(code);
-
-                document.getElementById('weather').innerText = `${temp}°C | ${condition}`;
-                document.getElementById('location-label').innerText = actualName.toUpperCase();
-
-            } catch (err) {
-                console.error(err);
-                document.getElementById('weather').innerText = "DATA ERROR";
-            }
+                const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=1`).then(r => r.json());
+                const { latitude, longitude } = geo.results[0];
+                const weather = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code`).then(r => r.json());
+                
+                document.getElementById('temp').innerText = Math.round(weather.current.temperature_2m) + "°";
+                
+                const code = weather.current.weather_code;
+                let icon = icons.clear;
+                if (code > 0 && code < 50) icon = icons.cloudy;
+                if (code >= 50 && code < 70) icon = icons.rain;
+                if (code >= 70) icon = icons.snow;
+                document.getElementById('icon-container').innerHTML = icon;
+            } catch (e) { console.log("Weather error"); }
         }
 
-        // Helper: Convert WMO codes to text
-        function getWeatherCondition(code) {
-            if (code === 0) return "CLEAR";
-            if (code >= 1 && code <= 3) return "CLOUDY";
-            if (code >= 51 && code <= 67) return "RAIN";
-            if (code >= 71 && code <= 77) return "SNOW";
-            if (code >= 95) return "STORM";
-            return "UNKNOWN";
+        // --- UI CONTROLS ---
+        function toggleSettings() {
+            const p = document.getElementById('settings-panel');
+            p.style.display = (p.style.display === 'flex') ? 'none' : 'flex';
         }
 
-        // --- 3. ANTI-BURN-IN ENGINE (Pixel Shifter) ---
-        // Moves the HUD slightly every 60 seconds
-        setInterval(() => {
-            const hud = document.getElementById('hud-container');
-            // Generate random number between -5 and 5
-            const x = Math.floor(Math.random() * 10) - 5;
-            const y = Math.floor(Math.random() * 10) - 5;
-            hud.style.transform = `translate(${x}px, ${y}px)`;
-        }, 60000); // 60,000 ms = 1 minute
+        function applySettings() {
+            const city = document.getElementById('city-in').value;
+            const color = document.getElementById('color-in').value;
+            const size = document.getElementById('size-in').value;
 
-        // --- 4. WAKE LOCK (Keep Screen On) ---
-        // This requires a tap from the user to work
-        let wakeLock = null;
-        async function requestWakeLock() {
-            try {
-                if ('wakeLock' in navigator) {
-                    wakeLock = await navigator.wakeLock.request('screen');
-                    console.log('Screen Wake Lock active');
-                    document.getElementById('hint').style.display = 'none'; // Hide hint once active
-                }
-            } catch (err) {
-                console.error(`${err.name}, ${err.message}`);
-            }
-        }
-
-        // --- 5. INTERACTION LOGIC ---
-        document.body.addEventListener('click', () => {
-            // First tap enables Wake Lock
-            if (!wakeLock) requestWakeLock();
+            if(city) localStorage.setItem('optic_city', city);
+            document.documentElement.style.setProperty('--accent-color', color);
+            document.documentElement.style.setProperty('--clock-size', size + 'rem');
             
-            // Toggle settings panel
-            const panel = document.getElementById('settings-panel');
-            if (panel.style.display === 'flex') {
-                panel.style.display = 'none'; // Close settings
-            } else {
-                 // Check if we clicked the input/button, if not, show settings
-                 // (Simplified logic: clicking body opens settings)
-                 panel.style.display = 'flex';
-            }
-        });
-
-        // Prevent closing settings when clicking inside the box
-        document.getElementById('settings-panel').addEventListener('click', (e) => {
-            e.stopPropagation();
-        });
-
-        function saveLocation() {
-            const input = document.getElementById('city-input').value;
-            if (input) {
-                city = input;
-                localStorage.setItem('optic_city', city);
-                fetchWeather(city);
-                document.getElementById('settings-panel').style.display = 'none';
-            }
+            fetchWeather();
+            toggleSettings();
         }
 
-        // Initialize
-        fetchWeather(city);
+        // --- INITIALIZE ---
+        setInterval(updateClock, 1000);
+        setInterval(fetchWeather, 600000); // Update weather every 10 mins
+        
+        // Anti-Burn-In Pixel Shifter
+        setInterval(() => {
+            const x = Math.floor(Math.random() * 6) - 3;
+            const y = Math.floor(Math.random() * 6) - 3;
+            document.getElementById('hud-container').style.transform = `translate(${x}px, ${y}px)`;
+        }, 60000);
 
+        updateClock();
+        fetchWeather();
     </script>
 </body>
 </html>
