@@ -3,136 +3,102 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="theme-color" content="#000000">
-    
-    <link rel="apple-touch-icon" href="logo.png">
-    
-    <title>Prism HUD Pro</title>
-    
+    <title>Prism HUD</title>
     <style>
-        :root {
-            --accent-color: #ffffff;
-            --clock-size: 8.5rem;
-            --ui-font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+        :root { --accent-color: #ffffff; --clock-size: 8.5rem; }
+        body { 
+            background: #000; color: var(--accent-color); margin: 0; height: 100vh; 
+            display: flex; justify-content: center; align-items: center; 
+            font-family: -apple-system, sans-serif; transform: scaleX(-1);
+            padding: env(safe-area-inset-top);
+        }
+        #hud-container { text-align: center; }
+        #clock { font-size: var(--clock-size); font-weight: 900; font-style: italic; letter-spacing: -4px; line-height: 0.8; margin-bottom: 1rem; }
+        #weather-box { display: flex; align-items: center; justify-content: center; gap: 15px; opacity: 0.7; font-size: 2rem; }
+        .weather-icon { width: 40px; height: 40px; stroke: currentColor; fill: none; stroke-width: 2; }
+        #settings-trigger { position: absolute; bottom: 30px; right: 30px; width: 44px; height: 44px; opacity: 0.2; border: 1px solid white; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
+        #settings-panel { position: absolute; background: #111; padding: 25px; border-radius: 20px; transform: scaleX(-1); display: none; flex-direction: column; gap: 15px; border: 1px solid #333; z-index: 100; width: 80%; }
+        input { background: #222; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 8px; }
+        button { background: #fff; color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="hud-container">
+        <div id="clock">00:00</div>
+        <div id="weather-box">
+            <div id="icon-container"></div>
+            <span id="temp">--°</span>
+        </div>
+    </div>
+
+    <div id="settings-trigger" onclick="toggleSettings()">⚙</div>
+
+    <div id="settings-panel">
+        <h3 style="margin:0">PRISM SETTINGS</h3>
+        <input type="text" id="city-in" placeholder="City Name (e.g. Calgary)">
+        <input type="color" id="color-in" value="#ffffff">
+        <input type="range" id="size-in" min="5" max="15" value="8.5">
+        <button onclick="applySettings()">SAVE & REFRESH</button>
+        <button onclick="toggleSettings()" style="background:transparent; color:red; border:1px solid red;">CLOSE</button>
+    </div>
+
+    <script>
+        // 1. CLOCK LOGIC (Runs first and always)
+        function updateClock() {
+            const now = new Date();
+            const h = String(now.getHours()).padStart(2, '0');
+            const m = String(now.getMinutes()).padStart(2, '0');
+            document.getElementById('clock').innerText = `${h}:${m}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock(); 
+
+        // 2. WEATHER LOGIC (With Error Handling)
+        const icons = {
+            clear: `<svg class="weather-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2m-1.42-7.78l-1.42 1.42M5.64 18.36l-1.42 1.42"></path></svg>`,
+            cloudy: `<svg class="weather-icon" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`
+        };
+
+        async function fetchWeather() {
+            const city = localStorage.getItem('optic_city') || 'Calgary';
+            try {
+                const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=1`);
+                const geoData = await geoRes.json();
+                if (!geoData.results) throw new Error("City not found");
+                
+                const { latitude, longitude } = geoData.results[0];
+                const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code`);
+                const wData = await wRes.json();
+                
+                document.getElementById('temp').innerText = Math.round(wData.current.temperature_2m) + "°";
+                document.getElementById('icon-container').innerHTML = wData.current.weather_code === 0 ? icons.clear : icons.cloudy;
+            } catch (e) {
+                console.error("Weather failed:", e);
+                document.getElementById('temp').innerText = "??°";
+            }
+        }
+        fetchWeather();
+        setInterval(fetchWeather, 600000);
+
+        // 3. SETTINGS
+        function toggleSettings() {
+            const p = document.getElementById('settings-panel');
+            p.style.display = (p.style.display === 'flex') ? 'none' : 'flex';
         }
 
-        * { 
-            box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent; 
+        function applySettings() {
+            const city = document.getElementById('city-in').value;
+            const color = document.getElementById('color-in').value;
+            const size = document.getElementById('size-in').value;
+            if(city) localStorage.setItem('optic_city', city);
+            document.documentElement.style.setProperty('--accent-color', color);
+            document.documentElement.style.setProperty('--clock-size', size + 'rem');
+            fetchWeather();
+            toggleSettings();
         }
-
-        body {
-            background-color: #000;
-            color: var(--accent-color);
-            margin: 0;
-            height: 100vh;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            transform: scaleX(-1); /* Mirror for HUD Reflection */
-            font-family: var(--ui-font);
-            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-        }
-
-        /* HUD CONTENT CONTAINER */
-        #hud-container {
-            text-align: center;
-            animation: entrance 1.2s cubic-bezier(0.22, 1, 0.36, 1);
-            transition: transform 1s ease-in-out;
-            will-change: transform;
-        }
-
-        @keyframes entrance {
-            from { opacity: 0; transform: translateY(20px) scale(0.98); }
-            to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-
-        /* CLOCK: LEMON MILK BOLD ITALIC VIBE */
-        #clock {
-            font-size: var(--clock-size);
-            font-weight: 900;
-            font-style: italic;
-            letter-spacing: -4px;
-            line-height: 0.8;
-            margin-bottom: 1.5rem;
-            filter: drop-shadow(0 0 10px rgba(255,255,255,0.15));
-        }
-
-        /* WEATHER: MINIMALIST & CENTERED */
-        #weather-box {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 18px;
-            opacity: 0.8;
-        }
-
-        .weather-icon {
-            width: 48px;
-            height: 48px;
-            stroke-width: 1.5;
-            fill: none;
-            stroke: currentColor;
-        }
-
-        #temp { 
-            font-size: 2.5rem; 
-            font-weight: 200; 
-            letter-spacing: -1px;
-        }
-
-        /* SETTINGS TRIGGER (GEAR) */
-        #settings-trigger {
-            position: absolute;
-            bottom: 40px;
-            right: 40px;
-            width: 50px;
-            height: 50px;
-            opacity: 0.25;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 50%;
-            transition: opacity 0.3s, transform 0.3s;
-        }
-        #settings-trigger:active { opacity: 1; transform: rotate(45deg); }
-
-        /* SETTINGS PANEL */
-        #settings-panel {
-            position: absolute;
-            background: rgba(15, 15, 15, 0.9);
-            -webkit-backdrop-filter: blur(25px);
-            backdrop-filter: blur(25px);
-            width: 85%;
-            max-width: 360px;
-            padding: 30px;
-            border-radius: 24px;
-            transform: scaleX(-1); /* Flip back to normal for reading */
-            display: none;
-            flex-direction: column;
-            gap: 20px;
-            border: 1px solid rgba(255,255,255,0.1);
-            z-index: 100;
-        }
-
-        h3 { margin: 0; font-size: 1rem; letter-spacing: 2px; text-transform: uppercase; opacity: 0.5; }
-        .group { display: flex; flex-direction: column; gap: 6px; }
-        label { font-size: 0.7rem; font-weight: 600; text-transform: uppercase; opacity: 0.4; }
-        
-        input[type="text"] {
-            background: rgba(255,255,255,0.08);
-            border: 1px solid rgba(255,255,255,0.1);
-            color: white;
-            padding: 14px;
-            border-radius: 12px;
-            font-size: 1rem;
-            outline: none;
-        }
-
-        input[type="range"]
+    </script>
+</body>
+</html>
