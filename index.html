@@ -3,87 +3,192 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#000000">
+    <link rel="apple-touch-icon" href="logo.png">
+
     <title>Prism HUD</title>
     <style>
-        :root { --accent-color: #ffffff; --clock-size: 8.5rem; }
-        body { 
-            background: #000; color: var(--accent-color); margin: 0; height: 100vh; 
-            display: flex; justify-content: center; align-items: center; 
-            font-family: -apple-system, sans-serif; transform: scaleX(-1);
-            padding: env(safe-area-inset-top);
+        :root {
+            --accent-color: #ffffff;
+            --clock-size: 8.5rem;
         }
-        #hud-container { text-align: center; }
-        #clock { font-size: var(--clock-size); font-weight: 900; font-style: italic; letter-spacing: -4px; line-height: 0.8; margin-bottom: 1rem; }
-        #weather-box { display: flex; align-items: center; justify-content: center; gap: 15px; opacity: 0.7; font-size: 2rem; }
-        .weather-icon { width: 40px; height: 40px; stroke: currentColor; fill: none; stroke-width: 2; }
-        #settings-trigger { position: absolute; bottom: 30px; right: 30px; width: 44px; height: 44px; opacity: 0.2; border: 1px solid white; border-radius: 50%; display: flex; justify-content: center; align-items: center; }
-        #settings-panel { position: absolute; background: #111; padding: 25px; border-radius: 20px; transform: scaleX(-1); display: none; flex-direction: column; gap: 15px; border: 1px solid #333; z-index: 100; width: 80%; }
-        input { background: #222; border: 1px solid #444; color: #fff; padding: 10px; border-radius: 8px; }
-        button { background: #fff; color: #000; border: none; padding: 12px; border-radius: 8px; font-weight: bold; }
+
+        body {
+            background-color: #000;
+            color: var(--accent-color);
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            transform: scaleX(-1); /* HUD Mirror */
+            padding: env(safe-area-inset-top);
+            transition: color 0.4s ease;
+        }
+
+        #hud-container {
+            text-align: center;
+            will-change: transform;
+        }
+
+        /* LEMON MILK STYLE CLOCK */
+        #clock {
+            font-size: var(--clock-size);
+            font-weight: 900;
+            font-style: italic;
+            letter-spacing: -4px;
+            line-height: 0.85;
+            margin-bottom: 0.8rem;
+            filter: drop-shadow(0 0 12px rgba(255,255,255,0.1));
+        }
+
+        /* CLEAN WEATHER UI */
+        #weather-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            opacity: 0.7;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .weather-icon {
+            width: 44px;
+            height: 44px;
+            stroke: currentColor;
+            fill: none;
+            stroke-width: 1.5;
+        }
+
+        #temp { font-size: 2.2rem; font-weight: 200; }
+
+        /* MINIMALIST GEAR ICON */
+        #settings-trigger {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            width: 44px;
+            height: 44px;
+            opacity: 0.15;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 1px solid var(--accent-color);
+            border-radius: 50%;
+        }
+
+        /* PREMIUM GLASS SETTINGS PANEL */
+        #settings-panel {
+            position: absolute;
+            background: rgba(20, 20, 20, 0.9);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            width: 85%;
+            max-width: 360px;
+            padding: 30px;
+            border-radius: 28px;
+            transform: scaleX(-1); /* Un-mirror */
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            z-index: 1000;
+        }
+
+        h3 { margin: 0; font-size: 0.9rem; letter-spacing: 2px; opacity: 0.5; }
+        .group { display: flex; flex-direction: column; gap: 8px; }
+        label { font-size: 0.65rem; font-weight: 700; opacity: 0.4; text-transform: uppercase; }
+        
+        input[type="text"] {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            padding: 12px;
+            border-radius: 12px;
+            outline: none;
+        }
+
+        input[type="range"] { accent-color: var(--accent-color); }
+
+        .apply-btn {
+            background: #fff;
+            color: #000;
+            border: none;
+            padding: 15px;
+            border-radius: 12px;
+            font-weight: 800;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
 
     <div id="hud-container">
-        <div id="clock">00:00</div>
+        <div id="clock">--:--</div>
         <div id="weather-box">
             <div id="icon-container"></div>
             <span id="temp">--°</span>
         </div>
     </div>
 
-    <div id="settings-trigger" onclick="toggleSettings()">⚙</div>
+    <div id="settings-trigger" onclick="toggleSettings()">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+    </div>
 
     <div id="settings-panel">
-        <h3 style="margin:0">PRISM SETTINGS</h3>
-        <input type="text" id="city-in" placeholder="City Name (e.g. Calgary)">
-        <input type="color" id="color-in" value="#ffffff">
-        <input type="range" id="size-in" min="5" max="15" value="8.5">
-        <button onclick="applySettings()">SAVE & REFRESH</button>
-        <button onclick="toggleSettings()" style="background:transparent; color:red; border:1px solid red;">CLOSE</button>
+        <div style="display:flex; justify-content:space-between;">
+            <h3>PRISM CONFIG</h3>
+            <span onclick="toggleSettings()" style="cursor:pointer; font-weight:bold; color:red;">[X]</span>
+        </div>
+        <div class="group"><label>City</label><input type="text" id="city-in" placeholder="Calgary"></div>
+        <div class="group"><label>Color</label><input type="color" id="color-in" value="#ffffff" style="width:100%; height:44px; border:none; background:none;"></div>
+        <div class="group"><label>Size</label><input type="range" id="size-in" min="4" max="14" value="8.5" step="0.1"></div>
+        <button class="apply-btn" onclick="applySettings()">SAVE CHANGES</button>
     </div>
 
     <script>
-        // 1. CLOCK LOGIC (Runs first and always)
+        // CLOCK - RUNS IMMEDIATELY
         function updateClock() {
             const now = new Date();
-            const h = String(now.getHours()).padStart(2, '0');
-            const m = String(now.getMinutes()).padStart(2, '0');
-            document.getElementById('clock').innerText = `${h}:${m}`;
+            document.getElementById('clock').innerText = 
+                String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
         }
         setInterval(updateClock, 1000);
-        updateClock(); 
+        updateClock();
 
-        // 2. WEATHER LOGIC (With Error Handling)
+        // WEATHER
         const icons = {
             clear: `<svg class="weather-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2m-1.42-7.78l-1.42 1.42M5.64 18.36l-1.42 1.42"></path></svg>`,
-            cloudy: `<svg class="weather-icon" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`
+            cloudy: `<svg class="weather-icon" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`,
+            rain: `<svg class="weather-icon" viewBox="0 0 24 24"><path d="M16 13l-2 5M10 13l-2 5M13 15l-2 5M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"></path></svg>`,
+            snow: `<svg class="weather-icon" viewBox="0 0 24 24"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"></path></svg>`
         };
 
         async function fetchWeather() {
             const city = localStorage.getItem('optic_city') || 'Calgary';
             try {
-                const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=1`);
-                const geoData = await geoRes.json();
-                if (!geoData.results) throw new Error("City not found");
-                
-                const { latitude, longitude } = geoData.results[0];
-                const wRes = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code`);
-                const wData = await wRes.json();
-                
-                document.getElementById('temp').innerText = Math.round(wData.current.temperature_2m) + "°";
-                document.getElementById('icon-container').innerHTML = wData.current.weather_code === 0 ? icons.clear : icons.cloudy;
-            } catch (e) {
-                console.error("Weather failed:", e);
-                document.getElementById('temp').innerText = "??°";
-            }
+                const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${city}&count=1`).then(r => r.json());
+                const { latitude, longitude } = geo.results[0];
+                const weather = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code`).then(r => r.json());
+                document.getElementById('temp').innerText = Math.round(weather.current.temperature_2m) + "°";
+                const code = weather.current.weather_code;
+                let icon = icons.clear;
+                if (code > 0 && code < 50) icon = icons.cloudy;
+                if (code >= 50 && code < 70) icon = icons.rain;
+                if (code >= 70) icon = icons.snow;
+                document.getElementById('icon-container').innerHTML = icon;
+            } catch (e) { document.getElementById('temp').innerText = "??°"; }
         }
         fetchWeather();
         setInterval(fetchWeather, 600000);
 
-        // 3. SETTINGS
+        // UI
         function toggleSettings() {
             const p = document.getElementById('settings-panel');
             p.style.display = (p.style.display === 'flex') ? 'none' : 'flex';
@@ -99,6 +204,13 @@
             fetchWeather();
             toggleSettings();
         }
+
+        // Anti-Burn-In
+        setInterval(() => {
+            const x = Math.floor(Math.random() * 6) - 3;
+            const y = Math.floor(Math.random() * 6) - 3;
+            document.getElementById('hud-container').style.transform = `translate(${x}px, ${y}px)`;
+        }, 60000);
     </script>
 </body>
 </html>
