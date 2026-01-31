@@ -15,7 +15,8 @@
         body {
             background-color: #000000;
             color: var(--accent-color);
-            font-family: 'Lemon Milk', sans-serif, "Arial Black"; /* Fallback to geometric sans */
+            /* Using a bold geometric fallback for Lemon Milk style */
+            font-family: 'Arial Black', sans-serif; 
             margin: 0;
             height: 100vh;
             overflow: hidden;
@@ -30,13 +31,13 @@
             transition: transform 1s ease-in-out;
             will-change: transform;
             font-style: italic;
-            font-weight: 800;
         }
 
         #clock {
             font-size: var(--clock-size);
             line-height: 1;
             margin-bottom: 0.5rem;
+            font-weight: 900;
         }
 
         #weather-box {
@@ -45,44 +46,65 @@
             justify-content: center;
             gap: 15px;
             font-size: var(--weather-size);
+            font-weight: 700;
         }
 
         .weather-icon {
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
             fill: currentColor;
         }
 
-        /* SUBTLE SETTINGS BUTTON */
+        /* HIGH VISIBILITY SETTINGS BUTTON */
         #settings-trigger {
             position: absolute;
-            bottom: 10px;
-            right: 10px;
-            width: 30px;
-            height: 30px;
-            opacity: 0.1; /* Almost invisible */
+            bottom: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            opacity: 0.4; /* Increased visibility */
             cursor: pointer;
+            border: 1px solid var(--accent-color);
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: rgba(255,255,255,0.05);
         }
 
         /* SETTINGS PANEL */
         #settings-panel {
             position: absolute;
-            background: rgba(15, 15, 15, 0.98);
-            width: 80%;
-            max-width: 400px;
-            padding: 20px;
-            border-radius: 15px;
+            background: #111;
+            width: 85%;
+            max-width: 350px;
+            padding: 25px;
+            border-radius: 20px;
             transform: scaleX(-1); /* Un-mirror for reading */
             display: none;
             flex-direction: column;
             gap: 15px;
             z-index: 1000;
-            border: 1px solid #333;
+            border: 2px solid #333;
+            box-shadow: 0 0 30px rgba(0,0,0,0.5);
         }
 
-        label { font-size: 0.8rem; opacity: 0.7; }
-        input { background: #222; border: 1px solid #444; color: white; padding: 8px; border-radius: 5px; }
-        .close-btn { align-self: flex-end; cursor: pointer; color: red; }
+        h3 { margin-top: 0; color: #fff; letter-spacing: 2px; }
+        label { font-size: 0.7rem; opacity: 0.6; text-transform: uppercase; font-weight: bold; }
+        input { background: #222; border: 1px solid #444; color: white; padding: 12px; border-radius: 8px; font-family: sans-serif; }
+        
+        .apply-btn { 
+            background: var(--accent-color); 
+            color: #000; 
+            border: none; 
+            padding: 15px; 
+            border-radius: 8px; 
+            font-weight: 900; 
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .close-btn { align-self: flex-end; cursor: pointer; color: #ff4444; font-size: 0.8rem; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -95,34 +117,35 @@
         </div>
     </div>
 
-    <div id="settings-trigger" onclick="toggleSettings()">▢</div>
+    <div id="settings-trigger" onclick="toggleSettings()">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+    </div>
 
     <div id="settings-panel" id="panel">
-        <div class="close-btn" onclick="toggleSettings()">CLOSE [X]</div>
+        <div class="close-btn" onclick="toggleSettings()">CANCEL [X]</div>
         <h3>PRISM CONFIG</h3>
         
-        <label>CITY</label>
-        <input type="text" id="city-in" placeholder="Calgary">
+        <label>Location (City)</label>
+        <input type="text" id="city-in" placeholder="Enter city name...">
         
-        <label>ACCENT COLOR</label>
-        <input type="color" id="color-in" value="#ffffff">
+        <label>HUD Accent Color</label>
+        <input type="color" id="color-in" value="#ffffff" style="height:50px; width:100%; padding:2px;">
 
-        <label>CLOCK SIZE</label>
-        <input type="range" id="size-in" min="5" max="15" value="8">
+        <label>Clock Scale</label>
+        <input type="range" id="size-in" min="4" max="14" value="8">
 
-        <button onclick="applySettings()" style="margin-top:10px; padding:10px; cursor:pointer;">APPLY CHANGES</button>
+        <button class="apply-btn" onclick="applySettings()">SAVE & INITIALIZE</button>
     </div>
 
     <script>
-        // --- WEATHER ICONS (SVG) ---
+        // Icons and weather logic preserved
         const icons = {
-            clear: `<svg class="weather-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>`,
-            cloudy: `<svg class="weather-icon" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>`,
-            rain: `<svg class="weather-icon" viewBox="0 0 24 24"><path d="M16 13l-2 5M10 13l-2 5M13 15l-2 5M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/></svg>`,
-            snow: `<svg class="weather-icon" viewBox="0 0 24 24"><path d="M12 2v20M2 12h20M5 5l14 14M19 5L5 14"/></svg>`
+            clear: `<svg class="weather-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`,
+            cloudy: `<svg class="weather-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`,
+            rain: `<svg class="weather-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 13l-2 5M10 13l-2 5M13 15l-2 5M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"></path></svg>`,
+            snow: `<svg class="weather-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"></path><line x1="8" y1="16" x2="8.01" y2="16"></line><line x1="12" y1="16" x2="12.01" y2="16"></line><line x1="16" y1="16" x2="16.01" y2="16"></line></svg>`
         };
 
-        // --- CORE LOGIC ---
         function updateClock() {
             const now = new Date();
             document.getElementById('clock').innerText = 
@@ -147,7 +170,6 @@
             } catch (e) { console.log("Weather error"); }
         }
 
-        // --- UI CONTROLS ---
         function toggleSettings() {
             const p = document.getElementById('settings-panel');
             p.style.display = (p.style.display === 'flex') ? 'none' : 'flex';
@@ -166,17 +188,23 @@
             toggleSettings();
         }
 
-        // --- INITIALIZE ---
-        setInterval(updateClock, 1000);
-        setInterval(fetchWeather, 600000); // Update weather every 10 mins
-        
-        // Anti-Burn-In Pixel Shifter
+        // Initialize Wake Lock
+        let wakeLock = null;
+        document.addEventListener('click', async () => {
+            if(!wakeLock && 'wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+            }
+        });
+
+        // Anti-Burn-In
         setInterval(() => {
-            const x = Math.floor(Math.random() * 6) - 3;
-            const y = Math.floor(Math.random() * 6) - 3;
+            const x = Math.floor(Math.random() * 8) - 4;
+            const y = Math.floor(Math.random() * 8) - 4;
             document.getElementById('hud-container').style.transform = `translate(${x}px, ${y}px)`;
         }, 60000);
 
+        setInterval(updateClock, 1000);
+        setInterval(fetchWeather, 600000);
         updateClock();
         fetchWeather();
     </script>
