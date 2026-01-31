@@ -4,107 +4,133 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <title>OpticOS HUD</title>
+    <title>OpticOS Professional</title>
     <style>
         :root {
             --accent-color: #ffffff;
-            --clock-size: 8rem;
-            --weather-size: 2.5rem;
+            --clock-size: 8.5rem;
+            --ui-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
         }
 
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
         body {
-            background-color: #000000;
+            background-color: #000;
             color: var(--accent-color);
-            /* Using a bold geometric fallback for Lemon Milk style */
-            font-family: 'Arial Black', sans-serif; 
             margin: 0;
             height: 100vh;
             overflow: hidden;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            transform: scaleX(-1); /* Mirror for HUD */
+            transform: scaleX(-1); /* HUD Mirror */
+            font-family: var(--ui-font);
+            transition: color 0.5s ease;
         }
 
+        /* ENTRANCE ANIMATION */
         #hud-container {
             text-align: center;
+            animation: fadeIn 1.5s ease-out;
             transition: transform 1s ease-in-out;
-            will-change: transform;
-            font-style: italic;
         }
 
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        /* CLOCK: LEMON MILK STYLE */
         #clock {
             font-size: var(--clock-size);
-            line-height: 1;
-            margin-bottom: 0.5rem;
             font-weight: 900;
+            font-style: italic;
+            letter-spacing: -5px;
+            line-height: 0.85;
+            margin-bottom: 1rem;
+            filter: drop-shadow(0 0 15px rgba(255,255,255,0.1));
         }
 
+        /* WEATHER: CLEAN & BALANCED */
         #weather-box {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
-            font-size: var(--weather-size);
-            font-weight: 700;
+            gap: 20px;
+            opacity: 0.7;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
 
         .weather-icon {
-            width: 60px;
-            height: 60px;
-            fill: currentColor;
+            width: 42px;
+            height: 42px;
+            stroke-width: 1.5px;
         }
 
-        /* HIGH VISIBILITY SETTINGS BUTTON */
+        #temp { font-size: 2.2rem; font-weight: 200; }
+
+        /* SETTINGS TRIGGER: ULTRA-CLEAN */
         #settings-trigger {
             position: absolute;
-            bottom: 20px;
-            right: 20px;
-            width: 50px;
-            height: 50px;
-            opacity: 0.4; /* Increased visibility */
-            cursor: pointer;
-            border: 1px solid var(--accent-color);
-            border-radius: 12px;
+            bottom: 30px;
+            right: 30px;
+            width: 44px;
+            height: 44px;
+            opacity: 0.15;
             display: flex;
             justify-content: center;
             align-items: center;
-            background: rgba(255,255,255,0.05);
+            transition: opacity 0.3s;
         }
+        #settings-trigger:active { opacity: 0.8; }
 
-        /* SETTINGS PANEL */
+        /* SETTINGS PANEL: MODERN OVERLAY */
         #settings-panel {
             position: absolute;
-            background: #111;
-            width: 85%;
-            max-width: 350px;
-            padding: 25px;
-            border-radius: 20px;
-            transform: scaleX(-1); /* Un-mirror for reading */
+            background: rgba(18, 18, 18, 0.95);
+            -webkit-backdrop-filter: blur(20px);
+            backdrop-filter: blur(20px);
+            width: 90%;
+            max-width: 380px;
+            padding: 30px;
+            border-radius: 30px;
+            transform: scaleX(-1); /* Un-mirror */
             display: none;
             flex-direction: column;
-            gap: 15px;
-            z-index: 1000;
-            border: 2px solid #333;
-            box-shadow: 0 0 30px rgba(0,0,0,0.5);
+            gap: 20px;
+            border: 1px solid rgba(255,255,255,0.1);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
         }
 
-        h3 { margin-top: 0; color: #fff; letter-spacing: 2px; }
-        label { font-size: 0.7rem; opacity: 0.6; text-transform: uppercase; font-weight: bold; }
-        input { background: #222; border: 1px solid #444; color: white; padding: 12px; border-radius: 8px; font-family: sans-serif; }
+        h3 { margin: 0; font-size: 1.2rem; font-weight: 600; letter-spacing: 1px; }
+        .group { display: flex; flex-direction: column; gap: 8px; }
+        label { font-size: 0.65rem; opacity: 0.5; font-weight: 700; text-transform: uppercase; }
         
-        .apply-btn { 
-            background: var(--accent-color); 
-            color: #000; 
-            border: none; 
-            padding: 15px; 
-            border-radius: 8px; 
-            font-weight: 900; 
-            cursor: pointer;
+        input[type="text"] {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: white;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        input[type="range"] { width: 100%; accent-color: var(--accent-color); }
+
+        .apply-btn {
+            background: #fff;
+            color: #000;
+            border: none;
+            padding: 16px;
+            border-radius: 14px;
+            font-weight: 700;
+            font-size: 1rem;
             margin-top: 10px;
         }
-
-        .close-btn { align-self: flex-end; cursor: pointer; color: #ff4444; font-size: 0.8rem; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -121,29 +147,36 @@
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
     </div>
 
-    <div id="settings-panel" id="panel">
-        <div class="close-btn" onclick="toggleSettings()">CANCEL [X]</div>
-        <h3>PRISM CONFIG</h3>
+    <div id="settings-panel">
+        <div style="display:flex; justify-content: space-between; align-items: center;">
+            <h3>CONFIGURATION</h3>
+            <span onclick="toggleSettings()" style="cursor:pointer; opacity:0.5; font-size:0.8rem;">DISMISS</span>
+        </div>
         
-        <label>Location (City)</label>
-        <input type="text" id="city-in" placeholder="Enter city name...">
+        <div class="group">
+            <label>Location</label>
+            <input type="text" id="city-in" placeholder="City Name">
+        </div>
         
-        <label>HUD Accent Color</label>
-        <input type="color" id="color-in" value="#ffffff" style="height:50px; width:100%; padding:2px;">
+        <div class="group">
+            <label>Interface Color</label>
+            <input type="color" id="color-in" value="#ffffff" style="height:44px; width:100%; border:none; background:none; cursor:pointer;">
+        </div>
 
-        <label>Clock Scale</label>
-        <input type="range" id="size-in" min="4" max="14" value="8">
+        <div class="group">
+            <label>Optic Scale</label>
+            <input type="range" id="size-in" min="4" max="12" value="8.5" step="0.1">
+        </div>
 
-        <button class="apply-btn" onclick="applySettings()">SAVE & INITIALIZE</button>
+        <button class="apply-btn" onclick="applySettings()">SAVE SETTINGS</button>
     </div>
 
     <script>
-        // Icons and weather logic preserved
         const icons = {
-            clear: `<svg class="weather-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`,
-            cloudy: `<svg class="weather-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`,
-            rain: `<svg class="weather-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 13l-2 5M10 13l-2 5M13 15l-2 5M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"></path></svg>`,
-            snow: `<svg class="weather-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"></path><line x1="8" y1="16" x2="8.01" y2="16"></line><line x1="12" y1="16" x2="12.01" y2="16"></line><line x1="16" y1="16" x2="16.01" y2="16"></line></svg>`
+            clear: `<svg class="weather-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2m-1.42-7.78l-1.42 1.42M5.64 18.36l-1.42 1.42"></path></svg>`,
+            cloudy: `<svg class="weather-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`,
+            rain: `<svg class="weather-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M16 13l-2 5M10 13l-2 5M13 15l-2 5M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"></path></svg>`,
+            snow: `<svg class="weather-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"></path><line x1="8" y1="16" x2="8.01" y2="16"></line><line x1="12" y1="16" x2="12.01" y2="16"></line><line x1="16" y1="16" x2="16.01" y2="16"></line></svg>`
         };
 
         function updateClock() {
@@ -172,7 +205,8 @@
 
         function toggleSettings() {
             const p = document.getElementById('settings-panel');
-            p.style.display = (p.style.display === 'flex') ? 'none' : 'flex';
+            const isVisible = p.style.display === 'flex';
+            p.style.display = isVisible ? 'none' : 'flex';
         }
 
         function applySettings() {
@@ -188,18 +222,10 @@
             toggleSettings();
         }
 
-        // Initialize Wake Lock
-        let wakeLock = null;
-        document.addEventListener('click', async () => {
-            if(!wakeLock && 'wakeLock' in navigator) {
-                wakeLock = await navigator.wakeLock.request('screen');
-            }
-        });
-
         // Anti-Burn-In
         setInterval(() => {
-            const x = Math.floor(Math.random() * 8) - 4;
-            const y = Math.floor(Math.random() * 8) - 4;
+            const x = Math.floor(Math.random() * 6) - 3;
+            const y = Math.floor(Math.random() * 6) - 3;
             document.getElementById('hud-container').style.transform = `translate(${x}px, ${y}px)`;
         }, 60000);
 
