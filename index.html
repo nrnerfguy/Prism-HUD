@@ -9,7 +9,9 @@
     <style>
         :root {
             --accent: #ffffff;
-            --panel-bg: rgba(15, 15, 15, 0.95);
+            --panel-bg: rgba(15, 15, 15, 0.98);
+            --clock-pos: 0px;
+            --weather-pos: 0px;
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -31,6 +33,7 @@
 
         .hud-mode { transform: scaleX(-1); }
 
+        /* WIDGET ANIMATION & POSITIONING */
         #main-display {
             text-align: center;
             z-index: 1;
@@ -42,114 +45,50 @@
             to { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
         }
 
-        #clock {
-            font-size: clamp(5rem, 20vw, 9rem);
-            font-weight: 900;
-            font-style: italic;
-            letter-spacing: -5px;
-            line-height: 0.8;
-            margin-bottom: 10px;
+        #clock-widget { transform: translateY(var(--clock-pos)); margin-bottom: 20px; }
+        #clock { font-size: clamp(5rem, 20vw, 9rem); font-weight: 900; font-style: italic; letter-spacing: -5px; line-height: 0.8; }
+        
+        #date { font-size: 1.2rem; text-transform: uppercase; letter-spacing: 5px; margin-top: 10px; opacity: 0.6; display: none; }
+
+        #weather-widget { 
+            transform: translateY(var(--weather-pos));
+            display: flex; align-items: center; justify-content: center; 
+            gap: 15px; opacity: 0.8; font-size: 1.8rem; font-weight: 200; 
         }
 
-        #weather {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            opacity: 0.8;
-            font-size: 1.8rem;
-            font-weight: 200;
-        }
-
-        /* SMART FADING SETTINGS ICON */
+        /* SETTINGS BUTTON */
         #nav-trigger {
-            position: absolute;
-            bottom: 30px;
-            right: 30px;
-            width: 50px;
-            height: 50px;
-            background: rgba(255,255,255,0.1);
+            position: absolute; bottom: 30px; right: 30px;
+            width: 50px; height: 50px;
+            background: #ffffff; /* MADE WHITE */
             border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            cursor: pointer;
+            display: flex; justify-content: center; align-items: center;
+            z-index: 100; cursor: pointer;
             transition: opacity 0.8s ease, transform 0.3s ease;
-            opacity: 0; /* Hidden by default until tap */
+            opacity: 0; color: #000; /* Black icon on white button */
         }
-        #nav-trigger.visible { opacity: 0.3; }
-        #nav-trigger:active { transform: scale(0.9); opacity: 1; }
+        #nav-trigger.visible { opacity: 0.9; }
 
-        /* SCROLLABLE SIDE PANEL */
+        /* SIDE PANEL */
         #side-panel {
-            position: fixed;
-            right: -340px;
-            top: 0;
-            width: 320px;
-            height: 100%;
-            background: var(--panel-bg);
-            -webkit-backdrop-filter: blur(30px);
-            backdrop-filter: blur(30px);
-            padding: 20px;
-            transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            z-index: 200;
-            display: flex;
-            flex-direction: column;
-            border-left: 1px solid rgba(255,255,255,0.1);
-            overflow-y: auto; /* ALLOWS SCROLLING */
-            -webkit-overflow-scrolling: touch;
+            position: fixed; right: -340px; top: 0; width: 320px; height: 100%;
+            background: var(--panel-bg); backdrop-filter: blur(40px);
+            padding: 20px; transition: right 0.4s ease;
+            z-index: 200; overflow-y: auto; border-left: 1px solid rgba(255,255,255,0.1);
         }
-
         .hud-mode #side-panel, .hud-mode #nav-trigger { transform: scaleX(-1); }
         #side-panel.open { right: 0; }
 
-        .panel-content {
-            display: flex;
-            flex-direction: column;
-            gap: 25px;
-            padding-bottom: 40px; /* Space at bottom for scrolling */
-        }
-
-        .control-group { display: flex; flex-direction: column; gap: 8px; }
-        label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.4; font-weight: 700; }
+        .panel-content { display: flex; flex-direction: column; gap: 20px; padding-bottom: 50px; }
+        .control-group { display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px; }
+        label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.5; font-weight: 700; }
         
-        .btn-toggle {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            background: rgba(255,255,255,0.05);
-            padding: 4px;
-            border-radius: 12px;
-        }
-
-        button {
-            background: transparent;
-            border: none;
-            color: white;
-            padding: 12px;
-            border-radius: 8px;
-            font-weight: 600;
-            font-size: 0.8rem;
-            cursor: pointer;
-        }
+        .btn-toggle { display: grid; grid-template-columns: 1fr 1fr; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 12px; }
+        button { background: transparent; border: none; color: white; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 0.75rem; cursor: pointer; }
         button.active { background: #fff; color: #000; }
 
-        .file-label {
-            padding: 15px;
-            background: rgba(255,255,255,0.03);
-            border: 1px dashed rgba(255,255,255,0.2);
-            text-align: center;
-            border-radius: 12px;
-            font-size: 0.75rem;
-        }
-
-        #overlay {
-            position: fixed;
-            top:0; left:0; width:100%; height:100%;
-            background: rgba(0,0,0,0.4);
-            display: none;
-            z-index: 150;
-        }
+        input[type="range"] { width: 100%; accent-color: var(--accent); }
+        #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.4); display: none; z-index: 150; }
     </style>
 </head>
 <body class="hud-mode" id="app-body" onclick="wakeUI()">
@@ -157,125 +96,137 @@
     <div id="overlay" onclick="toggleNav()"></div>
 
     <div id="main-display">
-        <div id="clock">00:00</div>
-        <div id="weather">
+        <div id="clock-widget">
+            <div id="clock">00:00</div>
+            <div id="date">FEB 07</div>
+        </div>
+        <div id="weather-widget">
             <div id="icon-container"></div>
             <span id="temp">--°</span>
         </div>
     </div>
 
     <div id="nav-trigger" onclick="toggleNav(event)">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
     </div>
 
     <div id="side-panel">
         <div class="panel-content">
-            <h2 style="margin:0; font-size: 1.1rem; letter-spacing: 2px;">PRISM CONFIG</h2>
+            <h2 style="margin:0; font-size: 1.1rem; letter-spacing: 2px;">PRISM SYSTEM</h2>
             
             <div class="control-group">
-                <label>View Orientation</label>
+                <label>Time Format</label>
                 <div class="btn-toggle">
-                    <button id="btn-hud" class="active" onclick="setMode(true)">HUD</button>
-                    <button id="btn-norm" onclick="setMode(false)">REGULAR</button>
+                    <button id="btn-12" onclick="setFormat(true)">12H</button>
+                    <button id="btn-24" class="active" onclick="setFormat(false)">24H</button>
                 </div>
             </div>
 
             <div class="control-group">
-                <label>Custom Backdrop</label>
-                <label for="bg-upload" class="file-label">Choose Image</label>
-                <input type="file" id="bg-upload" accept="image/*" onchange="handleBg(event)">
-                <button onclick="clearBg()" style="color: #ff4444; font-size: 0.7rem;">Reset to Black</button>
+                <label>Date Widget</label>
+                <div class="btn-toggle">
+                    <button id="date-on" onclick="toggleDate(true)">SHOW</button>
+                    <button id="date-off" class="active" onclick="toggleDate(false)">HIDE</button>
+                </div>
             </div>
 
             <div class="control-group">
-                <label>Interface Theme</label>
-                <input type="color" id="color-pick" onchange="updateColor(this.value)" style="width:100%; height:45px; background:none; border:none; cursor:pointer;">
+                <label>Adjust Clock Vertical</label>
+                <input type="range" min="-150" max="150" value="0" oninput="nudge('clock', this.value)">
             </div>
 
-            <button onclick="toggleNav()" style="background: #fff; color: #000; padding: 15px; border-radius: 14px; font-weight: 800;">CLOSE</button>
+            <div class="control-group">
+                <label>Adjust Weather Vertical</label>
+                <input type="range" min="-150" max="150" value="0" oninput="nudge('weather', this.value)">
+            </div>
+
+            <div class="control-group">
+                <label>Orientation</label>
+                <div class="btn-toggle">
+                    <button id="btn-hud" class="active" onclick="setMode(true)">HUD</button>
+                    <button id="btn-norm" onclick="setMode(false)">REG</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>Theme Color</label>
+                <input type="color" onchange="updateColor(this.value)" style="width:100%; height:40px; border:none; background:none;">
+            </div>
+
+            <button onclick="toggleNav()" style="background: #fff; color: #000; padding: 15px; border-radius: 12px; font-weight: 800;">SAVE & CLOSE</button>
         </div>
     </div>
 
     <script>
+        let is12h = false;
         let fadeTimeout;
 
         function updateClock() {
             const now = new Date();
-            document.getElementById('clock').innerText = 
-                String(now.getHours()).padStart(2, '0') + ":" + String(now.getMinutes()).padStart(2, '0');
+            let h = now.getHours();
+            const m = String(now.getMinutes()).padStart(2, '0');
+            
+            if (is12h) {
+                h = h % 12 || 12;
+            }
+            document.getElementById('clock').innerText = `${String(h).padStart(2, '0')}:${m}`;
+            
+            const options = { month: 'short', day: '2-digit' };
+            document.getElementById('date').innerText = now.toLocaleDateString('en-US', options);
         }
         setInterval(updateClock, 1000);
         updateClock();
 
-        // UI WAKE/FADE LOGIC
+        function setFormat(val) {
+            is12h = val;
+            document.getElementById('btn-12').classList.toggle('active', val);
+            document.getElementById('btn-24').classList.toggle('active', !val);
+            updateClock();
+        }
+
+        function toggleDate(val) {
+            document.getElementById('date').style.display = val ? 'block' : 'none';
+            document.getElementById('date-on').classList.toggle('active', val);
+            document.getElementById('date-off').classList.toggle('active', !val);
+        }
+
+        function nudge(type, val) {
+            document.documentElement.style.setProperty(`--${type}-pos`, val + 'px');
+        }
+
         function wakeUI() {
             const trigger = document.getElementById('nav-trigger');
             trigger.classList.add('visible');
-            
             clearTimeout(fadeTimeout);
             fadeTimeout = setTimeout(() => {
-                if (!document.getElementById('side-panel').classList.contains('open')) {
-                    trigger.classList.remove('visible');
-                }
-            }, 3000); // Fades after 3 seconds of no activity
+                if (!document.getElementById('side-panel').classList.contains('open')) trigger.classList.remove('visible');
+            }, 3000);
         }
 
         function toggleNav(e) {
-            if(e) e.stopPropagation(); // Prevents wakeUI from instantly refading
+            if(e) e.stopPropagation();
             const panel = document.getElementById('side-panel');
-            const overlay = document.getElementById('overlay');
-            const trigger = document.getElementById('nav-trigger');
-            
             panel.classList.toggle('open');
-            overlay.style.display = panel.classList.contains('open') ? 'block' : 'none';
-            
-            if (panel.classList.contains('open')) {
-                trigger.classList.add('visible');
-                clearTimeout(fadeTimeout);
-            } else {
-                wakeUI();
-            }
+            document.getElementById('overlay').style.display = panel.classList.contains('open') ? 'block' : 'none';
+            if (!panel.classList.contains('open')) wakeUI();
         }
 
         function setMode(isHud) {
-            const body = document.getElementById('app-body');
-            body.classList.toggle('hud-mode', isHud);
+            document.getElementById('app-body').classList.toggle('hud-mode', isHud);
             document.getElementById('btn-hud').classList.toggle('active', isHud);
             document.getElementById('btn-norm').classList.toggle('active', !isHud);
         }
 
-        function handleBg(e) {
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                document.body.style.backgroundImage = `url(${event.target.result})`;
-                localStorage.setItem('prism_bg', event.target.result);
-            };
-            reader.readAsDataURL(e.target.files[0]);
-        }
-
-        function clearBg() {
-            document.body.style.backgroundImage = 'none';
-            localStorage.removeItem('prism_bg');
-        }
-
-        function updateColor(val) {
-            document.documentElement.style.setProperty('--accent', val);
-        }
-
-        window.onload = () => {
-            const savedBg = localStorage.getItem('prism_bg');
-            if(savedBg) document.body.style.backgroundImage = `url(${savedBg})`;
-            fetchWeather();
-            wakeUI(); // Initial wake
-        };
+        function updateColor(val) { document.documentElement.style.setProperty('--accent', val); }
 
         async function fetchWeather() {
             try {
-                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=51.05&longitude=-114.07&current=temperature_2m,weather_code`).then(r => r.json());
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=51.05&longitude=-114.07&current=temperature_2m`).then(r => r.json());
                 document.getElementById('temp').innerText = Math.round(res.current.temperature_2m) + "°";
-                document.getElementById('icon-container').innerHTML = `<svg style="width:35px; height:35px; stroke:currentColor; fill:none; stroke-width:1.5;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2m-1.42-7.78l-1.42 1.42M5.64 18.36l-1.42 1.42"></path></svg>`;
-            } catch (e) { console.error("Weather Service Offline"); }
+                document.getElementById('icon-container').innerHTML = `<svg style="width:30px; height:30px; stroke:currentColor; fill:none; stroke-width:2;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>`;
+            } catch (e) {}
         }
+        fetchWeather();
     </script>
 </body>
 </html>
