@@ -15,7 +15,7 @@
             --weather-pos: 0px;
             --smooth-ease: cubic-bezier(0.4, 0, 0.2, 1);
             --slow-ease: cubic-bezier(0.65, 0, 0.35, 1);
-            --ios-green: #34c759;
+            --prism-blue: #007AFF; /* Sophisticated System Blue */
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -34,17 +34,34 @@
             overflow: hidden;
         }
 
-        /* MASTER SCALE & SLOW FLIP */
+        /* STARTUP ANIMATION */
+        @keyframes prismEntrance {
+            0% { opacity: 0; transform: scale(0.92) translateY(30px); filter: blur(15px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
+        }
+
         #hud-container {
             transform: scale(var(--global-scale));
             transition: transform 1.2s var(--slow-ease);
             text-align: center;
+            animation: prismEntrance 1.8s var(--slow-ease) forwards;
+            padding: 0 20px; /* Prevents clock clipping */
         }
         .mirrored #hud-container { transform: scale(var(--global-scale)) scaleX(-1); }
 
         /* WIDGETS */
-        .widget { transition: transform 0.5s var(--smooth-ease), opacity 0.4s ease, height 0.4s ease; overflow: hidden; }
-        #clock { font-size: clamp(5rem, 25vw, 12rem); font-weight: 900; font-style: italic; letter-spacing: -8px; line-height: 0.8; }
+        .widget { transition: transform 0.5s var(--smooth-ease), opacity 0.4s ease, height 0.4s ease; overflow: visible; }
+        
+        /* Fixed Clipping: Added padding-right and adjusted letter-spacing */
+        #clock { 
+            font-size: clamp(5rem, 25vw, 12rem); 
+            font-weight: 900; 
+            font-style: italic; 
+            letter-spacing: -4px; 
+            line-height: 0.8; 
+            padding-right: 15px; 
+        }
+
         #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.5; font-weight: 300; margin-top: 15px; }
         #weather-widget { display: flex; align-items: center; justify-content: center; gap: 20px; opacity: 0.8; font-size: 2.4rem; font-weight: 200; margin-top: 15px;}
 
@@ -62,7 +79,7 @@
         /* SETTINGS PANEL */
         #side-panel {
             position: fixed; right: -360px; top: 0; width: 340px; height: 100%;
-            background: rgba(10, 10, 10, 0.9); backdrop-filter: blur(60px);
+            background: rgba(10, 10, 10, 0.92); backdrop-filter: blur(60px);
             -webkit-backdrop-filter: blur(60px); padding: 40px 25px; 
             transition: right 0.5s var(--smooth-ease); z-index: 2000; overflow-y: auto;
             border-left: 1px solid rgba(255,255,255,0.1);
@@ -98,7 +115,7 @@
             border-radius: 50%; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
             transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1.4);
         }
-        .ios-switch.active { background: var(--ios-green); }
+        .ios-switch.active { background: var(--prism-blue); }
         .ios-switch.active::after { transform: translateX(22px); }
 
         input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; }
@@ -106,7 +123,7 @@
 
         #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); display: none; z-index: 1500; }
         
-        .reset-btn { color: #ff4444; background: none; border: none; font-weight: 700; cursor: pointer; padding: 10px; margin-top: 10px; opacity: 0.6; }
+        .reset-btn { color: #ff4444; background: none; border: none; font-weight: 700; cursor: pointer; padding: 10px; margin-top: 10px; opacity: 0.6; font-size: 0.75rem; text-transform: uppercase; }
         .reset-btn:hover { opacity: 1; }
     </style>
 </head>
@@ -224,7 +241,6 @@
             const sw = document.getElementById(`sw-${type}`);
             const isVisible = sw.classList.toggle('active');
             el.style.opacity = isVisible ? '1' : '0';
-            el.style.height = isVisible ? 'auto' : '0';
             el.style.pointerEvents = isVisible ? 'auto' : 'none';
         }
 
