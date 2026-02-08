@@ -5,16 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Prism OS Pro</title>
+    <title>Prism OS Obsidian</title>
     <style>
         :root {
             --accent: #ffffff;
-            --panel-bg: rgba(15, 15, 15, 0.98);
             --clock-pos: 0px;
+            --date-pos: 0px;
             --weather-pos: 0px;
+            --spring-ease: cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
 
         body {
             background-color: #000;
@@ -26,96 +27,107 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            font-family: -apple-system, system-ui, sans-serif;
+            font-family: "SF Pro Display", -apple-system, system-ui, sans-serif;
             overflow: hidden;
-            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: color 0.5s ease;
         }
 
-        .hud-mode { transform: scaleX(-1); }
-
-        /* WIDGET ANIMATION & POSITIONING */
-        #main-display {
+        #hud-core {
             text-align: center;
-            z-index: 1;
-            animation: prismEntrance 1.8s cubic-bezier(0.22, 1, 0.36, 1);
+            transition: transform 0.8s var(--spring-ease);
+            will-change: transform;
         }
 
-        @keyframes prismEntrance {
-            from { opacity: 0; transform: scale(0.9) translateY(20px); filter: blur(10px); }
-            to { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
-        }
+        .mirrored { transform: scaleX(-1); }
 
-        #clock-widget { transform: translateY(var(--clock-pos)); margin-bottom: 20px; }
-        #clock { font-size: clamp(5rem, 20vw, 9rem); font-weight: 900; font-style: italic; letter-spacing: -5px; line-height: 0.8; }
+        /* WIDGET STYLING */
+        .widget { transition: transform 0.3s ease, opacity 0.5s ease; }
         
-        #date { font-size: 1.2rem; text-transform: uppercase; letter-spacing: 5px; margin-top: 10px; opacity: 0.6; display: none; }
+        #clock-widget { transform: translateY(var(--clock-pos)); margin-bottom: 20px; animation: slideUp 1s var(--spring-ease); }
+        #clock { font-size: clamp(5rem, 24vw, 11rem); font-weight: 900; font-style: italic; letter-spacing: -7px; line-height: 0.8; }
+        
+        #date-widget { transform: translateY(var(--date-pos)); margin-top: 15px; animation: slideUp 1.2s var(--spring-ease); }
+        #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.5; font-weight: 300; display: none; }
 
         #weather-widget { 
             transform: translateY(var(--weather-pos));
             display: flex; align-items: center; justify-content: center; 
-            gap: 15px; opacity: 0.8; font-size: 1.8rem; font-weight: 200; 
+            gap: 20px; opacity: 0.8; font-size: 2.4rem; font-weight: 200; 
+            animation: slideUp 1.4s var(--spring-ease);
         }
 
-        /* SETTINGS BUTTON */
+        @keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* PREMIUM SETTINGS BUTTON */
         #nav-trigger {
-            position: absolute; bottom: 30px; right: 30px;
-            width: 50px; height: 50px;
-            background: #ffffff; /* MADE WHITE */
+            position: absolute; bottom: 40px; right: 40px;
+            width: 60px; height: 60px;
+            background: #ffffff;
             border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
-            z-index: 100; cursor: pointer;
-            transition: opacity 0.8s ease, transform 0.3s ease;
-            opacity: 0; color: #000; /* Black icon on white button */
+            z-index: 1000; cursor: pointer;
+            transition: all 0.5s var(--spring-ease);
+            opacity: 0; color: #000;
+            box-shadow: 0 10px 30px rgba(255,255,255,0.1);
         }
-        #nav-trigger.visible { opacity: 0.9; }
+        #nav-trigger.visible { opacity: 1; transform: scale(1); }
+        #nav-trigger:active { transform: scale(0.85); }
 
-        /* SIDE PANEL */
+        /* GLASS PANEL */
         #side-panel {
-            position: fixed; right: -340px; top: 0; width: 320px; height: 100%;
-            background: var(--panel-bg); backdrop-filter: blur(40px);
-            padding: 20px; transition: right 0.4s ease;
-            z-index: 200; overflow-y: auto; border-left: 1px solid rgba(255,255,255,0.1);
+            position: fixed; right: -360px; top: 15px; bottom: 15px; width: 330px;
+            background: rgba(20, 20, 20, 0.7); 
+            -webkit-backdrop-filter: blur(40px) saturate(180%);
+            backdrop-filter: blur(40px) saturate(180%);
+            padding: 35px 25px; transition: right 0.6s var(--spring-ease);
+            z-index: 2000; overflow-y: auto; 
+            border-radius: 35px 0 0 35px;
+            border: 1px solid rgba(255,255,255,0.1);
         }
-        .hud-mode #side-panel, .hud-mode #nav-trigger { transform: scaleX(-1); }
         #side-panel.open { right: 0; }
 
-        .panel-content { display: flex; flex-direction: column; gap: 20px; padding-bottom: 50px; }
-        .control-group { display: flex; flex-direction: column; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 15px; }
-        label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.5; font-weight: 700; }
+        .panel-content { display: flex; flex-direction: column; gap: 30px; padding-bottom: 60px; }
+        .control-group { display: flex; flex-direction: column; gap: 12px; }
+        label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.4; font-weight: 900; }
         
-        .btn-toggle { display: grid; grid-template-columns: 1fr 1fr; background: rgba(255,255,255,0.05); padding: 4px; border-radius: 12px; }
-        button { background: transparent; border: none; color: white; padding: 10px; border-radius: 8px; font-weight: 600; font-size: 0.75rem; cursor: pointer; }
-        button.active { background: #fff; color: #000; }
+        /* MODERN INPUTS */
+        .btn-toggle { display: grid; grid-template-columns: 1fr 1fr; background: rgba(255,255,255,0.06); padding: 5px; border-radius: 16px; }
+        button { background: transparent; border: none; color: white; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 0.8rem; transition: all 0.3s ease; }
+        button.active { background: #fff; color: #000; box-shadow: 0 4px 12px rgba(0,0,0,0.2); }
 
-        input[type="range"] { width: 100%; accent-color: var(--accent); }
-        #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.4); display: none; z-index: 150; }
+        input[type="range"] { -webkit-appearance: none; background: rgba(255,255,255,0.1); height: 6px; border-radius: 3px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; background: white; border-radius: 50%; box-shadow: 0 0 10px rgba(0,0,0,0.5); }
+
+        #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); display: none; z-index: 1500; backdrop-filter: blur(4px); }
     </style>
 </head>
-<body class="hud-mode" id="app-body" onclick="wakeUI()">
+<body onclick="wakeUI()">
 
     <div id="overlay" onclick="toggleNav()"></div>
 
-    <div id="main-display">
-        <div id="clock-widget">
+    <div id="hud-core" class="mirrored">
+        <div id="clock-widget" class="widget">
             <div id="clock">00:00</div>
-            <div id="date">FEB 07</div>
         </div>
-        <div id="weather-widget">
+        <div id="date-widget" class="widget">
+            <div id="date">MONDAY, FEB 09</div>
+        </div>
+        <div id="weather-widget" class="widget">
             <div id="icon-container"></div>
             <span id="temp">--°</span>
         </div>
     </div>
 
     <div id="nav-trigger" onclick="toggleNav(event)">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
     </div>
 
     <div id="side-panel">
         <div class="panel-content">
-            <h2 style="margin:0; font-size: 1.1rem; letter-spacing: 2px;">PRISM SYSTEM</h2>
+            <h2 style="margin:0; font-size: 1.4rem; letter-spacing: 1px; font-weight: 900;">PRISM OS</h2>
             
             <div class="control-group">
-                <label>Time Format</label>
+                <label>Clock Mode</label>
                 <div class="btn-toggle">
                     <button id="btn-12" onclick="setFormat(true)">12H</button>
                     <button id="btn-24" class="active" onclick="setFormat(false)">24H</button>
@@ -123,7 +135,7 @@
             </div>
 
             <div class="control-group">
-                <label>Date Widget</label>
+                <label>Calendar Widget</label>
                 <div class="btn-toggle">
                     <button id="date-on" onclick="toggleDate(true)">SHOW</button>
                     <button id="date-off" class="active" onclick="toggleDate(false)">HIDE</button>
@@ -131,17 +143,22 @@
             </div>
 
             <div class="control-group">
-                <label>Adjust Clock Vertical</label>
-                <input type="range" min="-150" max="150" value="0" oninput="nudge('clock', this.value)">
+                <label>Clock Offset</label>
+                <input type="range" min="-200" max="200" value="0" oninput="nudge('clock', this.value)">
             </div>
 
             <div class="control-group">
-                <label>Adjust Weather Vertical</label>
-                <input type="range" min="-150" max="150" value="0" oninput="nudge('weather', this.value)">
+                <label>Date Offset</label>
+                <input type="range" min="-200" max="200" value="0" oninput="nudge('date', this.value)">
             </div>
 
             <div class="control-group">
-                <label>Orientation</label>
+                <label>Weather Offset</label>
+                <input type="range" min="-200" max="200" value="0" oninput="nudge('weather', this.value)">
+            </div>
+
+            <div class="control-group">
+                <label>Viewing Perspective</label>
                 <div class="btn-toggle">
                     <button id="btn-hud" class="active" onclick="setMode(true)">HUD</button>
                     <button id="btn-norm" onclick="setMode(false)">REG</button>
@@ -149,11 +166,11 @@
             </div>
 
             <div class="control-group">
-                <label>Theme Color</label>
-                <input type="color" onchange="updateColor(this.value)" style="width:100%; height:40px; border:none; background:none;">
+                <label>Accent Tone</label>
+                <input type="color" onchange="updateColor(this.value)" style="width:100%; height:50px; border:none; background:none;">
             </div>
 
-            <button onclick="toggleNav()" style="background: #fff; color: #000; padding: 15px; border-radius: 12px; font-weight: 800;">SAVE & CLOSE</button>
+            <button onclick="toggleNav()" style="background: var(--accent); color: #000; padding: 20px; border-radius: 20px; font-weight: 900; margin-top: 10px; cursor: pointer;">APPLY SYSTEM SETTINGS</button>
         </div>
     </div>
 
@@ -165,14 +182,10 @@
             const now = new Date();
             let h = now.getHours();
             const m = String(now.getMinutes()).padStart(2, '0');
-            
-            if (is12h) {
-                h = h % 12 || 12;
-            }
+            if (is12h) h = h % 12 || 12;
             document.getElementById('clock').innerText = `${String(h).padStart(2, '0')}:${m}`;
-            
-            const options = { month: 'short', day: '2-digit' };
-            document.getElementById('date').innerText = now.toLocaleDateString('en-US', options);
+            const options = { weekday: 'long', month: 'short', day: '2-digit' };
+            document.getElementById('date').innerText = now.toLocaleDateString('en-US', options).toUpperCase();
         }
         setInterval(updateClock, 1000);
         updateClock();
@@ -206,24 +219,26 @@
         function toggleNav(e) {
             if(e) e.stopPropagation();
             const panel = document.getElementById('side-panel');
-            panel.classList.toggle('open');
-            document.getElementById('overlay').style.display = panel.classList.contains('open') ? 'block' : 'none';
-            if (!panel.classList.contains('open')) wakeUI();
+            const isOpen = panel.classList.toggle('open');
+            document.getElementById('overlay').style.display = isOpen ? 'block' : 'none';
+            if (!isOpen) wakeUI();
         }
 
         function setMode(isHud) {
-            document.getElementById('app-body').classList.toggle('hud-mode', isHud);
+            document.getElementById('hud-core').classList.toggle('mirrored', isHud);
             document.getElementById('btn-hud').classList.toggle('active', isHud);
             document.getElementById('btn-norm').classList.toggle('active', !isHud);
         }
 
-        function updateColor(val) { document.documentElement.style.setProperty('--accent', val); }
+        function updateColor(val) { 
+            document.documentElement.style.setProperty('--accent', val); 
+        }
 
         async function fetchWeather() {
             try {
                 const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=51.05&longitude=-114.07&current=temperature_2m`).then(r => r.json());
                 document.getElementById('temp').innerText = Math.round(res.current.temperature_2m) + "°";
-                document.getElementById('icon-container').innerHTML = `<svg style="width:30px; height:30px; stroke:currentColor; fill:none; stroke-width:2;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>`;
+                document.getElementById('icon-container').innerHTML = `<svg style="width:40px; height:40px; stroke:currentColor; fill:none; stroke-width:1.5;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>`;
             } catch (e) {}
         }
         fetchWeather();
