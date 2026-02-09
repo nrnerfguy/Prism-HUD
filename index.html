@@ -31,6 +31,7 @@
             overflow: hidden;
         }
 
+        /* Master wrapper handles the flip */
         #hud-master {
             display: flex;
             flex-direction: column;
@@ -40,13 +41,17 @@
             will-change: transform;
         }
 
+        /* Counter-flip for text readability */
+        .readable {
+            transition: transform 1.2s var(--slow-ease);
+        }
+
         .widget { 
             transition: transform 0.6s var(--smooth-ease), opacity 0.4s ease; 
             color: var(--accent); 
             filter: var(--widget-shadow);
         }
         
-        /* The Linear Nudge Fix */
         .nudge-active { transition: none !important; }
 
         #clock { 
@@ -62,7 +67,6 @@
         #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.8; font-weight: 300; margin-top: 20px; text-align: center; }
         #weather-widget { display: flex; align-items: center; justify-content: center; gap: 20px; opacity: 0.8; font-size: 2.4rem; font-weight: 200; margin-top: 15px;}
 
-        /* TRIGGER - 20% Opacity */
         #nav-trigger {
             position: absolute; bottom: 40px; right: 40px;
             width: 65px; height: 65px;
@@ -73,7 +77,6 @@
             z-index: 1000; cursor: pointer; transition: opacity 0.5s;
             opacity: 0.2; color: #fff;
         }
-        #nav-trigger:hover { opacity: 0.5; }
 
         #side-panel {
             position: fixed; right: -360px; top: 0; width: 340px; height: 100%;
@@ -97,7 +100,6 @@
         .ios-switch.active::after { transform: translateX(22px); }
 
         input[type="text"] { width: 100%; background: #000; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 12px; border-radius: 12px; margin-top: 10px; outline: none; }
-        input[type="text"]:focus { border-color: var(--accent); }
         input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); margin-top: 10px; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; background: #fff; border-radius: 50%; cursor: pointer; }
 
@@ -110,9 +112,9 @@
     <div id="overlay" onclick="toggleNav()"></div>
 
     <div id="hud-master">
-        <div id="clock-widget" class="widget"><div id="clock">0:00</div></div>
-        <div id="date-widget" class="widget"><div id="date">...</div></div>
-        <div id="weather-widget" class="widget">
+        <div id="clock-widget" class="widget readable"><div id="clock">0:00</div></div>
+        <div id="date-widget" class="widget readable"><div id="date">...</div></div>
+        <div id="weather-widget" class="widget readable">
             <div id="icon-container"></div>
             <span id="temp">--°</span>
         </div>
@@ -133,7 +135,11 @@
             </div>
 
             <div class="control-group">
-                <div class="row"><label>HUD Mirror</label><div id="sw-mirror" class="ios-switch active" onclick="toggle('mirrored')"></div></div>
+                <div class="row"><label>HUD Mirror (Projection)</label><div id="sw-mirrored" class="ios-switch active" onclick="toggle('mirrored')"></div></div>
+            </div>
+
+            <div class="control-group">
+                <div class="row"><label>24-Hour Time</label><div id="sw-is24h" class="ios-switch active" onclick="toggle('is24h')"></div></div>
             </div>
 
             <div class="control-group">
@@ -166,21 +172,21 @@
                 <input type="file" id="bg-upload" style="font-size: 0.7rem; margin-top:10px;" onchange="handleBg(this)">
             </div>
 
-            <button onclick="localStorage.clear(); location.reload();" style="color:red; background:none; border:none; font-weight:bold; cursor:pointer;">RESET ALL DATA</button>
+            <button onclick="localStorage.clear(); location.reload();" style="color:red; background:none; border:none; font-weight:bold; cursor:pointer; width:100%;">RESET ALL DATA</button>
         </div>
     </div>
 
     <script>
         let state = {
-            mirrored: true, showClock: true, showDate: true, showWeather: true,
+            mirrored: true, is24h: true, showClock: true, showDate: true, showWeather: true,
             nudgeclock: 0, nudgedate: 0, nudgeweather: 0,
             scale: 1, accent: '#007AFF', city: 'Calgary', bg: ''
         };
 
-        function save() { localStorage.setItem('prism_final_v5', JSON.stringify(state)); }
+        function save() { localStorage.setItem('prism_v6', JSON.stringify(state)); }
 
         function load() {
-            const saved = localStorage.getItem('prism_final_v5');
+            const saved = localStorage.getItem('prism_v6');
             if(saved) {
                 state = JSON.parse(saved);
                 applyAll();
@@ -192,27 +198,39 @@
 
         function applyAll() {
             document.documentElement.style.setProperty('--accent', state.accent);
-            document.getElementById('hud-master').style.transform = `scale(${state.scale}) scaleX(${state.mirrored ? -1 : 1})`;
+            
+            // Apply projection mirror
+            const m = state.mirrored ? -1 : 1;
+            document.getElementById('hud-master').style.transform = `scale(${state.scale}) scaleX(${m})`;
+            
+            // Counter-flip text so it looks normal even when projected
+            document.querySelectorAll('.readable').forEach(el => {
+                el.style.transform = `scaleX(${m})`;
+            });
+
             document.getElementById('city-input').value = state.city;
             document.getElementById('color-accent').value = state.accent;
             document.getElementById('range-scale').value = state.scale;
+            document.getElementById('sw-is24h').classList.toggle('active', state.is24h);
+            document.getElementById('sw-mirrored').classList.toggle('active', state.mirrored);
 
             ['clock', 'date', 'weather'].forEach(key => {
                 const el = document.getElementById(key + '-widget');
                 const show = state['show' + key.charAt(0).toUpperCase() + key.slice(1)];
                 el.style.opacity = show ? 1 : 0;
-                el.style.transform = `translateY(${state['nudge' + key]}px)`;
+                // Vertical nudge doesn't need counter-flipping
+                el.style.marginTop = state['nudge' + key] + "px"; 
                 document.getElementById('sw-show' + key.charAt(0).toUpperCase() + key.slice(1)).classList.toggle('active', show);
                 document.getElementById('range-' + key).value = state['nudge' + key];
             });
-            document.getElementById('sw-mirror').classList.toggle('active', state.mirrored);
+            updateClock();
         }
 
         function updateClock() {
             const now = new Date();
             let h = now.getHours();
             const m = String(now.getMinutes()).padStart(2, '0');
-            // NO LEADING ZERO
+            if (!state.is24h) h = h % 12 || 12;
             document.getElementById('clock').innerText = `${h}:${m}`;
             document.getElementById('date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
         }
@@ -222,7 +240,7 @@
         function endNudge(id) { document.getElementById(id + '-widget').classList.remove('nudge-active'); }
         function nudge(id, v) { 
             state['nudge' + id] = v; 
-            document.getElementById(id + '-widget').style.transform = `translateY(${v}px)`; 
+            document.getElementById(id + '-widget').style.marginTop = `${v}px`; 
             save(); 
         }
 
