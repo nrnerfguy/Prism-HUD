@@ -3,16 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Prism OS Executive</title>
+    <title>Prism OS Original Restoration</title>
     <style>
         :root {
             --accent: #007AFF; 
             --global-scale: 1;
+            --mirror-val: -1;
             --widget-shadow: 0px 0px 10px rgba(0,0,0,0.5);
             --smooth-ease: cubic-bezier(0.4, 0, 0.2, 1);
-            --slow-ease: cubic-bezier(0.65, 0, 0.35, 1);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -31,185 +29,147 @@
             overflow: hidden;
         }
 
-        @keyframes prismEntrance {
-            0% { opacity: 0; transform: scale(0.92) translateY(30px); filter: blur(15px); }
-            100% { opacity: 1; transform: scale(1) translateY(0); filter: blur(0); }
-        }
-
         #hud-master {
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            transition: transform 1.2s var(--slow-ease);
-            animation: prismEntrance 1.8s var(--slow-ease) forwards;
-            /* Combines scale and mirror */
-            transform: scale(var(--global-scale)) scaleX(var(--mirror-val, -1));
+            transform: scale(var(--global-scale)) scaleX(var(--mirror-val));
+            transition: transform 0.8s var(--smooth-ease);
         }
 
-        #hud-container { text-align: center; }
+        .widget { transition: transform 0.4s ease, opacity 0.4s ease; color: var(--accent); filter: drop-shadow(var(--widget-shadow)); }
+        #clock { font-size: clamp(5rem, 25vw, 12rem); font-weight: 900; font-style: italic; letter-spacing: -4px; line-height: 0.8; }
+        #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.6; margin-top: 20px; }
+        #weather-widget { display: flex; align-items: center; justify-content: center; gap: 20px; font-size: 2.4rem; margin-top: 15px; }
 
-        .widget { 
-            transition: transform 0.5s var(--smooth-ease), opacity 0.4s ease; 
-            color: var(--accent); 
-            filter: drop-shadow(var(--widget-shadow));
-        }
-        
-        #clock { 
-            font-size: clamp(5rem, 25vw, 12rem); 
-            font-weight: 900; 
-            font-style: italic; 
-            letter-spacing: -4px; 
-            line-height: 0.8; 
-            padding-right: 0.2em; 
-        }
-
-        #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.6; font-weight: 300; margin-top: 20px; }
-        #weather-widget { display: flex; align-items: center; justify-content: center; gap: 20px; opacity: 0.8; font-size: 2.4rem; font-weight: 200; margin-top: 15px;}
-
-        /* 20% Opacity Settings Trigger */
         #nav-trigger {
             position: absolute; bottom: 40px; right: 40px;
             width: 65px; height: 65px;
             background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1);
             border-radius: 50%; display: flex; justify-content: center; align-items: center;
-            z-index: 1000; cursor: pointer; transition: opacity 0.8s var(--smooth-ease);
-            opacity: 0; color: #fff; backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px);
+            z-index: 1000; cursor: pointer; opacity: 0; backdrop-filter: blur(10px);
         }
         #nav-trigger.visible { opacity: 1; }
 
         #side-panel {
             position: fixed; right: -360px; top: 0; width: 340px; height: 100%;
             background: rgba(10, 10, 10, 0.95); backdrop-filter: blur(60px);
-            -webkit-backdrop-filter: blur(60px); padding: 40px 25px; 
-            transition: right 0.5s var(--smooth-ease); z-index: 2000; overflow-y: auto;
-            border-left: 1px solid rgba(255,255,255,0.1);
+            padding: 40px 25px; transition: right 0.5s var(--smooth-ease); z-index: 2000;
+            border-left: 1px solid rgba(255,255,255,0.1); overflow-y: auto;
         }
         #side-panel.open { right: 0; }
 
-        .panel-content { display: flex; flex-direction: column; gap: 20px; padding-bottom: 80px; }
-
-        .control-group { 
-            padding: 18px; background: rgba(255,255,255,0.03);
-            border-radius: 20px; border: 1px solid rgba(255,255,255,0.05);
-        }
-
+        .control-group { padding: 18px; background: rgba(255,255,255,0.03); border-radius: 20px; margin-bottom: 15px; }
         .row { display: flex; justify-content: space-between; align-items: center; }
-        label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.5; font-weight: 800; }
+        label { font-size: 0.65rem; text-transform: uppercase; opacity: 0.5; font-weight: 800; }
 
         .ios-switch {
-            position: relative; width: 50px; height: 28px;
-            background: rgba(255,255,255,0.1); border-radius: 20px;
-            cursor: pointer; transition: background 0.3s;
+            position: relative; width: 50px; height: 28px; background: rgba(255,255,255,0.1);
+            border-radius: 20px; cursor: pointer; transition: 0.3s;
         }
-        .ios-switch::after {
-            content: ''; position: absolute; top: 2px; left: 2px;
-            width: 24px; height: 24px; background: #fff;
-            border-radius: 50%; transition: transform 0.3s;
-        }
+        .ios-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 24px; height: 24px; background: #fff; border-radius: 50%; transition: 0.3s; }
         .ios-switch.active { background: var(--accent); }
         .ios-switch.active::after { transform: translateX(22px); }
 
-        input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; background: #fff; border-radius: 50%; cursor: pointer;}
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); margin-top: 10px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; background: #fff; border-radius: 50%; }
 
         #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); display: none; z-index: 1500; }
-        .reset-btn { color: #ff4444; background: none; border: none; font-weight: 700; cursor: pointer; padding: 10px; margin-top: 10px; opacity: 0.6; text-transform: uppercase; width: 100%; font-size: 0.75rem; }
     </style>
 </head>
-<body id="app-body" onclick="wakeUI()">
+<body onclick="wakeUI()">
 
     <div id="overlay" onclick="toggleNav()"></div>
 
-    <div id="hud-master" style="--mirror-val: -1;">
-        <div id="hud-container">
-            <div id="clock-widget" class="widget">
-                <div id="clock">0:00</div>
-            </div>
-            <div id="date-widget" class="widget">
-                <div id="date">...</div>
-            </div>
-            <div id="weather-widget" class="widget">
-                <div id="icon-container"></div>
-                <span id="temp">--°</span>
-            </div>
+    <div id="hud-master">
+        <div id="clock-widget" class="widget"><div id="clock">0:00</div></div>
+        <div id="date-widget" class="widget"><div id="date">...</div></div>
+        <div id="weather-widget" class="widget">
+            <div id="icon-container"></div>
+            <span id="temp">--°</span>
         </div>
     </div>
 
     <div id="nav-trigger" onclick="toggleNav(event)">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <svg width="24" height="24" fill="white" viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.98l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.42l-.38 2.65c-.61.25-1.17.59-1.69.98l-2.49-1c-.23-.09-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.98l.38 2.65c.03.24.24.42.49.42h4c.25 0 .46-.18.49-.42l.38-2.65c.61-.25 1.17-.59 1.69-.98l2.49 1c.23.09.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
     </div>
 
     <div id="side-panel">
-        <div class="panel-content">
-            <h2 style="margin:0; font-size: 1.4rem; font-weight: 900;">Settings</h2>
-            
-            <div class="control-group">
-                <div class="row">
-                    <label>HUD Projection</label>
-                    <div id="sw-mirror" class="ios-switch active" onclick="toggleMirror()"></div>
-                </div>
-            </div>
-
-            <div class="control-group">
-                <div class="row">
-                    <label>24-Hour Time</label>
-                    <div id="sw-24h" class="ios-switch active" onclick="toggle24h()"></div>
-                </div>
-            </div>
-
-            <div class="control-group">
-                <label>Shadow Intensity</label>
-                <input type="range" id="range-shadow" min="0" max="50" value="10" oninput="updateShadow(this.value)">
-            </div>
-
-            <div class="control-group">
-                <label>System Scale</label>
-                <input type="range" id="range-scale" min="0.5" max="1.5" step="0.01" value="1" oninput="globalScale(this.value)">
-            </div>
-
-            <div class="control-group">
-                <label>Accent Color</label>
-                <div class="row" style="margin-top:10px;">
-                    <input type="color" id="color-accent" value="#007AFF" onchange="updateColor(this.value)" style="border:none; background:none; width:100%; height:30px; cursor:pointer;">
-                </div>
-            </div>
-
-            <button onclick="resetSystem()" class="reset-btn">Reset All Settings</button>
-            <button onclick="toggleNav()" style="background:#fff; color:#000; padding:18px; border-radius:15px; font-weight:800; border:none; margin-top:10px; cursor:pointer;">Dismiss</button>
+        <h2 style="font-weight:900;">Settings</h2>
+        
+        <div class="control-group">
+            <div class="row"><label>HUD Mirror</label><div id="sw-mirror" class="ios-switch active" onclick="toggleMirror()"></div></div>
         </div>
+
+        <div class="control-group">
+            <div class="row"><label>24-Hour Time</label><div id="sw-24h" class="ios-switch active" onclick="toggle24h()"></div></div>
+        </div>
+
+        <div class="control-group">
+            <div class="row"><label>Clock Widget</label><div id="sw-clock" class="ios-switch active" onclick="toggleWid('clock')"></div></div>
+            <input type="range" id="nudge-clock" min="-200" max="200" value="0" oninput="nudge('clock', this.value)">
+        </div>
+
+        <div class="control-group">
+            <div class="row"><label>Date Widget</label><div id="sw-date" class="ios-switch active" onclick="toggleWid('date')"></div></div>
+            <input type="range" id="nudge-date" min="-200" max="200" value="0" oninput="nudge('date', this.value)">
+        </div>
+
+        <div class="control-group">
+            <label>Master Scale</label>
+            <input type="range" id="range-scale" min="0.5" max="2" step="0.01" value="1" oninput="updateScale(this.value)">
+        </div>
+
+        <div class="control-group">
+            <label>Shadow Intensity</label>
+            <input type="range" id="range-shadow" min="0" max="50" value="10" oninput="updateShadow(this.value)">
+        </div>
+
+        <div class="control-group">
+            <label>Accent Color</label>
+            <input type="color" id="color-accent" value="#007AFF" onchange="updateColor(this.value)" style="width:100%; height:40px; border:none; background:none;">
+        </div>
+
+        <button onclick="localStorage.clear(); location.reload();" style="width:100%; background:none; color:red; border:none; padding:10px; cursor:pointer;">RESET ALL</button>
     </div>
 
     <script>
-        // Restoring the "Old" logic structure with persistence added
         let state = {
-            is24h: true,
-            mirrored: true,
-            scale: 1.0,
-            shadow: 10,
-            accent: '#007AFF'
+            is24h: true, mirrored: true, scale: 1, shadow: 10, accent: '#007AFF',
+            nudgeClock: 0, nudgeDate: 0, showClock: true, showDate: true
         };
 
-        function save() { localStorage.setItem('prism_os_config', JSON.stringify(state)); }
+        function save() { localStorage.setItem('prism_data', JSON.stringify(state)); }
 
         function load() {
-            const data = localStorage.getItem('prism_os_config');
-            if (data) {
-                state = JSON.parse(data);
-                // Sync UI
+            const saved = localStorage.getItem('prism_data');
+            if (saved) {
+                state = JSON.parse(saved);
                 document.getElementById('sw-24h').classList.toggle('active', state.is24h);
                 document.getElementById('sw-mirror').classList.toggle('active', state.mirrored);
+                document.getElementById('sw-clock').classList.toggle('active', state.showClock);
+                document.getElementById('sw-date').classList.toggle('active', state.showDate);
                 document.getElementById('range-scale').value = state.scale;
                 document.getElementById('range-shadow').value = state.shadow;
                 document.getElementById('color-accent').value = state.accent;
-                // Apply
-                globalScale(state.scale);
-                updateShadow(state.shadow);
-                updateColor(state.accent);
-                const master = document.getElementById('hud-master');
-                master.style.setProperty('--mirror-val', state.mirrored ? "-1" : "1");
+                document.getElementById('nudge-clock').value = state.nudgeClock;
+                document.getElementById('nudge-date').value = state.nudgeDate;
+                
+                applySettings();
             }
             updateClock();
+        }
+
+        function applySettings() {
+            document.documentElement.style.setProperty('--global-scale', state.scale);
+            document.documentElement.style.setProperty('--mirror-val', state.mirrored ? -1 : 1);
+            document.documentElement.style.setProperty('--accent', state.accent);
+            document.documentElement.style.setProperty('--widget-shadow', `0px 0px ${state.shadow}px rgba(0,0,0,0.8)`);
+            document.getElementById('clock-widget').style.transform = `translateY(${state.nudgeClock}px)`;
+            document.getElementById('clock-widget').style.opacity = state.showClock ? 1 : 0;
+            document.getElementById('date-widget').style.transform = `translateY(${state.nudgeDate}px)`;
+            document.getElementById('date-widget').style.opacity = state.showDate ? 1 : 0;
         }
 
         function updateClock() {
@@ -217,69 +177,26 @@
             let h = now.getHours();
             const m = String(now.getMinutes()).padStart(2, '0');
             if (!state.is24h) h = h % 12 || 12;
-            
-            // STRIP LEADING ZERO
             document.getElementById('clock').innerText = `${h}:${m}`;
-            
             const opt = { weekday: 'long', month: 'short', day: '2-digit' };
             document.getElementById('date').innerText = now.toLocaleDateString('en-US', opt).toUpperCase();
         }
         setInterval(updateClock, 1000);
 
-        function toggle24h() {
-            state.is24h = !state.is24h;
-            document.getElementById('sw-24h').classList.toggle('active', state.is24h);
-            updateClock();
-            save();
-        }
+        function toggle24h() { state.is24h = !state.is24h; document.getElementById('sw-24h').classList.toggle('active'); updateClock(); save(); }
+        function toggleMirror() { state.mirrored = !state.mirrored; document.getElementById('sw-mirror').classList.toggle('active'); document.documentElement.style.setProperty('--mirror-val', state.mirrored ? -1 : 1); save(); }
+        function updateScale(v) { state.scale = v; document.documentElement.style.setProperty('--global-scale', v); save(); }
+        function updateShadow(v) { state.shadow = v; document.documentElement.style.setProperty('--widget-shadow', `0px 0px ${v}px rgba(0,0,0,0.8)`); save(); }
+        function updateColor(v) { state.accent = v; document.documentElement.style.setProperty('--accent', v); save(); }
+        function nudge(id, v) { state['nudge' + id.charAt(0).toUpperCase() + id.slice(1)] = v; document.getElementById(id+'-widget').style.transform = `translateY(${v}px)`; save(); }
+        function toggleWid(id) { state['show' + id.charAt(0).toUpperCase() + id.slice(1)] = !state['show' + id.charAt(0).toUpperCase() + id.slice(1)]; document.getElementById('sw-'+id).classList.toggle('active'); document.getElementById(id+'-widget').style.opacity = state['show' + id.charAt(0).toUpperCase() + id.slice(1)] ? 1 : 0; save(); }
 
-        function toggleMirror() {
-            state.mirrored = !state.mirrored;
-            const master = document.getElementById('hud-master');
-            const sw = document.getElementById('sw-mirror');
-            const newVal = state.mirrored ? "-1" : "1";
-            master.style.setProperty('--mirror-val', newVal);
-            sw.classList.toggle('active', state.mirrored);
-            save();
-        }
-
-        function globalScale(v) {
-            state.scale = v;
-            document.documentElement.style.setProperty('--global-scale', v);
-            save();
-        }
-
-        function updateShadow(v) {
-            state.shadow = v;
-            document.documentElement.style.setProperty('--widget-shadow', `0px 0px ${v}px rgba(0,0,0,0.8)`);
-            save();
-        }
-        
-        function updateColor(v) { 
-            state.accent = v;
-            document.documentElement.style.setProperty('--accent', v); 
-            save();
-        }
-        
-        function resetSystem() { localStorage.removeItem('prism_os_config'); location.reload(); }
-
-        let fadeTimeout;
+        let ft;
         function wakeUI() {
-            const t = document.getElementById('nav-trigger');
-            t.classList.add('visible');
-            clearTimeout(fadeTimeout);
-            fadeTimeout = setTimeout(() => {
-                if (!document.getElementById('side-panel').classList.contains('open')) t.classList.remove('visible');
-            }, 3000);
+            const t = document.getElementById('nav-trigger'); t.classList.add('visible');
+            clearTimeout(ft); ft = setTimeout(() => { if(!document.getElementById('side-panel').classList.contains('open')) t.classList.remove('visible'); }, 3000);
         }
-
-        function toggleNav(e) {
-            if(e) e.stopPropagation();
-            const p = document.getElementById('side-panel');
-            const isOpen = p.classList.toggle('open');
-            document.getElementById('overlay').style.display = isOpen ? 'block' : 'none';
-            if (!isOpen) wakeUI();
-        }
+        function toggleNav(e) { if(e) e.stopPropagation(); const isOpen = document.getElementById('side-panel').classList.toggle('open'); document.getElementById('overlay').style.display = isOpen ? 'block' : 'none'; }
 
         async function fetchW() {
             try {
@@ -289,8 +206,7 @@
             } catch (e) { setTimeout(fetchW, 10000); }
         }
 
-        load();
-        fetchW();
+        load(); fetchW();
     </script>
 </body>
 </html>
