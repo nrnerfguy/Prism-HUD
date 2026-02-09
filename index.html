@@ -4,143 +4,101 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Prism OS Final</title>
     <style>
         :root {
             --accent: #007AFF; 
             --smooth-ease: cubic-bezier(0.4, 0, 0.2, 1);
-            --slow-ease: cubic-bezier(0.65, 0, 0.35, 1);
-            --widget-shadow: 0px 0px 10px rgba(0,0,0,0.5);
+            --widget-shadow: 0px 0px 10px rgba(0,0,0,0.8);
         }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
-            background-color: #000;
+            background: #000 no-repeat center center fixed;
             background-size: cover;
-            background-position: center;
-            color: #fff;
-            margin: 0;
-            height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
+            color: #fff; margin: 0; height: 100vh;
+            display: flex; justify-content: center; align-items: center;
             font-family: -apple-system, system-ui, sans-serif;
             overflow: hidden;
         }
 
         #hud-master {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            transition: transform 1.2s var(--slow-ease);
-            animation: prismEntrance 1.8s var(--slow-ease) forwards;
-            will-change: transform;
-        }
-
-        @keyframes prismEntrance {
-            0% { opacity: 0; filter: blur(15px); }
-            100% { opacity: 1; filter: blur(0); }
+            display: flex; flex-direction: column; align-items: center;
+            transition: transform 0.8s var(--smooth-ease);
         }
 
         .widget { 
-            transition: transform 0.5s var(--smooth-ease), opacity 0.4s ease; 
+            transition: transform 0.4s var(--smooth-ease), opacity 0.4s ease; 
             color: var(--accent); 
-            filter: drop-shadow(var(--widget-shadow));
+            text-shadow: var(--widget-shadow); /* Restoration: Shadows */
         }
         
+        /* Instant linear movement class */
+        .no-anim { transition: none !important; }
+
         #clock { 
-            font-size: clamp(5rem, 25vw, 12rem); 
-            font-weight: 900; 
-            font-style: italic; 
-            letter-spacing: -4px; 
-            line-height: 0.8; 
-            padding-right: 0.3em; 
+            font-size: clamp(5rem, 25vw, 12rem); font-weight: 900; 
+            font-style: italic; letter-spacing: -4px; line-height: 0.8; 
         }
 
-        #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.8; font-weight: 300; margin-top: 20px; text-align: center; }
-        #weather-widget { display: flex; align-items: center; justify-content: center; gap: 20px; opacity: 0.8; font-size: 2.4rem; font-weight: 200; margin-top: 15px;}
-
-        /* TRIGGER BUTTON */
-        #nav-trigger {
-            position: absolute; bottom: 40px; right: 40px;
-            width: 65px; height: 65px;
-            background: rgba(255, 255, 255, 0.1); 
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 50%; display: flex; justify-content: center; align-items: center;
-            z-index: 1000; cursor: pointer; transition: opacity 0.8s var(--smooth-ease);
-            opacity: 0; color: #fff;
+        #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; margin-top: 20px; text-align: center; }
+        
+        #weather-widget { 
+            display: flex; align-items: center; justify-content: center; 
+            gap: 20px; font-size: 2.4rem; font-weight: 200; margin-top: 15px;
         }
-        #nav-trigger.visible { opacity: 0.2; } /* 20% Opacity as requested */
 
         /* SIDE PANEL */
+        #nav-trigger {
+            position: absolute; bottom: 40px; right: 40px;
+            width: 65px; height: 65px; background: rgba(255, 255, 255, 0.15); 
+            backdrop-filter: blur(10px); border-radius: 50%; 
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1000; cursor: pointer; opacity: 0.2; color: #fff;
+        }
+
         #side-panel {
             position: fixed; right: -360px; top: 0; width: 340px; height: 100%;
-            background: rgba(15, 15, 15, 0.98); backdrop-filter: blur(60px);
-            padding: 40px 25px; transition: right 0.5s var(--smooth-ease); z-index: 2000; overflow-y: auto;
-            border-left: 1px solid rgba(255,255,255,0.1); color: #fff;
+            background: rgba(10, 10, 10, 0.98); backdrop-filter: blur(50px);
+            padding: 30px 20px; transition: right 0.4s var(--smooth-ease); 
+            z-index: 2000; overflow-y: auto; border-left: 1px solid rgba(255,255,255,0.1);
         }
         #side-panel.open { right: 0; }
 
-        .panel-content { display: flex; flex-direction: column; gap: 20px; padding-bottom: 80px; }
-        
         .control-group { 
-            padding: 18px; background: rgba(255,255,255,0.05);
-            border-radius: 20px; border: 1px solid rgba(255,255,255,0.1);
+            padding: 15px; background: rgba(255,255,255,0.05);
+            border-radius: 18px; margin-bottom: 15px;
         }
 
-        label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.6; font-weight: 800; display: block; margin-bottom: 8px; }
+        label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.6; font-weight: 800; display: block; margin-bottom: 8px; }
 
-        /* THE INPUT BOX */
-        .city-input-field {
-            width: 100%;
-            background: rgba(0,0,0,0.3);
-            border: 1px solid var(--accent);
-            color: #fff;
-            padding: 12px;
-            border-radius: 12px;
-            font-size: 1rem;
-            outline: none;
-            margin-bottom: 10px;
+        .city-input {
+            width: 100%; background: #000; border: 1px solid var(--accent);
+            color: #fff; padding: 10px; border-radius: 10px; margin-bottom: 8px;
         }
 
-        .update-btn {
-            width: 100%;
-            padding: 12px;
-            background: var(--accent);
-            border: none;
-            color: white;
-            font-weight: bold;
-            border-radius: 12px;
-            cursor: pointer;
-        }
-
-        /* TOGGLES & SLIDERS */
         .row { display: flex; justify-content: space-between; align-items: center; }
+        
         .ios-switch {
-            position: relative; width: 50px; height: 28px; background: rgba(255,255,255,0.1);
-            border-radius: 20px; cursor: pointer; transition: 0.3s;
+            width: 46px; height: 26px; background: rgba(255,255,255,0.1);
+            border-radius: 20px; cursor: pointer; position: relative; transition: 0.3s;
         }
-        .ios-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 24px; height: 24px; background: #fff; border-radius: 50%; transition: 0.3s; }
+        .ios-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 22px; height: 22px; background: #fff; border-radius: 50%; transition: 0.3s; }
         .ios-switch.active { background: var(--accent); }
-        .ios-switch.active::after { transform: translateX(22px); }
+        .ios-switch.active::after { transform: translateX(20px); }
 
-        input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); margin-top: 10px; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; background: #fff; border-radius: 50%; }
+        input[type="range"] { width: 100%; margin-top: 10px; }
 
-        #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); display: none; z-index: 1500; }
-        .reset-btn { color: #ff4444; background: none; border: none; font-weight: 700; cursor: pointer; padding: 10px; margin-top: 10px; opacity: 0.6; text-transform: uppercase; width: 100%; font-size: 0.75rem; }
+        #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.4); display: none; z-index: 1500; }
     </style>
 </head>
-<body onclick="wakeUI()">
+<body onclick="document.getElementById('nav-trigger').style.opacity = '0.2'">
 
     <div id="overlay" onclick="toggleNav()"></div>
 
     <div id="hud-master">
-        <div id="clock-widget" class="widget"><div id="clock">0:00</div></div>
+        <div id="clock-widget" class="widget"><div id="clock">00:00</div></div>
         <div id="date-widget" class="widget"><div id="date">...</div></div>
         <div id="weather-widget" class="widget">
             <div id="icon-container"></div>
@@ -153,132 +111,128 @@
     </div>
 
     <div id="side-panel">
-        <div class="panel-content">
-            <h2 style="font-weight:900; margin:0;">Settings</h2>
-            
-            <div class="control-group">
-                <label>Weather City</label>
-                <input type="text" id="city-input" class="city-input-field" placeholder="e.g. New York">
-                <button class="update-btn" onclick="setCity()">Update Weather</button>
-            </div>
-
-            <div class="control-group">
-                <div class="row"><label>HUD Mirror</label><div id="sw-mirror" class="ios-switch active" onclick="toggleMirror()"></div></div>
-            </div>
-
-            <div class="control-group">
-                <div class="row"><label>24-Hour Time</label><div id="sw-24h" class="ios-switch active" onclick="toggle24h()"></div></div>
-            </div>
-
-            <div class="control-group">
-                <div class="row"><label>Clock Widget</label><div id="sw-clock" class="ios-switch active" onclick="toggleWid('clock')"></div></div>
-                <input type="range" id="nudge-clock" min="-250" max="250" value="0" oninput="nudge('clock', this.value)">
-            </div>
-
-            <div class="control-group">
-                <div class="row"><label>Date Widget</label><div id="sw-date" class="ios-switch active" onclick="toggleWid('date')"></div></div>
-                <input type="range" id="nudge-date" min="-250" max="250" value="0" oninput="nudge('date', this.value)">
-            </div>
-
-            <div class="control-group">
-                <label>System Scale</label>
-                <input type="range" id="range-scale" min="0.5" max="2" step="0.01" value="1" oninput="updateScale(this.value)">
-            </div>
-
-            <div class="control-group">
-                <label>Accent Color</label>
-                <input type="color" id="color-accent" value="#007AFF" onchange="updateColor(this.value)" style="width:100%; height:40px; border:none; background:none;">
-            </div>
-
-            <button onclick="localStorage.clear(); location.reload();" class="reset-btn">Reset All Data</button>
+        <h2 style="margin-top:0;">Prism Settings</h2>
+        
+        <div class="control-group">
+            <label>Weather Location</label>
+            <input type="text" id="city-input" class="city-input" placeholder="City Name">
+            <button onclick="setCity()" style="width:100%; padding:8px; background:var(--accent); border:none; color:#fff; border-radius:8px; font-weight:bold;">Update</button>
         </div>
+
+        <div class="control-group">
+            <div class="row"><label>HUD Mirror</label><div id="sw-mirror" class="ios-switch active" onclick="toggle('mirrored')"></div></div>
+        </div>
+
+        <div class="control-group">
+            <div class="row"><label>Clock Visibility</label><div id="sw-showClock" class="ios-switch active" onclick="toggle('showClock')"></div></div>
+            <input type="range" min="-300" max="300" value="0" oninput="nudge('clock', this.value)" onmousedown="preNudge('clock')" onmouseup="postNudge('clock')">
+        </div>
+
+        <div class="control-group">
+            <div class="row"><label>Date Visibility</label><div id="sw-showDate" class="ios-switch active" onclick="toggle('showDate')"></div></div>
+            <input type="range" min="-300" max="300" value="0" oninput="nudge('date', this.value)" onmousedown="preNudge('date')" onmouseup="postNudge('date')">
+        </div>
+
+        <div class="control-group">
+            <div class="row"><label>Weather Visibility</label><div id="sw-showWeather" class="ios-switch active" onclick="toggle('showWeather')"></div></div>
+            <input type="range" min="-300" max="300" value="0" oninput="nudge('weather', this.value)" onmousedown="preNudge('weather')" onmouseup="postNudge('weather')">
+        </div>
+
+        <div class="control-group">
+            <label>Background Image</label>
+            <input type="file" id="bg-file" onchange="handleBg(this)" style="font-size:0.7rem;">
+        </div>
+
+        <div class="control-group">
+            <label>Accent & Shadows</label>
+            <input type="color" id="color-pick" onchange="updateColor(this.value)" style="width:100%;">
+        </div>
+
+        <button onclick="localStorage.clear(); location.reload();" style="width:100%; background:none; border:none; color:red; cursor:pointer; font-weight:bold; padding:20px;">RESET SYSTEM</button>
     </div>
 
     <script>
         let state = {
-            is24h: true, mirrored: true, scale: 1, accent: '#007AFF',
-            nudgeClock: 0, nudgeDate: 0, showClock: true, showDate: true,
-            city: 'Calgary'
+            mirrored: true, showClock: true, showDate: true, showWeather: true,
+            nudgeclock: 0, nudgedate: 0, nudgeweather: 0,
+            accent: '#007AFF', city: 'Calgary', bg: ''
         };
 
-        function save() { localStorage.setItem('prism_v3', JSON.stringify(state)); }
+        function save() { localStorage.setItem('prism_v4', JSON.stringify(state)); }
 
         function load() {
-            const saved = localStorage.getItem('prism_v3');
-            if (saved) {
-                state = JSON.parse(saved);
-                document.getElementById('sw-24h').classList.toggle('active', state.is24h);
-                document.getElementById('sw-mirror').classList.toggle('active', state.mirrored);
-                document.getElementById('sw-clock').classList.toggle('active', state.showClock);
-                document.getElementById('sw-date').classList.toggle('active', state.showDate);
-                document.getElementById('range-scale').value = state.scale;
-                document.getElementById('color-accent').value = state.accent;
-                document.getElementById('nudge-clock').value = state.nudgeClock;
-                document.getElementById('nudge-date').value = state.nudgeDate;
+            const data = localStorage.getItem('prism_v4');
+            if(data) {
+                state = JSON.parse(data);
+                if(state.bg) document.body.style.backgroundImage = `url(${state.bg})`;
                 document.getElementById('city-input').value = state.city;
-                applySettings();
+                applyAll();
             }
             updateClock();
             fetchWeather();
         }
 
-        function applySettings() {
+        function applyAll() {
             document.documentElement.style.setProperty('--accent', state.accent);
-            const mirrorX = state.mirrored ? -1 : 1;
-            document.getElementById('hud-master').style.transform = `scale(${state.scale}) scaleX(${mirrorX})`;
-            document.getElementById('clock-widget').style.transform = `translateY(${state.nudgeClock}px)`;
-            document.getElementById('clock-widget').style.opacity = state.showClock ? 1 : 0;
-            document.getElementById('date-widget').style.transform = `translateY(${state.nudgeDate}px)`;
-            document.getElementById('date-widget').style.opacity = state.showDate ? 1 : 0;
+            document.getElementById('hud-master').style.transform = `scaleX(${state.mirrored ? -1 : 1})`;
+            
+            ['clock', 'date', 'weather'].forEach(id => {
+                const el = document.getElementById(id + '-widget');
+                el.style.opacity = state['show' + id.charAt(0).toUpperCase() + id.slice(1)] ? 1 : 0;
+                el.style.transform = `translateY(${state['nudge'+id]}px)`;
+                document.getElementById('sw-show' + id.charAt(0).toUpperCase() + id.slice(1)).classList.toggle('active', state['show' + id.charAt(0).toUpperCase() + id.slice(1)]);
+            });
+            document.getElementById('sw-mirror').classList.toggle('active', state.mirrored);
+        }
+
+        function nudge(id, v) {
+            state['nudge' + id] = v;
+            document.getElementById(id + '-widget').style.transform = `translateY(${v}px)`;
+            save();
+        }
+
+        // Removed animation during slider movement for linear feel
+        function preNudge(id) { document.getElementById(id + '-widget').classList.add('no-anim'); }
+        function postNudge(id) { document.getElementById(id + '-widget').classList.remove('no-anim'); }
+
+        function toggle(key) {
+            state[key] = !state[key];
+            applyAll();
+            save();
+        }
+
+        function updateColor(v) { state.accent = v; applyAll(); save(); }
+
+        function handleBg(input) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                state.bg = e.target.result;
+                document.body.style.backgroundImage = `url(${state.bg})`;
+                save();
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+
+        function setCity() { state.city = document.getElementById('city-input').value; save(); fetchWeather(); }
+
+        async function fetchWeather() {
+            try {
+                const g = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${state.city}&count=1`).then(r => r.json());
+                if(!g.results) return;
+                const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${g.results[0].latitude}&longitude=${g.results[0].longitude}&current=temperature_2m`).then(r => r.json());
+                document.getElementById('temp').innerText = Math.round(w.current.temperature_2m) + "°";
+                document.getElementById('icon-container').innerHTML = `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>`;
+            } catch(e) {}
         }
 
         function updateClock() {
             const now = new Date();
-            let h = now.getHours();
-            const m = String(now.getMinutes()).padStart(2, '0');
-            if (!state.is24h) h = h % 12 || 12;
-            document.getElementById('clock').innerText = `${h}:${m}`;
-            const opt = { weekday: 'long', month: 'short', day: '2-digit' };
-            document.getElementById('date').innerText = now.toLocaleDateString('en-US', opt).toUpperCase();
+            document.getElementById('clock').innerText = `${now.getHours()}:${String(now.getMinutes()).padStart(2, '0')}`;
+            document.getElementById('date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
         }
         setInterval(updateClock, 1000);
 
-        function toggle24h() { state.is24h = !state.is24h; document.getElementById('sw-24h').classList.toggle('active'); updateClock(); save(); }
-        function toggleMirror() { state.mirrored = !state.mirrored; document.getElementById('sw-mirror').classList.toggle('active'); applySettings(); save(); }
-        function updateScale(v) { state.scale = v; applySettings(); save(); }
-        function updateColor(v) { state.accent = v; document.documentElement.style.setProperty('--accent', v); save(); }
-        function nudge(id, v) { state['nudge' + id.charAt(0).toUpperCase() + id.slice(1)] = v; document.getElementById(id+'-widget').style.transform = `translateY(${v}px)`; save(); }
-        function toggleWid(id) { 
-            const key = 'show' + id.charAt(0).toUpperCase() + id.slice(1);
-            state[key] = !state[key]; 
-            document.getElementById('sw-'+id).classList.toggle('active'); 
-            document.getElementById(id+'-widget').style.opacity = state[key] ? 1 : 0; 
-            save(); 
-        }
-
-        function setCity() {
-            state.city = document.getElementById('city-input').value;
-            save();
-            fetchWeather();
-        }
-
-        async function fetchWeather() {
-            try {
-                const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${state.city}&count=1`).then(r => r.json());
-                if(!geo.results) return;
-                const { latitude, longitude } = geo.results[0];
-                const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m`).then(r => r.json());
-                document.getElementById('temp').innerText = Math.round(w.current.temperature_2m) + "°";
-                document.getElementById('icon-container').innerHTML = `<svg width="40" height="40" stroke="currentColor" fill="none" stroke-width="1.5" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>`;
-            } catch (e) { console.error("Weather error", e); }
-        }
-
-        let ft;
-        function wakeUI() {
-            const t = document.getElementById('nav-trigger'); t.classList.add('visible');
-            clearTimeout(ft); ft = setTimeout(() => { if(!document.getElementById('side-panel').classList.contains('open')) t.classList.remove('visible'); }, 3000);
-        }
-        function toggleNav(e) { if(e) e.stopPropagation(); const isOpen = document.getElementById('side-panel').classList.toggle('open'); document.getElementById('overlay').style.display = isOpen ? 'block' : 'none'; }
+        function toggleNav(e) { if(e) e.stopPropagation(); document.getElementById('side-panel').classList.toggle('open'); document.getElementById('overlay').style.display = document.getElementById('side-panel').classList.contains('open') ? 'block' : 'none'; }
 
         load();
     </script>
