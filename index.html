@@ -112,6 +112,11 @@
         input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; margin-top: 10px; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; background: #fff; border-radius: 50%; cursor: pointer;}
 
+        input[type="text"] {
+            width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: #fff; padding: 12px; border-radius: 12px; margin-top: 10px; font-size: 0.9rem; outline: none;
+        }
+
         #overlay { position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.5); display: none; z-index: 1500; }
         .reset-btn { color: #ff4444; background: none; border: none; font-weight: 700; cursor: pointer; padding: 10px; margin-top: 10px; opacity: 0.6; text-transform: uppercase; width: 100%; font-size: 0.75rem; }
     </style>
@@ -143,6 +148,12 @@
         <div class="panel-content">
             <h2 style="margin:0; font-size: 1.4rem; font-weight: 900;">Settings</h2>
             
+            <div class="control-group">
+                <label>Weather Location</label>
+                <input type="text" id="city-input" placeholder="Enter City (e.g. London)">
+                <button onclick="updateWeatherByCity()" style="background:var(--accent); color:#fff; border:none; width:100%; padding:10px; border-radius:10px; margin-top:10px; font-weight:bold; cursor:pointer;">Update Weather</button>
+            </div>
+
             <div class="control-group">
                 <div class="row">
                     <label>HUD Projection (Mirror)</label>
@@ -199,7 +210,6 @@
     </div>
 
     <script>
-        // STATE INITIALIZATION
         let state = {
             scale: 1.0,
             mirrored: true,
@@ -209,21 +219,20 @@
             clockNudge: 0,
             dateNudge: 0,
             showClock: true,
-            showDate: true
+            showDate: true,
+            city: 'London'
         };
 
         const masterEl = document.getElementById('hud-master');
 
-        // PERSISTENCE LOGIC
         function save() {
-            localStorage.setItem('prism_os_save', JSON.stringify(state));
+            localStorage.setItem('prism_os_save_v2', JSON.stringify(state));
         }
 
         function load() {
-            const data = localStorage.getItem('prism_os_save');
+            const data = localStorage.getItem('prism_os_save_v2');
             if (data) {
                 state = JSON.parse(data);
-                // Sync UI Controls
                 document.getElementById('sw-mirror').classList.toggle('active', state.mirrored);
                 document.getElementById('sw-24h').classList.toggle('active', state.is24h);
                 document.getElementById('sw-clock').classList.toggle('active', state.showClock);
@@ -233,8 +242,8 @@
                 document.getElementById('nudge-clock').value = state.clockNudge;
                 document.getElementById('nudge-date').value = state.dateNudge;
                 document.getElementById('color-picker').value = state.accent;
+                document.getElementById('city-input').value = state.city;
                 
-                // Apply visual states
                 applyMasterTransforms();
                 updateShadow(state.shadow, false);
                 updateColor(state.accent, false);
@@ -244,6 +253,7 @@
                 document.getElementById('date-widget').style.opacity = state.showDate ? '1' : '0';
             }
             updateClock();
+            fetchWeather();
         }
 
         function applyMasterTransforms() {
@@ -276,10 +286,7 @@
             let h = now.getHours();
             const m = String(now.getMinutes()).padStart(2, '0');
             if (!state.is24h) h = h % 12 || 12;
-            
-            // FIXED: STRIPPED LEADING ZERO (h instead of String(h).padStart)
             document.getElementById('clock').innerText = `${h}:${m}`;
-            
             const opt = { weekday: 'long', month: 'short', day: '2-digit' };
             document.getElementById('date').innerText = now.toLocaleDateString('en-US', opt).toUpperCase();
         }
@@ -314,6 +321,32 @@
             state.accent = v;
             if(shouldSave) save();
         }
+
+        async function updateWeatherByCity() {
+            const city = document.getElementById('city-input').value;
+            if(!city) return;
+            state.city = city;
+            save();
+            fetchWeather();
+        }
+
+        async function fetchWeather() {
+            try {
+                // Step 1: Geocode city to Lat/Long
+                const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${state.city}&count=1&language=en&format=json`);
+                const geoData = await geoRes.json();
+                if(!geoData.results) return;
+                
+                const { latitude, longitude } = geoData.results[0];
+                
+                // Step 2: Get weather
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m`);
+                const data = await res.json();
+                
+                document.getElementById('temp').innerText = Math.round(data.current.temperature_2m) + "°";
+                document.getElementById('icon-container').innerHTML = `<svg style="width:40px; height:40px; stroke:currentColor; fill:none; stroke-width:1.5;" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>`;
+            } catch (e) { console.error(e); }
+        }
         
         function handleBg(e) {
             const r = new FileReader();
@@ -325,7 +358,7 @@
         }
 
         function resetSystem() {
-            localStorage.removeItem('prism_os_save');
+            localStorage.removeItem('prism_os_save_v2');
             location.reload();
         }
 
@@ -347,7 +380,6 @@
             if (!isOpen) wakeUI();
         }
 
-        // STARTUP
         load();
     </script>
 </body>
