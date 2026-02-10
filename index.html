@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Prism OS Final</title>
+    <title>Prism OS - Full Build</title>
     <style>
         :root {
             --accent: #007AFF; 
@@ -18,9 +18,6 @@
 
         body {
             background-color: #000;
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
             color: #fff;
             margin: 0;
             height: 100vh;
@@ -36,6 +33,18 @@
         @keyframes pageEntrance {
             from { opacity: 0; transform: scale(1.03); filter: blur(5px); }
             to { opacity: 1; transform: scale(1); filter: blur(0px); }
+        }
+
+        /* Dedicated Background Layer */
+        #bg-layer {
+            position: fixed;
+            inset: -50px; 
+            z-index: -1;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            transition: opacity 0.3s, filter 0.3s;
+            pointer-events: none;
         }
 
         #hud-master {
@@ -70,6 +79,7 @@
         #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.8; font-weight: 300; margin-top: 10px; }
         #weather-widget { gap: 20px; opacity: 0.8; font-size: 2.4rem; font-weight: 200; margin-top: 10px;}
 
+        /* Panel UI */
         #nav-trigger {
             position: absolute; bottom: 40px; right: 40px;
             width: 65px; height: 65px;
@@ -98,10 +108,6 @@
             border: 1px solid transparent;
             transition: all 0.2s;
         }
-        .control-group:hover {
-            background: rgba(255,255,255,0.1);
-            border-color: rgba(255,255,255,0.1);
-        }
 
         .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.5; font-weight: 800; }
@@ -119,29 +125,22 @@
         .ios-switch.active { background: var(--accent); }
         .ios-switch.active::after { transform: translateX(22px); }
 
-        /* Custom File Upload Button */
         .file-upload-btn {
             display: block; width: 100%; padding: 12px;
             background: rgba(255,255,255,0.1); border: 1px dashed rgba(255,255,255,0.3);
-            border-radius: 12px; color: #fff; text-align: center;
-            font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: 0.2s;
-            margin-top: 10px;
+            border-radius: 12px; color: #fff; text-align: center; font-size: 0.75rem; font-weight: 600; cursor: pointer; margin-top: 10px;
         }
-        .file-upload-btn:hover { background: rgba(255,255,255,0.15); border-color: var(--accent); }
 
-        /* Wallpaper Gallery */
-        .bg-history {
-            display: flex; gap: 8px; margin-top: 12px; overflow-x: auto; padding-bottom: 5px;
-        }
+        .bg-history { display: flex; gap: 12px; margin-top: 15px; overflow-x: auto; padding-bottom: 8px; }
         .bg-thumb {
-            min-width: 50px; height: 50px; border-radius: 8px;
+            min-width: 70px; height: 70px; border-radius: 12px;
             background-size: cover; background-position: center;
-            border: 1px solid rgba(255,255,255,0.2); cursor: pointer;
-            transition: 0.2s; flex-shrink: 0;
+            border: 2px solid transparent; cursor: pointer;
+            transition: 0.3s; flex-shrink: 0; opacity: 0.5;
         }
-        .bg-thumb:hover { border-color: var(--accent); transform: scale(1.05); }
+        .bg-thumb.active { border-color: var(--accent); opacity: 1; box-shadow: 0 0 15px var(--accent); transform: scale(1.05); }
 
-        input[type="text"] { width: 100%; background: #000; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 12px; border-radius: 12px; margin-top: 10px; outline: none; }
+        input[type="text"], input[type="color"] { width: 100%; background: #000; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 12px; border-radius: 12px; margin-top: 10px; outline: none; }
         input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); margin-top: 10px; border-radius: 2px; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; background: #fff; border-radius: 50%; cursor: pointer; }
 
@@ -151,6 +150,7 @@
 </head>
 <body>
 
+    <div id="bg-layer"></div>
     <div id="overlay" onclick="toggleNav()"></div>
 
     <div id="hud-master">
@@ -177,11 +177,28 @@
             </div>
 
             <div class="control-group">
-                <div class="row"><label>HUD Mirror (Projection)</label><div id="sw-mirrored" class="ios-switch" onclick="toggle('mirrored')"></div></div>
+                <div class="row"><label>Static BG Color</label></div>
+                <input type="color" id="static-bg-picker" oninput="setStatic(this.value)">
             </div>
 
             <div class="control-group">
-                <div class="row"><label>24-Hour Time</label><div id="sw-is24h" class="ios-switch active" onclick="toggle('is24h')"></div></div>
+                <label>Background Blur & Opacity</label>
+                <div class="row"><label style="font-size: 0.5rem;">Blur</label></div>
+                <input type="range" min="0" max="40" step="1" value="0" oninput="state.blur=this.value; applyAll(); save();">
+                <div class="row" style="margin-top:10px;"><label style="font-size: 0.5rem;">Opacity</label></div>
+                <input type="range" min="0" max="1" step="0.01" value="1" oninput="state.bgOpacity=this.value; applyAll(); save();">
+            </div>
+
+            <div class="control-group">
+                <label>Wallpaper (Last 3)</label>
+                <label for="bg-upload" class="file-upload-btn">Upload Image</label>
+                <input type="file" id="bg-upload" style="display:none;" onchange="handleBg(this)">
+                <div id="bg-history" class="bg-history"></div>
+            </div>
+
+            <div class="control-group">
+                <div class="row"><label>HUD Mirror (Projection)</label><div id="sw-mirrored" class="ios-switch" onclick="toggle('mirrored')"></div></div>
+                <div class="row" style="margin-top:10px;"><label>24-Hour Time</label><div id="sw-is24h" class="ios-switch" onclick="toggle('is24h')"></div></div>
             </div>
 
             <div class="control-group">
@@ -209,14 +226,7 @@
 
             <div class="control-group">
                 <label>Accent Color</label>
-                <input type="color" id="color-accent" style="width:100%; height:40px; border:none; background:none; cursor:pointer;" onchange="state.accent = this.value; applyAll(); save();">
-            </div>
-
-            <div class="control-group">
-                <label>Background Theme</label>
-                <label for="bg-upload" class="file-upload-btn">Upload Image</label>
-                <input type="file" id="bg-upload" style="display:none;" onchange="handleBg(this)">
-                <div id="bg-history" class="bg-history"></div>
+                <input type="color" id="color-accent" onchange="state.accent = this.value; applyAll(); save();">
             </div>
 
             <button onclick="localStorage.clear(); location.reload();" style="color:red; background:none; border:none; font-weight:bold; cursor:pointer; width:100%; margin-top:10px;">SET TO DEFAULTS</button>
@@ -227,7 +237,8 @@
         let state = {
             mirrored: false, is24h: true, showClock: true, showDate: true, showWeather: true,
             nudgeclock: 0, nudgedate: 0, nudgeweather: 0,
-            scale: 1, accent: '#007AFF', city: 'Calgary', bg: '', history: []
+            scale: 1, accent: '#007AFF', city: 'Calgary', bg: '', history: [],
+            isStatic: false, staticColor: '#000000', blur: 0, bgOpacity: 1
         };
 
         const icons = {
@@ -238,22 +249,37 @@
             storm: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9M13 11l-4 6h6l-4 6"></path></svg>`
         };
 
-        function save() { localStorage.setItem('prism_v12', JSON.stringify(state)); }
+        function save() { localStorage.setItem('prism_v_final_master', JSON.stringify(state)); }
 
         function load() {
-            const saved = localStorage.getItem('prism_v12');
+            const saved = localStorage.getItem('prism_v_final_master');
             if(saved) state = JSON.parse(saved);
             applyAll();
             renderHistory();
-            if(state.bg) document.body.style.backgroundImage = `url(${state.bg})`;
             updateClock();
             fetchWeather();
         }
 
         function applyAll() {
+            const bgl = document.getElementById('bg-layer');
             document.documentElement.style.setProperty('--accent', state.accent);
+            
+            // HUD Transforms
             const m = state.mirrored ? -1 : 1;
             document.getElementById('hud-master').style.transform = `scale(${state.scale}) scaleX(${m})`;
+            
+            // Background Layer
+            if(state.isStatic) {
+                document.body.style.backgroundColor = state.staticColor;
+                bgl.style.backgroundImage = 'none';
+            } else {
+                document.body.style.backgroundColor = '#000';
+                bgl.style.backgroundImage = `url(${state.bg})`;
+            }
+            bgl.style.filter = `blur(${state.blur}px)`;
+            bgl.style.opacity = state.bgOpacity;
+
+            // Switches & Widgets
             document.getElementById('sw-mirrored').classList.toggle('active', state.mirrored);
             document.getElementById('sw-is24h').classList.toggle('active', state.is24h);
 
@@ -267,17 +293,35 @@
             });
         }
 
+        function setStatic(val) {
+            state.staticColor = val;
+            state.isStatic = true;
+            applyAll(); renderHistory(); save();
+        }
+
+        function handleBg(input) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const data = e.target.result;
+                state.bg = data;
+                state.isStatic = false;
+                state.history = [data, ...state.history.filter(x => x !== data)].slice(0, 3);
+                applyAll(); renderHistory(); save();
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+
         function renderHistory() {
             const container = document.getElementById('bg-history');
             container.innerHTML = '';
             state.history.forEach(data => {
                 const thumb = document.createElement('div');
-                thumb.className = 'bg-thumb';
+                thumb.className = `bg-thumb ${(!state.isStatic && state.bg === data) ? 'active' : ''}`;
                 thumb.style.backgroundImage = `url(${data})`;
                 thumb.onclick = () => {
                     state.bg = data;
-                    document.body.style.backgroundImage = `url(${data})`;
-                    save();
+                    state.isStatic = false;
+                    applyAll(); renderHistory(); save();
                 };
                 container.appendChild(thumb);
             });
@@ -293,28 +337,12 @@
         }
         setInterval(updateClock, 1000);
 
-        function nudge(id, v) { 
-            state['nudge' + id] = v; 
-            document.getElementById(id + '-widget').style.transform = `translateY(${v}px)`; 
-            save(); 
-        }
-
-        function resetWidget(id) {
-            state['nudge' + id] = 0;
-            state['show' + id.charAt(0).toUpperCase() + id.slice(1)] = true;
-            applyAll(); save();
-        }
-
-        function toggle(key) { state[key] = !state[key]; applyAll(); save(); }
-        function updateCity() { state.city = document.getElementById('city-input').value; save(); fetchWeather(); }
-
         async function fetchWeather() {
             try {
                 const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${state.city}&count=1`).then(r => r.json());
                 if(!geo.results) return;
                 const { latitude, longitude } = geo.results[0];
                 const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code`).then(r => r.json());
-                
                 document.getElementById('temp').innerText = Math.round(w.current.temperature_2m) + "°";
                 const code = w.current.weather_code;
                 let icon = icons.sun;
@@ -326,25 +354,11 @@
             } catch(e) {}
         }
 
-        function handleBg(input) {
-            const reader = new FileReader();
-            reader.onload = e => {
-                const data = e.target.result;
-                state.bg = data;
-                // Add to history and keep last 5
-                state.history = [data, ...state.history.filter(x => x !== data)].slice(0, 5);
-                document.body.style.backgroundImage = `url(${data})`;
-                renderHistory();
-                save();
-            };
-            reader.readAsDataURL(input.files[0]);
-        }
-
-        function toggleNav(e) { 
-            if(e) e.stopPropagation(); 
-            const isOpen = document.getElementById('side-panel').classList.toggle('open'); 
-            document.getElementById('overlay').style.display = isOpen ? 'block' : 'none'; 
-        }
+        function nudge(id, v) { state['nudge' + id] = v; applyAll(); save(); }
+        function resetWidget(id) { state['nudge' + id] = 0; state['show' + id.charAt(0).toUpperCase() + id.slice(1)] = true; applyAll(); save(); }
+        function toggle(key) { state[key] = !state[key]; applyAll(); save(); }
+        function updateCity() { state.city = document.getElementById('city-input').value; save(); fetchWeather(); }
+        function toggleNav(e) { if(e) e.stopPropagation(); const isOpen = document.getElementById('side-panel').classList.toggle('open'); document.getElementById('overlay').style.display = isOpen ? 'block' : 'none'; }
 
         load();
     </script>
