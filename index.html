@@ -49,7 +49,8 @@
         }
 
         .widget { 
-            transition: transform 0.6s var(--smooth-ease), opacity 0.4s ease; 
+            /* Linear slide for position updates, opacity still smooth */
+            transition: opacity 0.4s ease; 
             color: var(--accent); 
             filter: var(--widget-shadow);
             width: 100%;
@@ -57,8 +58,6 @@
             justify-content: center;
             align-items: center;
         }
-        
-        .nudge-active { transition: none !important; }
 
         #clock { 
             font-size: clamp(5rem, 25vw, 12rem); 
@@ -72,6 +71,7 @@
         #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.8; font-weight: 300; margin-top: 10px; }
         #weather-widget { gap: 20px; opacity: 0.8; font-size: 2.4rem; font-weight: 200; margin-top: 10px;}
 
+        /* Restored Settings Icon */
         #nav-trigger {
             position: absolute; bottom: 40px; right: 40px;
             width: 65px; height: 65px;
@@ -143,7 +143,7 @@
     </div>
 
     <div id="nav-trigger" onclick="toggleNav(event)">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 12 12"></path></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
     </div>
 
     <div id="side-panel">
@@ -165,19 +165,19 @@
             </div>
 
             <div class="control-group">
-                <div class="row"><label>Clock Widget</label><span class="reset-link" onclick="resetWidget('clock')">Reset Pos</span></div>
+                <div class="row"><label>Clock Widget</label><span class="reset-link" onclick="resetWidget('clock')">Reset</span></div>
                 <div class="row" style="margin-top: 10px;"><label style="font-size: 0.5rem; opacity: 0.8;">Visible</label><div id="sw-showClock" class="ios-switch active" onclick="toggle('showClock')"></div></div>
                 <input type="range" id="range-clock" min="-400" max="400" value="0" oninput="nudge('clock', this.value)">
             </div>
 
             <div class="control-group">
-                <div class="row"><label>Date Widget</label><span class="reset-link" onclick="resetWidget('date')">Reset Pos</span></div>
+                <div class="row"><label>Date Widget</label><span class="reset-link" onclick="resetWidget('date')">Reset</span></div>
                 <div class="row" style="margin-top: 10px;"><label style="font-size: 0.5rem; opacity: 0.8;">Visible</label><div id="sw-showDate" class="ios-switch active" onclick="toggle('showDate')"></div></div>
                 <input type="range" id="range-date" min="-400" max="400" value="0" oninput="nudge('date', this.value)">
             </div>
 
             <div class="control-group">
-                <div class="row"><label>Weather Widget</label><span class="reset-link" onclick="resetWidget('weather')">Reset Pos</span></div>
+                <div class="row"><label>Weather Widget</label><span class="reset-link" onclick="resetWidget('weather')">Reset</span></div>
                 <div class="row" style="margin-top: 10px;"><label style="font-size: 0.5rem; opacity: 0.8;">Visible</label><div id="sw-showWeather" class="ios-switch active" onclick="toggle('showWeather')"></div></div>
                 <input type="range" id="range-weather" min="-400" max="400" value="0" oninput="nudge('weather', this.value)">
             </div>
@@ -197,7 +197,7 @@
                 <input type="file" id="bg-upload" style="font-size: 0.7rem; margin-top:10px;" onchange="handleBg(this)">
             </div>
 
-            <button onclick="localStorage.clear(); location.reload();" style="color:red; background:none; border:none; font-weight:bold; cursor:pointer; width:100%; margin-top:10px;">RESET SYSTEM DATA</button>
+            <button onclick="localStorage.clear(); location.reload();" style="color:red; background:none; border:none; font-weight:bold; cursor:pointer; width:100%; margin-top:10px;">SET TO DEFAULTS</button>
         </div>
     </div>
 
@@ -216,10 +216,10 @@
             storm: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9M13 11l-4 6h6l-4 6"></path></svg>`
         };
 
-        function save() { localStorage.setItem('prism_v10', JSON.stringify(state)); }
+        function save() { localStorage.setItem('prism_v11', JSON.stringify(state)); }
 
         function load() {
-            const saved = localStorage.getItem('prism_v10');
+            const saved = localStorage.getItem('prism_v11');
             if(saved) state = JSON.parse(saved);
             applyAll();
             if(state.bg) document.body.style.backgroundImage = `url(${state.bg})`;
@@ -238,6 +238,7 @@
                 const el = document.getElementById(key + '-widget');
                 const show = state['show' + key.charAt(0).toUpperCase() + key.slice(1)];
                 el.style.opacity = show ? 1 : 0;
+                // Instant update for nudge position
                 el.style.transform = `translateY(${state['nudge' + key]}px)`;
                 document.getElementById('sw-show' + key.charAt(0).toUpperCase() + key.slice(1)).classList.toggle('active', show);
                 document.getElementById('range-' + key).value = state['nudge' + key];
