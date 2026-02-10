@@ -49,7 +49,6 @@
         }
 
         .widget { 
-            /* Linear slide for position updates, opacity still smooth */
             transition: opacity 0.4s ease; 
             color: var(--accent); 
             filter: var(--widget-shadow);
@@ -71,7 +70,6 @@
         #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.8; font-weight: 300; margin-top: 10px; }
         #weather-widget { gap: 20px; opacity: 0.8; font-size: 2.4rem; font-weight: 200; margin-top: 10px;}
 
-        /* Restored Settings Icon */
         #nav-trigger {
             position: absolute; bottom: 40px; right: 40px;
             width: 65px; height: 65px;
@@ -120,6 +118,28 @@
         .ios-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 24px; height: 24px; background: #fff; border-radius: 50%; transition: 0.3s; }
         .ios-switch.active { background: var(--accent); }
         .ios-switch.active::after { transform: translateX(22px); }
+
+        /* Custom File Upload Button */
+        .file-upload-btn {
+            display: block; width: 100%; padding: 12px;
+            background: rgba(255,255,255,0.1); border: 1px dashed rgba(255,255,255,0.3);
+            border-radius: 12px; color: #fff; text-align: center;
+            font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: 0.2s;
+            margin-top: 10px;
+        }
+        .file-upload-btn:hover { background: rgba(255,255,255,0.15); border-color: var(--accent); }
+
+        /* Wallpaper Gallery */
+        .bg-history {
+            display: flex; gap: 8px; margin-top: 12px; overflow-x: auto; padding-bottom: 5px;
+        }
+        .bg-thumb {
+            min-width: 50px; height: 50px; border-radius: 8px;
+            background-size: cover; background-position: center;
+            border: 1px solid rgba(255,255,255,0.2); cursor: pointer;
+            transition: 0.2s; flex-shrink: 0;
+        }
+        .bg-thumb:hover { border-color: var(--accent); transform: scale(1.05); }
 
         input[type="text"] { width: 100%; background: #000; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 12px; border-radius: 12px; margin-top: 10px; outline: none; }
         input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); margin-top: 10px; border-radius: 2px; }
@@ -193,8 +213,10 @@
             </div>
 
             <div class="control-group">
-                <label>Background Image</label>
-                <input type="file" id="bg-upload" style="font-size: 0.7rem; margin-top:10px;" onchange="handleBg(this)">
+                <label>Background Theme</label>
+                <label for="bg-upload" class="file-upload-btn">Upload Image</label>
+                <input type="file" id="bg-upload" style="display:none;" onchange="handleBg(this)">
+                <div id="bg-history" class="bg-history"></div>
             </div>
 
             <button onclick="localStorage.clear(); location.reload();" style="color:red; background:none; border:none; font-weight:bold; cursor:pointer; width:100%; margin-top:10px;">SET TO DEFAULTS</button>
@@ -205,7 +227,7 @@
         let state = {
             mirrored: false, is24h: true, showClock: true, showDate: true, showWeather: true,
             nudgeclock: 0, nudgedate: 0, nudgeweather: 0,
-            scale: 1, accent: '#007AFF', city: 'Calgary', bg: ''
+            scale: 1, accent: '#007AFF', city: 'Calgary', bg: '', history: []
         };
 
         const icons = {
@@ -216,12 +238,13 @@
             storm: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9M13 11l-4 6h6l-4 6"></path></svg>`
         };
 
-        function save() { localStorage.setItem('prism_v11', JSON.stringify(state)); }
+        function save() { localStorage.setItem('prism_v12', JSON.stringify(state)); }
 
         function load() {
-            const saved = localStorage.getItem('prism_v11');
+            const saved = localStorage.getItem('prism_v12');
             if(saved) state = JSON.parse(saved);
             applyAll();
+            renderHistory();
             if(state.bg) document.body.style.backgroundImage = `url(${state.bg})`;
             updateClock();
             fetchWeather();
@@ -238,10 +261,25 @@
                 const el = document.getElementById(key + '-widget');
                 const show = state['show' + key.charAt(0).toUpperCase() + key.slice(1)];
                 el.style.opacity = show ? 1 : 0;
-                // Instant update for nudge position
                 el.style.transform = `translateY(${state['nudge' + key]}px)`;
                 document.getElementById('sw-show' + key.charAt(0).toUpperCase() + key.slice(1)).classList.toggle('active', show);
                 document.getElementById('range-' + key).value = state['nudge' + key];
+            });
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('bg-history');
+            container.innerHTML = '';
+            state.history.forEach(data => {
+                const thumb = document.createElement('div');
+                thumb.className = 'bg-thumb';
+                thumb.style.backgroundImage = `url(${data})`;
+                thumb.onclick = () => {
+                    state.bg = data;
+                    document.body.style.backgroundImage = `url(${data})`;
+                    save();
+                };
+                container.appendChild(thumb);
             });
         }
 
@@ -291,8 +329,12 @@
         function handleBg(input) {
             const reader = new FileReader();
             reader.onload = e => {
-                state.bg = e.target.result;
-                document.body.style.backgroundImage = `url(${state.bg})`;
+                const data = e.target.result;
+                state.bg = data;
+                // Add to history and keep last 5
+                state.history = [data, ...state.history.filter(x => x !== data)].slice(0, 5);
+                document.body.style.backgroundImage = `url(${data})`;
+                renderHistory();
                 save();
             };
             reader.readAsDataURL(input.files[0]);
