@@ -16,18 +16,22 @@
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-        body {
+        html, body {
             background-color: #000;
             color: #fff;
             margin: 0;
+            padding: 0;
+            width: 100vw;
             height: 100vh;
-            /* Fix for mobile height issues */
-            height: 100dvh; 
+            height: 100dvh; /* Fixes bottom bar on mobile */
             display: flex;
             justify-content: center;
             align-items: center;
             font-family: -apple-system, system-ui, sans-serif;
             overflow: hidden;
+        }
+
+        body {
             animation: pageEntrance 1.5s var(--slow-ease) forwards;
             opacity: 0;
         }
@@ -91,30 +95,25 @@
             opacity: 0.2; color: #fff;
         }
 
-        /* --- FIXED SIDE PANEL CSS --- */
+        /* --- THE PANEL FIX --- */
         #side-panel {
             position: fixed; 
-            right: -380px; /* Fully hidden */
+            right: -380px; 
             top: 0; 
-            width: 360px; /* Fixed width */
-            height: 100dvh; /* Dynamic height fixes bottom bar */
+            bottom: 0; 
+            width: 360px; 
             background: rgba(10, 10, 10, 0.98); 
             backdrop-filter: blur(60px);
             padding: 40px 25px; 
-            transition: right 0.5s var(--smooth-ease); 
+            transition: right 0.4s var(--smooth-ease); 
             z-index: 2000; 
             overflow-y: auto;
-            overflow-x: hidden; /* Prevents horizontal scrollbar/gap */
             border-left: 1px solid rgba(255,255,255,0.1); 
             color: #fff;
-            
-            /* Hide Scrollbar for cleaner look */
-            scrollbar-width: none; 
-            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
+        #side-panel.open { right: 0 !important; }
         #side-panel::-webkit-scrollbar { display: none; }
-        
-        #side-panel.open { right: 0; } /* Flush with right edge */
 
         .panel-content { display: flex; flex-direction: column; gap: 15px; padding-bottom: 80px; }
         
@@ -123,12 +122,9 @@
             background: rgba(255,255,255,0.05); 
             border-radius: 20px; 
             border: 1px solid transparent;
-            transition: background 0.2s, border-color 0.2s;
+            transition: 0.2s;
         }
-        .control-group:hover {
-            background: rgba(255,255,255,0.08);
-            border-color: rgba(255,255,255,0.1);
-        }
+        .control-group:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.1); }
 
         .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.5; font-weight: 800; }
@@ -153,33 +149,15 @@
         }
 
         .wallpaper-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 5px; }
-        
-        #static-bg-preview {
-            width: 70px; height: 70px; border-radius: 12px;
-            border: 2px solid rgba(255,255,255,0.2);
-            cursor: pointer; position: relative; overflow: hidden;
-            transition: 0.3s;
-        }
-        #static-bg-preview.active { border-color: var(--accent); box-shadow: 0 0 15px var(--accent); opacity: 1; }
+        #static-bg-preview { width: 70px; height: 70px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; position: relative; overflow: hidden; transition: 0.3s; }
+        #static-bg-preview.active { border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
         #static-bg-preview input { position: absolute; opacity: 0; inset: 0; cursor: pointer; width: 100%; height: 100%; }
 
-        .bg-thumb {
-            width: 70px; height: 70px; border-radius: 12px;
-            background-size: cover; background-position: center;
-            border: 2px solid transparent; cursor: pointer;
-            transition: 0.3s; flex-shrink: 0; opacity: 0.5;
-        }
-        .bg-thumb.active { border-color: var(--accent); opacity: 1; box-shadow: 0 0 15px var(--accent); transform: scale(1.05); }
+        .bg-thumb { width: 70px; height: 70px; border-radius: 12px; background-size: cover; background-position: center; border: 2px solid transparent; cursor: pointer; transition: 0.3s; opacity: 0.5; }
+        .bg-thumb.active { border-color: var(--accent); opacity: 1; transform: scale(1.05); }
 
-        .theme-item {
-            display: flex; justify-content: space-between; align-items: center;
-            background: rgba(0,0,0,0.4); padding: 10px 12px; border-radius: 10px; margin-top: 8px;
-        }
-        .theme-actions button {
-            background: none; border: none; color: #fff; font-size: 0.7rem; font-weight: bold;
-            cursor: pointer; opacity: 0.7; margin-left: 10px;
-        }
-        .theme-actions button:hover { opacity: 1; }
+        .theme-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.4); padding: 10px 12px; border-radius: 10px; margin-top: 8px; }
+        .theme-actions button { background: none; border: none; color: #fff; font-size: 0.7rem; font-weight: bold; cursor: pointer; opacity: 0.7; margin-left: 10px; }
 
         input[type="text"] { width: 100%; background: #000; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 12px; border-radius: 12px; margin-top: 10px; outline: none; }
         input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); margin-top: 10px; border-radius: 2px; }
@@ -214,7 +192,7 @@
             <div class="control-group">
                 <label>Theme Manager</label>
                 <div style="display: flex; gap: 10px;">
-                    <input type="text" id="theme-name" placeholder="Name your theme..." style="margin-top: 10px; flex-grow: 1;">
+                    <input type="text" id="theme-name" placeholder="Save as..." style="margin-top: 10px; flex-grow: 1;">
                     <button onclick="saveTheme()" class="update-btn" style="width: auto; padding: 0 20px; margin-top: 10px;">SAVE</button>
                 </div>
                 <div id="theme-list" style="margin-top: 15px;"></div>
@@ -227,12 +205,12 @@
             </div>
 
             <div class="control-group">
-                <label>Wallpaper & Background</label>
+                <label>Background</label>
                 <label for="bg-upload" class="file-upload-btn">CHOOSE FILE</label>
                 <input type="file" id="bg-upload" style="display:none;" onchange="handleBg(this)">
                 
                 <div class="wallpaper-grid">
-                    <div id="static-bg-preview" title="Static Color">
+                    <div id="static-bg-preview">
                         <input type="color" id="static-bg-picker" oninput="setStatic(this.value)">
                     </div>
                     <div id="bg-history" style="display:contents;"></div>
@@ -248,25 +226,25 @@
             </div>
 
             <div class="control-group">
-                <div class="row"><label>HUD Mirror (Projection)</label><div id="sw-mirrored" class="ios-switch" onclick="toggle('mirrored')"></div></div>
-                <div class="row" style="margin-top:10px;"><label>24-Hour Time</label><div id="sw-is24h" class="ios-switch" onclick="toggle('is24h')"></div></div>
+                <div class="row"><label>HUD Mirror</label><div id="sw-mirrored" class="ios-switch" onclick="toggle('mirrored')"></div></div>
+                <div class="row" style="margin-top:10px;"><label>24H Time</label><div id="sw-is24h" class="ios-switch" onclick="toggle('is24h')"></div></div>
             </div>
 
             <div class="control-group">
                 <div class="row"><label>Clock Widget</label><span class="reset-link" onclick="resetWidget('clock')">Reset</span></div>
-                <div class="row" style="margin-top: 10px;"><label style="font-size: 0.5rem; opacity: 0.8;">Visible</label><div id="sw-showClock" class="ios-switch active" onclick="toggle('showClock')"></div></div>
+                <div class="row" style="margin-top: 10px;"><label style="font-size: 0.5rem;">Visible</label><div id="sw-showClock" class="ios-switch active" onclick="toggle('showClock')"></div></div>
                 <input type="range" id="range-clock" min="-400" max="400" value="0" oninput="nudge('clock', this.value)">
             </div>
 
             <div class="control-group">
                 <div class="row"><label>Date Widget</label><span class="reset-link" onclick="resetWidget('date')">Reset</span></div>
-                <div class="row" style="margin-top: 10px;"><label style="font-size: 0.5rem; opacity: 0.8;">Visible</label><div id="sw-showDate" class="ios-switch active" onclick="toggle('showDate')"></div></div>
+                <div class="row" style="margin-top: 10px;"><label style="font-size: 0.5rem;">Visible</label><div id="sw-showDate" class="ios-switch active" onclick="toggle('showDate')"></div></div>
                 <input type="range" id="range-date" min="-400" max="400" value="0" oninput="nudge('date', this.value)">
             </div>
 
             <div class="control-group">
                 <div class="row"><label>Weather Widget</label><span class="reset-link" onclick="resetWidget('weather')">Reset</span></div>
-                <div class="row" style="margin-top: 10px;"><label style="font-size: 0.5rem; opacity: 0.8;">Visible</label><div id="sw-showWeather" class="ios-switch active" onclick="toggle('showWeather')"></div></div>
+                <div class="row" style="margin-top: 10px;"><label style="font-size: 0.5rem;">Visible</label><div id="sw-showWeather" class="ios-switch active" onclick="toggle('showWeather')"></div></div>
                 <input type="range" id="range-weather" min="-400" max="400" value="0" oninput="nudge('weather', this.value)">
             </div>
 
@@ -277,10 +255,10 @@
 
             <div class="control-group">
                 <label>Accent Color</label>
-                <input type="color" id="color-accent" style="height:45px; border:none; background:none; padding:0;" onchange="state.accent = this.value; applyAll(); save();">
+                <input type="color" id="color-accent" style="height:45px; width:100%; border:none; background:none;" onchange="state.accent = this.value; applyAll(); save();">
             </div>
 
-            <button onclick="localStorage.clear(); location.reload();" style="color:red; background:none; border:none; font-weight:bold; cursor:pointer; width:100%; margin-top:10px;">SET TO DEFAULTS</button>
+            <button onclick="localStorage.clear(); location.reload();" style="color:red; background:none; border:none; font-weight:bold; cursor:pointer; width:100%; margin-top:10px;">FACTORY RESET</button>
         </div>
     </div>
 
@@ -301,10 +279,10 @@
             storm: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9M13 11l-4 6h6l-4 6"></path></svg>`
         };
 
-        function save() { localStorage.setItem('prism_master_polished', JSON.stringify(state)); }
+        function save() { localStorage.setItem('prism_ultra_v2', JSON.stringify(state)); }
 
         function load() {
-            const saved = localStorage.getItem('prism_master_polished');
+            const saved = localStorage.getItem('prism_ultra_v2');
             if(saved) state = JSON.parse(saved);
             applyAll();
             renderHistory();
@@ -315,33 +293,24 @@
 
         function saveTheme() {
             const name = document.getElementById('theme-name').value.trim();
-            if (!name) return alert("Please enter a theme name.");
-            
+            if (!name) return;
             const themeData = JSON.parse(JSON.stringify(state));
             delete themeData.presets; 
-            
             state.presets[name] = themeData;
             document.getElementById('theme-name').value = "";
-            renderThemeList();
-            save();
+            renderThemeList(); save();
         }
 
         function loadTheme(name) {
-            if (!state.presets[name]) return;
             const savedPresets = state.presets; 
             state = JSON.parse(JSON.stringify(state.presets[name]));
             state.presets = savedPresets; 
-            applyAll();
-            renderHistory();
-            save();
+            applyAll(); renderHistory(); save();
         }
 
         function deleteTheme(name) {
-            if (confirm(`Delete theme "${name}"?`)) {
-                delete state.presets[name];
-                renderThemeList();
-                save();
-            }
+            delete state.presets[name];
+            renderThemeList(); save();
         }
 
         function renderThemeList() {
@@ -350,13 +319,7 @@
             Object.keys(state.presets).forEach(name => {
                 const item = document.createElement("div");
                 item.className = "theme-item";
-                item.innerHTML = `
-                    <span style="font-weight:600; font-size:0.8rem;">${name}</span>
-                    <div class="theme-actions">
-                        <button onclick="loadTheme('${name}')" style="color:var(--accent);">LOAD</button>
-                        <button onclick="deleteTheme('${name}')" style="color:#ff4444;">✕</button>
-                    </div>
-                `;
+                item.innerHTML = `<span>${name}</span><div class="theme-actions"><button onclick="loadTheme('${name}')" style="color:var(--accent);">LOAD</button><button onclick="deleteTheme('${name}')" style="color:#ff4444;">✕</button></div>`;
                 list.appendChild(item);
             });
         }
@@ -364,7 +327,6 @@
         function applyAll() {
             const bgl = document.getElementById('bg-layer');
             document.documentElement.style.setProperty('--accent', state.accent);
-            
             const m = state.mirrored ? -1 : 1;
             document.getElementById('hud-master').style.transform = `scale(${state.scale}) scaleX(${m})`;
             
@@ -392,13 +354,10 @@
                 document.getElementById('sw-show' + key.charAt(0).toUpperCase() + key.slice(1)).classList.toggle('active', show);
                 document.getElementById('range-' + key).value = state['nudge' + key];
             });
+            document.getElementById('range-scale').value = state.scale;
         }
 
-        function setStatic(val) {
-            state.staticColor = val;
-            state.isStatic = true;
-            applyAll(); renderHistory(); save();
-        }
+        function setStatic(val) { state.staticColor = val; state.isStatic = true; applyAll(); renderHistory(); save(); }
 
         function handleBg(input) {
             const reader = new FileReader();
@@ -419,11 +378,7 @@
                 const thumb = document.createElement('div');
                 thumb.className = `bg-thumb ${(!state.isStatic && state.bg === data) ? 'active' : ''}`;
                 thumb.style.backgroundImage = `url(${data})`;
-                thumb.onclick = () => {
-                    state.bg = data;
-                    state.isStatic = false;
-                    applyAll(); renderHistory(); save();
-                };
+                thumb.onclick = () => { state.bg = data; state.isStatic = false; applyAll(); renderHistory(); save(); };
                 container.appendChild(thumb);
             });
         }
