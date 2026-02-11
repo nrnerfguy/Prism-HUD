@@ -135,6 +135,10 @@
         .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.5; font-weight: 800; }
 
+        .status-tag { font-size: 0.55rem; font-weight: 900; letter-spacing: 1px; margin-right: 10px; transition: 0.3s; }
+        .status-tag.off { opacity: 0.3; color: #fff; }
+        .status-tag.on { opacity: 1; color: var(--accent); }
+
         .reset-link { 
             font-size: 0.65rem; color: var(--accent); cursor: pointer; 
             text-transform: uppercase; font-weight: 900; 
@@ -149,11 +153,20 @@
         }
 
         .ios-switch {
-            position: relative; width: 50px; height: 28px; background: rgba(255,255,255,0.1); border-radius: 20px; cursor: pointer; transition: background 0.3s;
+            position: relative; width: 50px; height: 28px; background: rgba(255,255,255,0.1); border-radius: 20px; cursor: pointer; transition: all 0.3s ease;
         }
         .ios-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 24px; height: 24px; background: #fff; border-radius: 50%; transition: 0.3s; }
         .ios-switch.active { background: var(--accent); }
         .ios-switch.active::after { transform: translateX(22px); }
+        
+        /* Switch Hover Effect */
+        .ios-switch:hover {
+            filter: brightness(1.3);
+            box-shadow: 0 0 12px rgba(255,255,255,0.1);
+        }
+        .ios-switch.active:hover {
+            box-shadow: 0 0 15px var(--accent);
+        }
 
         .file-upload-btn {
             display: block; width: 100%; padding: 12px;
@@ -209,7 +222,6 @@
             transform: scale(0.98);
         }
 
-        /* --- MODAL STYLES --- */
         #confirm-modal {
             position: fixed; inset: 0; background: rgba(0,0,0,0.85);
             display: none; justify-content: center; align-items: center; z-index: 3000;
@@ -306,19 +318,37 @@
 
             <div class="control-group">
                 <div class="row"><label>Clock Widget</label><span class="reset-link" onclick="resetWidget('clock')">Reset</span></div>
-                <div class="row" style="margin-top: 10px;"><label style="font-size: 0.5rem;">Visible</label><div id="sw-showClock" class="ios-switch active" onclick="toggle('showClock')"></div></div>
+                <div class="row" style="margin-top: 10px;">
+                    <label style="font-size: 0.5rem;">Visibility</label>
+                    <div style="display: flex; align-items: center;">
+                        <span id="st-clock" class="status-tag">SHOWN</span>
+                        <div id="sw-showClock" class="ios-switch active" onclick="toggle('showClock')"></div>
+                    </div>
+                </div>
                 <input type="range" id="range-clock" min="-400" max="400" value="0" oninput="nudge('clock', this.value)">
             </div>
 
             <div class="control-group">
                 <div class="row"><label>Date Widget</label><span class="reset-link" onclick="resetWidget('date')">Reset</span></div>
-                <div class="row" style="margin-top: 10px;"><label style="font-size: 0.5rem;">Visible</label><div id="sw-showDate" class="ios-switch active" onclick="toggle('showDate')"></div></div>
+                <div class="row" style="margin-top: 10px;">
+                    <label style="font-size: 0.5rem;">Visibility</label>
+                    <div style="display: flex; align-items: center;">
+                        <span id="st-date" class="status-tag">SHOWN</span>
+                        <div id="sw-showDate" class="ios-switch active" onclick="toggle('showDate')"></div>
+                    </div>
+                </div>
                 <input type="range" id="range-date" min="-400" max="400" value="0" oninput="nudge('date', this.value)">
             </div>
 
             <div class="control-group">
                 <div class="row"><label>Weather Widget</label><span class="reset-link" onclick="resetWidget('weather')">Reset</span></div>
-                <div class="row" style="margin-top: 10px;"><label style="font-size: 0.5rem;">Visible</label><div id="sw-showWeather" class="ios-switch active" onclick="toggle('showWeather')"></div></div>
+                <div class="row" style="margin-top: 10px;">
+                    <label style="font-size: 0.5rem;">Visibility</label>
+                    <div style="display: flex; align-items: center;">
+                        <span id="st-weather" class="status-tag">SHOWN</span>
+                        <div id="sw-showWeather" class="ios-switch active" onclick="toggle('showWeather')"></div>
+                    </div>
+                </div>
                 <input type="range" id="range-weather" min="-400" max="400" value="0" oninput="nudge('weather', this.value)">
             </div>
 
@@ -425,7 +455,14 @@
                 const show = state['show' + key.charAt(0).toUpperCase() + key.slice(1)];
                 el.style.opacity = show ? 1 : 0;
                 el.style.transform = `translateY(${state['nudge' + key]}px)`;
-                document.getElementById('sw-show' + key.charAt(0).toUpperCase() + key.slice(1)).classList.toggle('active', show);
+                
+                const sw = document.getElementById('sw-show' + key.charAt(0).toUpperCase() + key.slice(1));
+                sw.classList.toggle('active', show);
+                
+                const statusTag = document.getElementById('st-' + key);
+                statusTag.innerText = show ? 'SHOWN' : 'HIDDEN';
+                statusTag.className = show ? 'status-tag on' : 'status-tag off';
+
                 document.getElementById('range-' + key).value = state['nudge' + key];
             });
             document.getElementById('range-scale').value = state.scale;
