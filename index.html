@@ -23,7 +23,7 @@
             padding: 0;
             width: 100vw;
             height: 100vh;
-            height: 100dvh; /* Fixes bottom bar on mobile */
+            height: 100dvh;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -95,7 +95,6 @@
             opacity: 0.2; color: #fff;
         }
 
-        /* --- THE PANEL FIX --- */
         #side-panel {
             position: fixed; 
             right: -380px; 
@@ -146,6 +145,13 @@
             display: block; width: 100%; padding: 12px;
             background: rgba(255,255,255,0.1); border: 1px dashed rgba(255,255,255,0.3);
             border-radius: 12px; color: #fff; text-align: center; font-size: 0.75rem; font-weight: 600; cursor: pointer; margin-bottom: 15px;
+            transition: all 0.3s var(--smooth-ease);
+        }
+        .file-upload-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: var(--accent);
+            box-shadow: 0 0 15px var(--accent);
+            transform: translateY(-1px);
         }
 
         .wallpaper-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 5px; }
@@ -164,7 +170,17 @@
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; background: #fff; border-radius: 50%; cursor: pointer; }
 
         #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; z-index: 1500; }
-        .update-btn { background: var(--accent); color: white; border: none; width: 100%; padding: 12px; border-radius: 12px; margin-top: 10px; font-weight: bold; cursor: pointer; }
+        
+        .update-btn { 
+            background: var(--accent); color: white; border: none; width: 100%; padding: 12px; 
+            border-radius: 12px; margin-top: 10px; font-weight: bold; cursor: pointer; 
+            transition: all 0.3s var(--smooth-ease);
+        }
+        .update-btn:hover {
+            filter: brightness(1.2);
+            box-shadow: 0 0 15px var(--accent);
+            transform: translateY(-1px);
+        }
     </style>
 </head>
 <body>
@@ -182,7 +198,7 @@
     </div>
 
     <div id="nav-trigger" onclick="toggleNav(event)">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
     </div>
 
     <div id="side-panel">
@@ -206,7 +222,7 @@
 
             <div class="control-group">
                 <label>Background</label>
-                <label for="bg-upload" class="file-upload-btn">CHOOSE FILE</label>
+                <label for="bg-upload" class="file-upload-btn" style="margin-top: 15px;">CHOOSE FILE</label>
                 <input type="file" id="bg-upload" style="display:none;" onchange="handleBg(this)">
                 
                 <div class="wallpaper-grid">
@@ -217,18 +233,18 @@
                 </div>
             </div>
 
-<div class="control-group">
-    <label>Background Effects</label>
-    <div class="row" style="margin-top: 15px;">
-        <label style="font-size: 0.5rem;">Blur</label>
-    </div>
-    <input type="range" min="0" max="40" step="1" value="0" oninput="state.blur=this.value; applyAll(); save();">
-    
-    <div class="row" style="margin-top: 10px;">
-        <label style="font-size: 0.5rem;">Opacity</label>
-    </div>
-    <input type="range" min="0" max="1" step="0.01" value="1" oninput="state.bgOpacity=this.value; applyAll(); save();">
-</div>
+            <div class="control-group">
+                <label>Background Effects</label>
+                <div class="row" style="margin-top: 15px;">
+                    <label style="font-size: 0.5rem;">Blur</label>
+                </div>
+                <input type="range" min="0" max="40" step="1" value="0" oninput="state.blur=this.value; applyAll(); save();">
+                
+                <div class="row" style="margin-top: 10px;">
+                    <label style="font-size: 0.5rem;">Opacity</label>
+                </div>
+                <input type="range" min="0" max="1" step="0.01" value="1" oninput="state.bgOpacity=this.value; applyAll(); save();">
+            </div>
 
             <div class="control-group">
                 <div class="row"><label>Flip Widgets</label><div id="sw-mirrored" class="ios-switch" onclick="toggle('mirrored')"></div></div>
