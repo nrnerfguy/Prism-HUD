@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>Prism OS - Theme Master</title>
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Prism OS Final</title>
     <style>
         :root {
             --accent: #007AFF; 
@@ -24,12 +26,13 @@
             align-items: center;
             font-family: -apple-system, system-ui, sans-serif;
             overflow: hidden;
-            animation: pageEntrance 1s var(--slow-ease) forwards;
+            animation: pageEntrance 1.5s var(--slow-ease) forwards;
+            opacity: 0;
         }
 
         @keyframes pageEntrance {
-            from { opacity: 0; transform: scale(1.02); }
-            to { opacity: 1; transform: scale(1); }
+            from { opacity: 0; transform: scale(1.03); filter: blur(5px); }
+            to { opacity: 1; transform: scale(1); filter: blur(0px); }
         }
 
         #bg-layer {
@@ -39,7 +42,7 @@
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            transition: opacity 0.4s, filter 0.4s;
+            transition: opacity 0.3s, filter 0.3s;
             pointer-events: none;
         }
 
@@ -50,6 +53,7 @@
             justify-content: center;
             text-align: center;
             transition: transform 0.8s var(--smooth-ease);
+            will-change: transform;
         }
 
         .widget { 
@@ -62,7 +66,15 @@
             align-items: center;
         }
 
-        #clock { font-size: clamp(5rem, 25vw, 12rem); font-weight: 900; font-style: italic; letter-spacing: -4px; line-height: 1; }
+        #clock { 
+            font-size: clamp(5rem, 25vw, 12rem); 
+            font-weight: 900; 
+            font-style: italic; 
+            letter-spacing: -4px; 
+            line-height: 1; 
+            text-shadow: 0px 0px 20px rgba(0,0,0,0.5);
+        }
+
         #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.8; font-weight: 300; margin-top: 10px; }
         #weather-widget { gap: 20px; opacity: 0.8; font-size: 2.4rem; font-weight: 200; margin-top: 10px;}
 
@@ -73,10 +85,9 @@
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.1);
             border-radius: 50%; display: flex; justify-content: center; align-items: center;
-            z-index: 1000; cursor: pointer; transition: 0.3s;
-            opacity: 0.25; color: #fff;
+            z-index: 1000; cursor: pointer; transition: opacity 0.5s;
+            opacity: 0.2; color: #fff;
         }
-        #nav-trigger:hover { opacity: 1; transform: scale(1.1); }
 
         #side-panel {
             position: fixed; right: -360px; top: 0; width: 340px; height: 100%;
@@ -88,21 +99,27 @@
 
         .panel-content { display: flex; flex-direction: column; gap: 15px; padding-bottom: 80px; }
         
-        /* Interactive Highlight */
+        /* HOVER HIGHLIGHTS */
         .control-group { 
             padding: 18px; 
             background: rgba(255,255,255,0.05); 
             border-radius: 20px; 
             border: 1px solid transparent;
-            transition: all 0.2s;
+            transition: background 0.2s, border-color 0.2s;
         }
         .control-group:hover {
             background: rgba(255,255,255,0.08);
-            border-color: rgba(255,255,255,0.15);
+            border-color: rgba(255,255,255,0.1);
         }
 
         .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.5; font-weight: 800; }
+
+        .reset-link { 
+            font-size: 0.65rem; color: var(--accent); cursor: pointer; 
+            text-transform: uppercase; font-weight: 900; 
+            padding: 4px 8px; background: rgba(0,0,0,0.3); border-radius: 6px;
+        }
 
         .ios-switch {
             position: relative; width: 50px; height: 28px; background: rgba(255,255,255,0.1); border-radius: 20px; cursor: pointer; transition: background 0.3s;
@@ -111,33 +128,45 @@
         .ios-switch.active { background: var(--accent); }
         .ios-switch.active::after { transform: translateX(22px); }
 
-        /* Wallpaper Grid & Static Preview */
+        .file-upload-btn {
+            display: block; width: 100%; padding: 12px;
+            background: rgba(255,255,255,0.1); border: 1px dashed rgba(255,255,255,0.3);
+            border-radius: 12px; color: #fff; text-align: center; font-size: 0.75rem; font-weight: 600; cursor: pointer; margin-bottom: 15px;
+        }
+
+        /* SQUARE COLOR PICKER & HISTORY */
         .wallpaper-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 5px; }
+        
         #static-bg-preview {
             width: 70px; height: 70px; border-radius: 12px;
             border: 2px solid rgba(255,255,255,0.2);
             cursor: pointer; position: relative; overflow: hidden;
-            transition: 0.3s; background: #000;
+            transition: 0.3s;
         }
-        #static-bg-preview.active { border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
-        #static-bg-preview input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
+        #static-bg-preview.active { border-color: var(--accent); box-shadow: 0 0 15px var(--accent); opacity: 1; }
+        #static-bg-preview input { position: absolute; opacity: 0; inset: 0; cursor: pointer; width: 100%; height: 100%; }
 
         .bg-thumb {
             width: 70px; height: 70px; border-radius: 12px;
             background-size: cover; background-position: center;
-            border: 2px solid transparent; cursor: pointer; opacity: 0.6; transition: 0.3s;
+            border: 2px solid transparent; cursor: pointer;
+            transition: 0.3s; flex-shrink: 0; opacity: 0.5;
         }
-        .bg-thumb.active { border-color: var(--accent); opacity: 1; transform: scale(1.05); }
+        .bg-thumb.active { border-color: var(--accent); opacity: 1; box-shadow: 0 0 15px var(--accent); transform: scale(1.05); }
 
-        /* Theme Presets UI */
+        /* THEME LIST STYLES */
         .theme-item {
             display: flex; justify-content: space-between; align-items: center;
-            padding: 10px; background: rgba(0,0,0,0.3); border-radius: 10px; margin-top: 8px;
+            background: rgba(0,0,0,0.4); padding: 10px 12px; border-radius: 10px; margin-top: 8px;
         }
-        .theme-btn { background: none; border: none; color: var(--accent); cursor: pointer; font-weight: bold; font-size: 0.7rem; }
+        .theme-actions button {
+            background: none; border: none; color: #fff; font-size: 0.7rem; font-weight: bold;
+            cursor: pointer; opacity: 0.7; margin-left: 10px;
+        }
+        .theme-actions button:hover { opacity: 1; }
 
         input[type="text"] { width: 100%; background: #000; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 12px; border-radius: 12px; margin-top: 10px; outline: none; }
-        input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; }
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); margin-top: 10px; border-radius: 2px; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; background: #fff; border-radius: 50%; cursor: pointer; }
 
         #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; z-index: 1500; }
@@ -164,24 +193,30 @@
 
     <div id="side-panel">
         <div class="panel-content">
-            <h2 style="margin:0; font-weight: 900;">System Settings</h2>
+            <h2 style="margin:0; font-size: 1.5rem; font-weight: 900;">Settings</h2>
+
+            <div class="control-group">
+                <label>Theme Manager</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="theme-name" placeholder="Name your theme..." style="margin-top: 10px; flex-grow: 1;">
+                    <button onclick="saveTheme()" class="update-btn" style="width: auto; padding: 0 20px; margin-top: 10px;">SAVE</button>
+                </div>
+                <div id="theme-list" style="margin-top: 15px;"></div>
+            </div>
             
             <div class="control-group">
-                <label>Theme Presets</label>
-                <div style="display:flex; gap:10px; margin-top:10px;">
-                    <input type="text" id="theme-name" placeholder="Theme Name..." style="margin-top:0; flex:1; padding:8px;">
-                    <button class="theme-btn" onclick="saveTheme()" style="background:var(--accent); color:white; padding:0 15px; border-radius:8px;">SAVE</button>
-                </div>
-                <div id="theme-list"></div>
+                <label>Weather City</label>
+                <input type="text" id="city-input" placeholder="Enter City...">
+                <button class="update-btn" onclick="updateCity()">Update Location</button>
             </div>
 
             <div class="control-group">
                 <label>Wallpaper & Background</label>
-                <label for="bg-upload" class="file-upload-btn" style="border: 1px dashed rgba(255,255,255,0.3); padding:10px; display:block; text-align:center; cursor:pointer; margin-bottom:10px; font-size:0.7rem;">UPLOAD IMAGE</label>
+                <label for="bg-upload" class="file-upload-btn">CHOOSE FILE</label>
                 <input type="file" id="bg-upload" style="display:none;" onchange="handleBg(this)">
                 
                 <div class="wallpaper-grid">
-                    <div id="static-bg-preview">
+                    <div id="static-bg-preview" title="Static Color">
                         <input type="color" id="static-bg-picker" oninput="setStatic(this.value)">
                     </div>
                     <div id="bg-history" style="display:contents;"></div>
@@ -189,60 +224,136 @@
             </div>
 
             <div class="control-group">
-                <label>Background Effects</label>
-                <div class="row"><label style="font-size:0.55rem;">Blur</label></div>
-                <input type="range" min="0" max="40" value="0" oninput="state.blur=this.value; applyAll(); save();">
-                <div class="row" style="margin-top:10px;"><label style="font-size:0.55rem;">Opacity</label></div>
+                <label>Effects</label>
+                <div class="row"><label style="font-size: 0.5rem;">Blur</label></div>
+                <input type="range" min="0" max="40" step="1" value="0" oninput="state.blur=this.value; applyAll(); save();">
+                <div class="row" style="margin-top:10px;"><label style="font-size: 0.5rem;">Opacity</label></div>
                 <input type="range" min="0" max="1" step="0.01" value="1" oninput="state.bgOpacity=this.value; applyAll(); save();">
             </div>
 
             <div class="control-group">
-                <div class="row"><label>Mirror Projection</label><div id="sw-mirrored" class="ios-switch" onclick="toggle('mirrored')"></div></div>
-                <div class="row" style="margin-top:10px;"><label>24H Time</label><div id="sw-is24h" class="ios-switch" onclick="toggle('is24h')"></div></div>
+                <div class="row"><label>HUD Mirror (Projection)</label><div id="sw-mirrored" class="ios-switch" onclick="toggle('mirrored')"></div></div>
+                <div class="row" style="margin-top:10px;"><label>24-Hour Time</label><div id="sw-is24h" class="ios-switch" onclick="toggle('is24h')"></div></div>
             </div>
 
             <div class="control-group">
-                <div class="row"><label>Accent Color</label></div>
-                <input type="color" id="color-accent" style="width:100%; height:40px; border:none; background:none;" onchange="state.accent = this.value; applyAll(); save();">
+                <div class="row"><label>Clock Widget</label><span class="reset-link" onclick="resetWidget('clock')">Reset</span></div>
+                <div class="row" style="margin-top: 10px;"><label style="font-size: 0.5rem; opacity: 0.8;">Visible</label><div id="sw-showClock" class="ios-switch active" onclick="toggle('showClock')"></div></div>
+                <input type="range" id="range-clock" min="-400" max="400" value="0" oninput="nudge('clock', this.value)">
             </div>
 
             <div class="control-group">
-                <div class="row"><label>Clock Nudge</label><div id="sw-showClock" class="ios-switch" onclick="toggle('showClock')"></div></div>
-                <input type="range" min="-400" max="400" value="0" oninput="nudge('clock', this.value)">
+                <div class="row"><label>Date Widget</label><span class="reset-link" onclick="resetWidget('date')">Reset</span></div>
+                <div class="row" style="margin-top: 10px;"><label style="font-size: 0.5rem; opacity: 0.8;">Visible</label><div id="sw-showDate" class="ios-switch active" onclick="toggle('showDate')"></div></div>
+                <input type="range" id="range-date" min="-400" max="400" value="0" oninput="nudge('date', this.value)">
             </div>
 
             <div class="control-group">
-                <div class="row"><label>Date Nudge</label><div id="sw-showDate" class="ios-switch" onclick="toggle('showDate')"></div></div>
-                <input type="range" min="-400" max="400" value="0" oninput="nudge('date', this.value)">
+                <div class="row"><label>Weather Widget</label><span class="reset-link" onclick="resetWidget('weather')">Reset</span></div>
+                <div class="row" style="margin-top: 10px;"><label style="font-size: 0.5rem; opacity: 0.8;">Visible</label><div id="sw-showWeather" class="ios-switch active" onclick="toggle('showWeather')"></div></div>
+                <input type="range" id="range-weather" min="-400" max="400" value="0" oninput="nudge('weather', this.value)">
             </div>
 
-            <button onclick="localStorage.clear(); location.reload();" style="color:#ff4444; background:none; border:none; font-size:0.7rem; font-weight:bold; cursor:pointer; margin-top:20px;">FACTORY RESET SYSTEM</button>
+            <div class="control-group">
+                <label>System Scale</label>
+                <input type="range" id="range-scale" min="0.4" max="2.0" step="0.01" value="1" oninput="state.scale = this.value; applyAll(); save();">
+            </div>
+
+            <div class="control-group">
+                <label>Accent Color</label>
+                <input type="color" id="color-accent" style="height:45px; border:none; background:none; padding:0;" onchange="state.accent = this.value; applyAll(); save();">
+            </div>
+
+            <button onclick="localStorage.clear(); location.reload();" style="color:red; background:none; border:none; font-weight:bold; cursor:pointer; width:100%; margin-top:10px;">SET TO DEFAULTS</button>
         </div>
     </div>
 
     <script>
         let state = {
             mirrored: false, is24h: true, showClock: true, showDate: true, showWeather: true,
-            nudgeclock: 0, nudgedate: 0, scale: 1, accent: '#007AFF', city: 'Calgary',
-            bg: '', history: [], isStatic: false, staticColor: '#000000', blur: 0, bgOpacity: 1,
-            presets: {} 
+            nudgeclock: 0, nudgedate: 0, nudgeweather: 0,
+            scale: 1, accent: '#007AFF', city: 'Calgary', bg: '', history: [],
+            isStatic: false, staticColor: '#000000', blur: 0, bgOpacity: 1,
+            presets: {} // Storage for Saved Themes
         };
 
-        function save() { localStorage.setItem('prism_v_final_presets', JSON.stringify(state)); }
+        const icons = {
+            sun: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>`,
+            cloud: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`,
+            rain: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M16 13v8M8 13v8M12 15v8M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"></path></svg>`,
+            snow: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25M8 16h.01M8 20h.01M12 18h.01M12 22h.01M16 16h.01M16 20h.01"></path></svg>`,
+            storm: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9M13 11l-4 6h6l-4 6"></path></svg>`
+        };
+
+        function save() { localStorage.setItem('prism_master_final_v2', JSON.stringify(state)); }
 
         function load() {
-            const saved = localStorage.getItem('prism_v_final_presets');
+            const saved = localStorage.getItem('prism_master_final_v2');
             if(saved) state = JSON.parse(saved);
             applyAll();
             renderHistory();
-            renderThemes();
+            renderThemeList();
             updateClock();
+            fetchWeather();
         }
+
+        // --- THEME MANAGER LOGIC ---
+        function saveTheme() {
+            const name = document.getElementById('theme-name').value.trim();
+            if (!name) return alert("Please enter a theme name.");
+            
+            // Create a copy of state but exclude the presets list itself to avoid nesting infinite loops
+            const themeData = JSON.parse(JSON.stringify(state));
+            delete themeData.presets; 
+            
+            state.presets[name] = themeData;
+            document.getElementById('theme-name').value = "";
+            renderThemeList();
+            save();
+        }
+
+        function loadTheme(name) {
+            if (!state.presets[name]) return;
+            const savedPresets = state.presets; // Keep existing presets
+            state = JSON.parse(JSON.stringify(state.presets[name]));
+            state.presets = savedPresets; // Restore the library
+            applyAll();
+            renderHistory();
+            save();
+        }
+
+        function deleteTheme(name) {
+            if (confirm(`Delete theme "${name}"?`)) {
+                delete state.presets[name];
+                renderThemeList();
+                save();
+            }
+        }
+
+        function renderThemeList() {
+            const list = document.getElementById('theme-list');
+            list.innerHTML = "";
+            Object.keys(state.presets).forEach(name => {
+                const item = document.createElement("div");
+                item.className = "theme-item";
+                item.innerHTML = `
+                    <span style="font-weight:600; font-size:0.8rem;">${name}</span>
+                    <div class="theme-actions">
+                        <button onclick="loadTheme('${name}')" style="color:var(--accent);">LOAD</button>
+                        <button onclick="deleteTheme('${name}')" style="color:#ff4444;">✕</button>
+                    </div>
+                `;
+                list.appendChild(item);
+            });
+        }
+        // ---------------------------
 
         function applyAll() {
             const bgl = document.getElementById('bg-layer');
             document.documentElement.style.setProperty('--accent', state.accent);
-            document.getElementById('hud-master').style.transform = `scale(${state.scale}) scaleX(${state.mirrored ? -1 : 1})`;
+            
+            const m = state.mirrored ? -1 : 1;
+            document.getElementById('hud-master').style.transform = `scale(${state.scale}) scaleX(${m})`;
             
             if(state.isStatic) {
                 document.body.style.backgroundColor = state.staticColor;
@@ -259,54 +370,14 @@
 
             document.getElementById('sw-mirrored').classList.toggle('active', state.mirrored);
             document.getElementById('sw-is24h').classList.toggle('active', state.is24h);
-            document.getElementById('sw-showClock').classList.toggle('active', state.showClock);
-            document.getElementById('sw-showDate').classList.toggle('active', state.showDate);
 
-            document.getElementById('clock-widget').style.transform = `translateY(${state.nudgeclock}px)`;
-            document.getElementById('date-widget').style.transform = `translateY(${state.nudgedate}px)`;
-            document.getElementById('clock-widget').style.opacity = state.showClock ? 1 : 0;
-            document.getElementById('date-widget').style.opacity = state.showDate ? 1 : 0;
-        }
-
-        function saveTheme() {
-            const name = document.getElementById('theme-name').value.trim();
-            if(!name) return;
-            state.presets[name] = JSON.parse(JSON.stringify(state));
-            delete state.presets[name].presets; // Don't nest presets
-            document.getElementById('theme-name').value = '';
-            renderThemes();
-            save();
-        }
-
-        function loadTheme(name) {
-            const themeData = state.presets[name];
-            const currentPresets = state.presets;
-            state = { ...themeData, presets: currentPresets };
-            applyAll();
-            renderHistory();
-            save();
-        }
-
-        function deleteTheme(name) {
-            delete state.presets[name];
-            renderThemes();
-            save();
-        }
-
-        function renderThemes() {
-            const list = document.getElementById('theme-list');
-            list.innerHTML = '';
-            Object.keys(state.presets).forEach(name => {
-                const item = document.createElement('div');
-                item.className = 'theme-item';
-                item.innerHTML = `
-                    <span style="font-size:0.75rem;">${name}</span>
-                    <div style="display:flex; gap:10px;">
-                        <button class="theme-btn" onclick="loadTheme('${name}')">LOAD</button>
-                        <button class="theme-btn" style="color:#ff4444;" onclick="deleteTheme('${name}')">×</button>
-                    </div>
-                `;
-                list.appendChild(item);
+            ['clock', 'date', 'weather'].forEach(key => {
+                const el = document.getElementById(key + '-widget');
+                const show = state['show' + key.charAt(0).toUpperCase() + key.slice(1)];
+                el.style.opacity = show ? 1 : 0;
+                el.style.transform = `translateY(${state['nudge' + key]}px)`;
+                document.getElementById('sw-show' + key.charAt(0).toUpperCase() + key.slice(1)).classList.toggle('active', show);
+                document.getElementById('range-' + key).value = state['nudge' + key];
             });
         }
 
@@ -336,7 +407,8 @@
                 thumb.className = `bg-thumb ${(!state.isStatic && state.bg === data) ? 'active' : ''}`;
                 thumb.style.backgroundImage = `url(${data})`;
                 thumb.onclick = () => {
-                    state.bg = data; state.isStatic = false;
+                    state.bg = data;
+                    state.isStatic = false;
                     applyAll(); renderHistory(); save();
                 };
                 container.appendChild(thumb);
@@ -353,8 +425,27 @@
         }
         setInterval(updateClock, 1000);
 
+        async function fetchWeather() {
+            try {
+                const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${state.city}&count=1`).then(r => r.json());
+                if(!geo.results) return;
+                const { latitude, longitude } = geo.results[0];
+                const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code`).then(r => r.json());
+                document.getElementById('temp').innerText = Math.round(w.current.temperature_2m) + "°";
+                const code = w.current.weather_code;
+                let icon = icons.sun;
+                if (code >= 1 && code <= 3) icon = icons.cloud;
+                else if (code >= 45 && code <= 67) icon = icons.rain;
+                else if (code >= 71 && code <= 86) icon = icons.snow;
+                else if (code >= 95) icon = icons.storm;
+                document.getElementById('icon-container').innerHTML = icon;
+            } catch(e) {}
+        }
+
         function nudge(id, v) { state['nudge' + id] = v; applyAll(); save(); }
+        function resetWidget(id) { state['nudge' + id] = 0; state['show' + id.charAt(0).toUpperCase() + id.slice(1)] = true; applyAll(); save(); }
         function toggle(key) { state[key] = !state[key]; applyAll(); save(); }
+        function updateCity() { state.city = document.getElementById('city-input').value; save(); fetchWeather(); }
         function toggleNav(e) { if(e) e.stopPropagation(); const isOpen = document.getElementById('side-panel').classList.toggle('open'); document.getElementById('overlay').style.display = isOpen ? 'block' : 'none'; }
 
         load();
