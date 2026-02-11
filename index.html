@@ -217,17 +217,22 @@
                 </div>
             </div>
 
-            <div class="control-group">
-                <label>Effects</label>
-                <div class="row"><label style="font-size: 0.5rem;">Blur</label></div>
-                <input type="range" min="0" max="40" step="1" value="0" oninput="state.blur=this.value; applyAll(); save();">
-                <div class="row" style="margin-top:10px;"><label style="font-size: 0.5rem;">Opacity</label></div>
-                <input type="range" min="0" max="1" step="0.01" value="1" oninput="state.bgOpacity=this.value; applyAll(); save();">
-            </div>
+<div class="control-group">
+    <label>Background Effects</label>
+    <div class="row" style="margin-top: 15px;">
+        <label style="font-size: 0.5rem;">Blur</label>
+    </div>
+    <input type="range" min="0" max="40" step="1" value="0" oninput="state.blur=this.value; applyAll(); save();">
+    
+    <div class="row" style="margin-top: 10px;">
+        <label style="font-size: 0.5rem;">Opacity</label>
+    </div>
+    <input type="range" min="0" max="1" step="0.01" value="1" oninput="state.bgOpacity=this.value; applyAll(); save();">
+</div>
 
             <div class="control-group">
-                <div class="row"><label>HUD Mirror</label><div id="sw-mirrored" class="ios-switch" onclick="toggle('mirrored')"></div></div>
-                <div class="row" style="margin-top:10px;"><label>24H Time</label><div id="sw-is24h" class="ios-switch" onclick="toggle('is24h')"></div></div>
+                <div class="row"><label>Flip Widgets</label><div id="sw-mirrored" class="ios-switch" onclick="toggle('mirrored')"></div></div>
+                <div class="row" style="margin-top:10px;"><label>24 Hour Time</label><div id="sw-is24h" class="ios-switch" onclick="toggle('is24h')"></div></div>
             </div>
 
             <div class="control-group">
@@ -249,7 +254,7 @@
             </div>
 
             <div class="control-group">
-                <label>System Scale</label>
+                <label>Widget Scale</label>
                 <input type="range" id="range-scale" min="0.4" max="2.0" step="0.01" value="1" oninput="state.scale = this.value; applyAll(); save();">
             </div>
 
