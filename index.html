@@ -21,6 +21,8 @@
             color: #fff;
             margin: 0;
             height: 100vh;
+            /* Fix for mobile height issues */
+            height: 100dvh; 
             display: flex;
             justify-content: center;
             align-items: center;
@@ -89,17 +91,33 @@
             opacity: 0.2; color: #fff;
         }
 
+        /* --- FIXED SIDE PANEL CSS --- */
         #side-panel {
-            position: fixed; right: -360px; top: 0; width: 340px; height: 100%;
-            background: rgba(10, 10, 10, 0.98); backdrop-filter: blur(60px);
-            padding: 40px 25px; transition: right 0.5s var(--smooth-ease); z-index: 2000; overflow-y: auto;
-            border-left: 1px solid rgba(255,255,255,0.1); color: #fff;
+            position: fixed; 
+            right: -380px; /* Fully hidden */
+            top: 0; 
+            width: 360px; /* Fixed width */
+            height: 100dvh; /* Dynamic height fixes bottom bar */
+            background: rgba(10, 10, 10, 0.98); 
+            backdrop-filter: blur(60px);
+            padding: 40px 25px; 
+            transition: right 0.5s var(--smooth-ease); 
+            z-index: 2000; 
+            overflow-y: auto;
+            overflow-x: hidden; /* Prevents horizontal scrollbar/gap */
+            border-left: 1px solid rgba(255,255,255,0.1); 
+            color: #fff;
+            
+            /* Hide Scrollbar for cleaner look */
+            scrollbar-width: none; 
+            -ms-overflow-style: none;
         }
-        #side-panel.open { right: 0; }
+        #side-panel::-webkit-scrollbar { display: none; }
+        
+        #side-panel.open { right: 0; } /* Flush with right edge */
 
         .panel-content { display: flex; flex-direction: column; gap: 15px; padding-bottom: 80px; }
         
-        /* HOVER HIGHLIGHTS */
         .control-group { 
             padding: 18px; 
             background: rgba(255,255,255,0.05); 
@@ -134,7 +152,6 @@
             border-radius: 12px; color: #fff; text-align: center; font-size: 0.75rem; font-weight: 600; cursor: pointer; margin-bottom: 15px;
         }
 
-        /* SQUARE COLOR PICKER & HISTORY */
         .wallpaper-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 5px; }
         
         #static-bg-preview {
@@ -154,7 +171,6 @@
         }
         .bg-thumb.active { border-color: var(--accent); opacity: 1; box-shadow: 0 0 15px var(--accent); transform: scale(1.05); }
 
-        /* THEME LIST STYLES */
         .theme-item {
             display: flex; justify-content: space-between; align-items: center;
             background: rgba(0,0,0,0.4); padding: 10px 12px; border-radius: 10px; margin-top: 8px;
@@ -274,7 +290,7 @@
             nudgeclock: 0, nudgedate: 0, nudgeweather: 0,
             scale: 1, accent: '#007AFF', city: 'Calgary', bg: '', history: [],
             isStatic: false, staticColor: '#000000', blur: 0, bgOpacity: 1,
-            presets: {} // Storage for Saved Themes
+            presets: {}
         };
 
         const icons = {
@@ -285,10 +301,10 @@
             storm: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9M13 11l-4 6h6l-4 6"></path></svg>`
         };
 
-        function save() { localStorage.setItem('prism_master_final_v2', JSON.stringify(state)); }
+        function save() { localStorage.setItem('prism_master_polished', JSON.stringify(state)); }
 
         function load() {
-            const saved = localStorage.getItem('prism_master_final_v2');
+            const saved = localStorage.getItem('prism_master_polished');
             if(saved) state = JSON.parse(saved);
             applyAll();
             renderHistory();
@@ -297,12 +313,10 @@
             fetchWeather();
         }
 
-        // --- THEME MANAGER LOGIC ---
         function saveTheme() {
             const name = document.getElementById('theme-name').value.trim();
             if (!name) return alert("Please enter a theme name.");
             
-            // Create a copy of state but exclude the presets list itself to avoid nesting infinite loops
             const themeData = JSON.parse(JSON.stringify(state));
             delete themeData.presets; 
             
@@ -314,9 +328,9 @@
 
         function loadTheme(name) {
             if (!state.presets[name]) return;
-            const savedPresets = state.presets; // Keep existing presets
+            const savedPresets = state.presets; 
             state = JSON.parse(JSON.stringify(state.presets[name]));
-            state.presets = savedPresets; // Restore the library
+            state.presets = savedPresets; 
             applyAll();
             renderHistory();
             save();
@@ -346,7 +360,6 @@
                 list.appendChild(item);
             });
         }
-        // ---------------------------
 
         function applyAll() {
             const bgl = document.getElementById('bg-layer');
