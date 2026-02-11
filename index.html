@@ -129,8 +129,34 @@
             border-radius: 20px; 
             border: 1px solid transparent;
             transition: 0.2s;
+            position: relative;
         }
         .control-group:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.1); }
+
+        /* Weather Dropdown Styles */
+        #weather-results {
+            position: absolute;
+            top: 95%; left: 18px; right: 18px;
+            background: rgba(20, 20, 20, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 15px;
+            z-index: 3000;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .city-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: 0.2s;
+            text-align: left;
+        }
+        .city-item:hover { background: var(--accent); color: white; }
+        .city-item span { opacity: 0.6; font-size: 0.7rem; display: block; }
 
         .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.5; font-weight: 800; }
@@ -159,14 +185,8 @@
         .ios-switch.active { background: var(--accent); }
         .ios-switch.active::after { transform: translateX(22px); }
         
-        /* Switch Hover Effect */
-        .ios-switch:hover {
-            filter: brightness(1.3);
-            box-shadow: 0 0 12px rgba(255,255,255,0.1);
-        }
-        .ios-switch.active:hover {
-            box-shadow: 0 0 15px var(--accent);
-        }
+        .ios-switch:hover { filter: brightness(1.3); box-shadow: 0 0 12px rgba(255,255,255,0.1); }
+        .ios-switch.active:hover { box-shadow: 0 0 15px var(--accent); }
 
         .file-upload-btn {
             display: block; width: 100%; padding: 12px;
@@ -174,12 +194,7 @@
             border-radius: 12px; color: #fff; text-align: center; font-size: 0.75rem; font-weight: 600; cursor: pointer; margin-bottom: 15px;
             transition: all 0.3s var(--smooth-ease);
         }
-        .file-upload-btn:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-color: var(--accent);
-            box-shadow: 0 0 15px var(--accent);
-            transform: translateY(-1px);
-        }
+        .file-upload-btn:hover { background: rgba(255, 255, 255, 0.15); border-color: var(--accent); box-shadow: 0 0 15px var(--accent); transform: translateY(-1px); }
 
         .wallpaper-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 5px; }
         #static-bg-preview { width: 70px; height: 70px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; position: relative; overflow: hidden; transition: 0.3s; }
@@ -192,7 +207,8 @@
         .theme-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.4); padding: 10px 12px; border-radius: 10px; margin-top: 8px; }
         .theme-actions button { background: none; border: none; color: #fff; font-size: 0.7rem; font-weight: bold; cursor: pointer; opacity: 0.7; margin-left: 10px; }
 
-        input[type="text"] { width: 100%; background: #000; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 12px; border-radius: 12px; margin-top: 10px; outline: none; }
+        input[type="text"] { width: 100%; background: #000; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 12px; border-radius: 12px; margin-top: 10px; outline: none; transition: 0.3s; }
+        input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(0,122,255,0.2); }
         input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); margin-top: 10px; border-radius: 2px; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; background: #fff; border-radius: 50%; cursor: pointer; }
 
@@ -203,40 +219,20 @@
             border-radius: 12px; margin-top: 10px; font-weight: bold; cursor: pointer; 
             transition: all 0.3s var(--smooth-ease);
         }
-        .update-btn:hover {
-            filter: brightness(1.2);
-            box-shadow: 0 0 15px var(--accent);
-            transform: translateY(-1px);
-        }
+        .update-btn:hover { filter: brightness(1.2); box-shadow: 0 0 15px var(--accent); transform: translateY(-1px); }
 
         .factory-reset-btn {
             color: #ff4444; background: none; border: 1px solid rgba(255, 68, 68, 0.2); 
             font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; 
             padding: 10px; border-radius: 10px; transition: all 0.3s ease;
         }
-        .factory-reset-btn:hover {
-            color: #fff;
-            background: #ff4444;
-            border-color: #ff4444;
-            box-shadow: 0 0 20px rgba(255, 68, 68, 0.6);
-            transform: scale(0.98);
-        }
+        .factory-reset-btn:hover { color: #fff; background: #ff4444; border-color: #ff4444; box-shadow: 0 0 20px rgba(255, 68, 68, 0.6); transform: scale(0.98); }
 
-        #confirm-modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-            display: none; justify-content: center; align-items: center; z-index: 3000;
-            backdrop-filter: blur(10px);
-        }
-        .modal-box {
-            background: #111; border: 1px solid rgba(255,255,255,0.1);
-            padding: 30px; border-radius: 25px; text-align: center; max-width: 300px;
-        }
+        #confirm-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 3000; backdrop-filter: blur(10px); }
+        .modal-box { background: #111; border: 1px solid rgba(255,255,255,0.1); padding: 30px; border-radius: 25px; text-align: center; max-width: 300px; }
         .modal-box h3 { margin-top: 0; color: #ff4444; }
         .modal-box p { font-size: 0.85rem; opacity: 0.7; margin-bottom: 25px; }
-        .modal-btn { 
-            width: 100%; padding: 12px; border-radius: 12px; border: none; 
-            font-weight: bold; cursor: pointer; margin-bottom: 10px;
-        }
+        .modal-btn { width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
     </style>
 </head>
 <body>
@@ -281,8 +277,8 @@
             
             <div class="control-group">
                 <label>Weather City</label>
-                <input type="text" id="city-input" placeholder="Enter City...">
-                <button class="update-btn" onclick="updateCity()">Update Location</button>
+                <input type="text" id="city-input" placeholder="Search City..." oninput="searchCities(this.value)">
+                <div id="weather-results"></div>
             </div>
 
             <div class="control-group">
@@ -395,6 +391,38 @@
             fetchWeather();
         }
 
+        async function searchCities(query) {
+            const resultsBox = document.getElementById('weather-results');
+            if (query.length < 2) { resultsBox.style.display = 'none'; return; }
+            
+            try {
+                const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${query}&count=5&language=en&format=json`);
+                const data = await res.json();
+                
+                if (data.results) {
+                    resultsBox.innerHTML = '';
+                    data.results.forEach(city => {
+                        const div = document.createElement('div');
+                        div.className = 'city-item';
+                        div.innerHTML = `${city.name} <span>${city.admin1 || ''}, ${city.country_code.toUpperCase()}</span>`;
+                        div.onclick = () => selectCity(city.name);
+                        resultsBox.appendChild(div);
+                    });
+                    resultsBox.style.display = 'block';
+                } else {
+                    resultsBox.style.display = 'none';
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function selectCity(name) {
+            state.city = name;
+            document.getElementById('city-input').value = name;
+            document.getElementById('weather-results').style.display = 'none';
+            fetchWeather();
+            save();
+        }
+
         function saveTheme() {
             const name = document.getElementById('theme-name').value.trim();
             if (!name) return;
@@ -457,15 +485,17 @@
                 el.style.transform = `translateY(${state['nudge' + key]}px)`;
                 
                 const sw = document.getElementById('sw-show' + key.charAt(0).toUpperCase() + key.slice(1));
-                sw.classList.toggle('active', show);
+                if(sw) sw.classList.toggle('active', show);
                 
                 const statusTag = document.getElementById('st-' + key);
-                statusTag.innerText = show ? 'SHOWN' : 'HIDDEN';
-                statusTag.className = show ? 'status-tag on' : 'status-tag off';
-
+                if(statusTag) {
+                    statusTag.innerText = show ? 'SHOWN' : 'HIDDEN';
+                    statusTag.className = show ? 'status-tag on' : 'status-tag off';
+                }
                 document.getElementById('range-' + key).value = state['nudge' + key];
             });
             document.getElementById('range-scale').value = state.scale;
+            document.getElementById('city-input').value = state.city;
         }
 
         function setStatic(val) { state.staticColor = val; state.isStatic = true; applyAll(); renderHistory(); save(); }
@@ -528,7 +558,6 @@
         function nudge(id, v) { state['nudge' + id] = v; applyAll(); save(); }
         function resetWidget(id) { state['nudge' + id] = 0; state['show' + id.charAt(0).toUpperCase() + id.slice(1)] = true; applyAll(); save(); }
         function toggle(key) { state[key] = !state[key]; applyAll(); save(); }
-        function updateCity() { state.city = document.getElementById('city-input').value; save(); fetchWeather(); }
         function toggleNav(e) { if(e) e.stopPropagation(); const isOpen = document.getElementById('side-panel').classList.toggle('open'); document.getElementById('overlay').style.display = isOpen ? 'block' : 'none'; }
 
         load();
