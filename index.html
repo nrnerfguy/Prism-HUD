@@ -88,11 +88,18 @@
             position: absolute; bottom: 40px; right: 40px;
             width: 65px; height: 65px;
             background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.2);
             border-radius: 50%; display: flex; justify-content: center; align-items: center;
-            z-index: 1000; cursor: pointer; transition: opacity 0.5s;
-            opacity: 0.2; color: #fff;
+            z-index: 1000; cursor: pointer; transition: all 0.3s var(--smooth-ease);
+            opacity: 0.6; color: #fff;
+        }
+        #nav-trigger:hover {
+            opacity: 1;
+            transform: scale(1.1) rotate(15deg);
+            background: rgba(255, 255, 255, 0.2);
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(255,255,255,0.1);
         }
 
         #side-panel {
@@ -132,6 +139,13 @@
             font-size: 0.65rem; color: var(--accent); cursor: pointer; 
             text-transform: uppercase; font-weight: 900; 
             padding: 4px 8px; background: rgba(0,0,0,0.3); border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+        .reset-link:hover {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 10px var(--accent);
+            transform: scale(1.05);
         }
 
         .ios-switch {
@@ -181,12 +195,51 @@
             box-shadow: 0 0 15px var(--accent);
             transform: translateY(-1px);
         }
+
+        .factory-reset-btn {
+            color: #ff4444; background: none; border: 1px solid rgba(255, 68, 68, 0.2); 
+            font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; 
+            padding: 10px; border-radius: 10px; transition: all 0.3s ease;
+        }
+        .factory-reset-btn:hover {
+            color: #fff;
+            background: #ff4444;
+            border-color: #ff4444;
+            box-shadow: 0 0 20px rgba(255, 68, 68, 0.6);
+            transform: scale(0.98);
+        }
+
+        /* --- MODAL STYLES --- */
+        #confirm-modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
+            display: none; justify-content: center; align-items: center; z-index: 3000;
+            backdrop-filter: blur(10px);
+        }
+        .modal-box {
+            background: #111; border: 1px solid rgba(255,255,255,0.1);
+            padding: 30px; border-radius: 25px; text-align: center; max-width: 300px;
+        }
+        .modal-box h3 { margin-top: 0; color: #ff4444; }
+        .modal-box p { font-size: 0.85rem; opacity: 0.7; margin-bottom: 25px; }
+        .modal-btn { 
+            width: 100%; padding: 12px; border-radius: 12px; border: none; 
+            font-weight: bold; cursor: pointer; margin-bottom: 10px;
+        }
     </style>
 </head>
 <body>
 
     <div id="bg-layer"></div>
     <div id="overlay" onclick="toggleNav()"></div>
+
+    <div id="confirm-modal">
+        <div class="modal-box">
+            <h3>Reset System?</h3>
+            <p>This will permanently delete all saved themes and background settings.</p>
+            <button class="modal-btn" style="background: #ff4444; color: #fff;" onclick="performFactoryReset()">RESET EVERYTHING</button>
+            <button class="modal-btn" style="background: rgba(255,255,255,0.1); color: #fff;" onclick="closeModal()">CANCEL</button>
+        </div>
+    </div>
 
     <div id="hud-master">
         <div id="clock-widget" class="widget"><div id="clock">0:00</div></div>
@@ -198,7 +251,7 @@
     </div>
 
     <div id="nav-trigger" onclick="toggleNav(event)">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
     </div>
 
     <div id="side-panel">
@@ -279,7 +332,7 @@
                 <input type="color" id="color-accent" style="height:45px; width:100%; border:none; background:none;" onchange="state.accent = this.value; applyAll(); save();">
             </div>
 
-            <button onclick="localStorage.clear(); location.reload();" style="color:red; background:none; border:none; font-weight:bold; cursor:pointer; width:100%; margin-top:10px;">FACTORY RESET</button>
+            <button onclick="openModal()" class="factory-reset-btn">FACTORY RESET</button>
         </div>
     </div>
 
@@ -430,6 +483,10 @@
                 document.getElementById('icon-container').innerHTML = icon;
             } catch(e) {}
         }
+
+        function openModal() { document.getElementById('confirm-modal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('confirm-modal').style.display = 'none'; }
+        function performFactoryReset() { localStorage.clear(); location.reload(); }
 
         function nudge(id, v) { state['nudge' + id] = v; applyAll(); save(); }
         function resetWidget(id) { state['nudge' + id] = 0; state['show' + id.charAt(0).toUpperCase() + id.slice(1)] = true; applyAll(); save(); }
