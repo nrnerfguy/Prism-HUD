@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Prism OS Final Pro</title>
+    <title>Prism OS Ultra Static</title>
     <style>
         :root {
             --accent: #007AFF; 
@@ -41,20 +41,20 @@
             to { opacity: 1; transform: scale(1); filter: blur(0px); }
         }
 
+        /* REMOVED PARALLAX INSET AND TRANSFORM LOGIC */
         #bg-layer {
             position: fixed;
-            /* Extra inset margin to allow parallax movement without showing edges */
-            inset: -100px; 
+            inset: 0; 
             z-index: -1;
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
-            transition: opacity 0.3s, filter 0.3s, transform 0.15s ease-out;
+            transition: opacity 0.3s, filter 0.3s;
             pointer-events: none;
-            will-change: transform;
+            will-change: opacity, filter;
+            transform: none !important; /* Forces static placement */
         }
 
-        /* OLED SAFETY WRAPPER - Micro-shifts everything to prevent pixel burn */
         #safety-wrapper {
             width: 100%;
             height: 100%;
@@ -113,139 +113,62 @@
             transform: scale(1.1) rotate(15deg);
             background: rgba(255, 255, 255, 0.2);
             border-color: var(--accent);
-            box-shadow: 0 0 20px rgba(255,255,255,0.1);
         }
 
         #side-panel {
-            position: fixed; 
-            right: -380px; 
-            top: 0; 
-            bottom: 0; 
-            width: 360px; 
-            background: rgba(10, 10, 10, 0.98); 
-            backdrop-filter: blur(60px);
-            padding: 40px 25px; 
-            transition: right 0.4s var(--smooth-ease); 
-            z-index: 2000; 
-            overflow-y: auto;
-            border-left: 1px solid rgba(255,255,255,0.1); 
-            color: #fff;
-            scrollbar-width: none;
+            position: fixed; right: -380px; top: 0; bottom: 0; width: 360px; 
+            background: rgba(10, 10, 10, 0.98); backdrop-filter: blur(60px);
+            padding: 40px 25px; transition: right 0.4s var(--smooth-ease); 
+            z-index: 2000; overflow-y: auto; border-left: 1px solid rgba(255,255,255,0.1); 
+            color: #fff; scrollbar-width: none;
         }
         #side-panel.open { right: 0 !important; }
         #side-panel::-webkit-scrollbar { display: none; }
 
         .panel-content { display: flex; flex-direction: column; gap: 15px; padding-bottom: 80px; }
-        
-        .control-group { 
-            padding: 18px; 
-            background: rgba(255,255,255,0.05); 
-            border-radius: 20px; 
-            border: 1px solid transparent;
-            transition: 0.2s;
-            position: relative;
-        }
-        .control-group:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.1); }
+        .control-group { padding: 18px; background: rgba(255,255,255,0.05); border-radius: 20px; position: relative; }
 
         #weather-results {
-            position: absolute;
-            top: 95%; left: 18px; right: 18px;
-            background: rgba(20, 20, 20, 0.95);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 15px;
-            z-index: 3000;
-            max-height: 200px;
-            overflow-y: auto;
-            display: none;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            position: absolute; top: 95%; left: 18px; right: 18px;
+            background: rgba(20, 20, 20, 0.95); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 15px;
+            z-index: 3000; max-height: 200px; overflow-y: auto; display: none;
         }
-        .city-item {
-            padding: 12px 15px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            cursor: pointer;
-            font-size: 0.8rem;
-            transition: 0.2s;
-            text-align: left;
-        }
-        .city-item:hover { background: var(--accent); color: white; }
-        .city-item span { opacity: 0.6; font-size: 0.7rem; display: block; }
+        .city-item { padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; font-size: 0.8rem; }
+        .city-item:hover { background: var(--accent); }
 
         .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.5; font-weight: 800; }
+        .status-tag { font-size: 0.55rem; font-weight: 900; letter-spacing: 1px; margin-right: 10px; }
+        .status-tag.on { color: var(--accent); }
+        .reset-link { font-size: 0.65rem; color: var(--accent); cursor: pointer; text-transform: uppercase; font-weight: 900; }
 
-        .status-tag { font-size: 0.55rem; font-weight: 900; letter-spacing: 1px; margin-right: 10px; transition: 0.3s; }
-        .status-tag.off { opacity: 0.3; color: #fff; }
-        .status-tag.on { opacity: 1; color: var(--accent); }
-
-        .reset-link { 
-            font-size: 0.65rem; color: var(--accent); cursor: pointer; 
-            text-transform: uppercase; font-weight: 900; 
-            padding: 4px 8px; background: rgba(0,0,0,0.3); border-radius: 6px;
-            transition: all 0.2s ease;
-        }
-        .reset-link:hover {
-            background: var(--accent);
-            color: #fff;
-            box-shadow: 0 0 10px var(--accent);
-            transform: scale(1.05);
-        }
-
-        .ios-switch {
-            position: relative; width: 50px; height: 28px; background: rgba(255,255,255,0.1); border-radius: 20px; cursor: pointer; transition: all 0.3s ease;
-        }
+        .ios-switch { position: relative; width: 50px; height: 28px; background: rgba(255,255,255,0.1); border-radius: 20px; cursor: pointer; transition: 0.3s; }
         .ios-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 24px; height: 24px; background: #fff; border-radius: 50%; transition: 0.3s; }
         .ios-switch.active { background: var(--accent); }
         .ios-switch.active::after { transform: translateX(22px); }
-        
-        .ios-switch:hover { filter: brightness(1.3); box-shadow: 0 0 12px rgba(255,255,255,0.1); }
-        .ios-switch.active:hover { box-shadow: 0 0 15px var(--accent); }
 
-        .file-upload-btn {
-            display: block; width: 100%; padding: 12px;
-            background: rgba(255,255,255,0.1); border: 1px dashed rgba(255,255,255,0.3);
-            border-radius: 12px; color: #fff; text-align: center; font-size: 0.75rem; font-weight: 600; cursor: pointer; margin-bottom: 15px;
-            transition: all 0.3s var(--smooth-ease);
-        }
-        .file-upload-btn:hover { background: rgba(255, 255, 255, 0.15); border-color: var(--accent); box-shadow: 0 0 15px var(--accent); transform: translateY(-1px); }
-
+        .file-upload-btn { display: block; width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px dashed rgba(255,255,255,0.3); border-radius: 12px; text-align: center; font-size: 0.75rem; cursor: pointer; }
         .wallpaper-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 5px; }
-        #static-bg-preview { width: 70px; height: 70px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; position: relative; overflow: hidden; transition: 0.3s; }
-        #static-bg-preview.active { border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
-        #static-bg-preview input { position: absolute; opacity: 0; inset: 0; cursor: pointer; width: 100%; height: 100%; }
+        #static-bg-preview { width: 70px; height: 70px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.2); position: relative; overflow: hidden; }
+        #static-bg-preview.active { border-color: var(--accent); }
+        #static-bg-preview input { position: absolute; opacity: 0; inset: 0; cursor: pointer; }
 
-        .bg-thumb { width: 70px; height: 70px; border-radius: 12px; background-size: cover; background-position: center; border: 2px solid transparent; cursor: pointer; transition: 0.3s; opacity: 0.5; }
-        .bg-thumb.active { border-color: var(--accent); opacity: 1; transform: scale(1.05); }
+        .bg-thumb { width: 70px; height: 70px; border-radius: 12px; background-size: cover; background-position: center; cursor: pointer; transition: 0.3s; opacity: 0.5; }
+        .bg-thumb.active { border-color: var(--accent); opacity: 1; border: 2px solid var(--accent); }
 
         .theme-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.4); padding: 10px 12px; border-radius: 10px; margin-top: 8px; }
-        .theme-actions button { background: none; border: none; color: #fff; font-size: 0.7rem; font-weight: bold; cursor: pointer; opacity: 0.7; margin-left: 10px; }
-
-        input[type="text"] { width: 100%; background: #000; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 12px; border-radius: 12px; margin-top: 10px; outline: none; transition: 0.3s; }
-        input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(0,122,255,0.2); }
-        input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); margin-top: 10px; border-radius: 2px; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; background: #fff; border-radius: 50%; cursor: pointer; }
+        input[type="text"] { width: 100%; background: #000; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 12px; border-radius: 12px; margin-top: 10px; }
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); margin-top: 10px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 18px; width: 18px; background: #fff; border-radius: 50%; }
 
         #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; z-index: 1500; }
-        
-        .update-btn { 
-            background: var(--accent); color: white; border: none; width: 100%; padding: 12px; 
-            border-radius: 12px; margin-top: 10px; font-weight: bold; cursor: pointer; 
-            transition: all 0.3s var(--smooth-ease);
-        }
-        .update-btn:hover { filter: brightness(1.2); box-shadow: 0 0 15px var(--accent); transform: translateY(-1px); }
-
-        .factory-reset-btn {
-            color: #ff4444; background: none; border: 1px solid rgba(255, 68, 68, 0.2); 
-            font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; 
-            padding: 10px; border-radius: 10px; transition: all 0.3s ease;
-        }
-        .factory-reset-btn:hover { color: #fff; background: #ff4444; border-color: #ff4444; box-shadow: 0 0 20px rgba(255, 68, 68, 0.6); transform: scale(0.98); }
+        .update-btn { background: var(--accent); color: white; border: none; padding: 12px; border-radius: 12px; font-weight: bold; cursor: pointer; }
+        .factory-reset-btn { color: #ff4444; background: none; border: 1px solid rgba(255, 68, 68, 0.2); width: 100%; padding: 10px; border-radius: 10px; margin-top: 10px; font-weight: bold; }
 
         #confirm-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 3000; backdrop-filter: blur(10px); }
         .modal-box { background: #111; border: 1px solid rgba(255,255,255,0.1); padding: 30px; border-radius: 25px; text-align: center; max-width: 300px; }
-        .modal-box h3 { margin-top: 0; color: #ff4444; }
-        .modal-box p { font-size: 0.85rem; opacity: 0.7; margin-bottom: 25px; }
-        .modal-btn { width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
+        .modal-btn { width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: bold; margin-bottom: 10px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -256,7 +179,7 @@
     <div id="confirm-modal">
         <div class="modal-box">
             <h3>Reset System?</h3>
-            <p>This will permanently delete all saved themes and background settings.</p>
+            <p>This will permanently delete all saved themes and settings.</p>
             <button class="modal-btn" style="background: #ff4444; color: #fff;" onclick="performFactoryReset()">RESET EVERYTHING</button>
             <button class="modal-btn" style="background: rgba(255,255,255,0.1); color: #fff;" onclick="closeModal()">CANCEL</button>
         </div>
@@ -274,7 +197,7 @@
     </div>
 
     <div id="nav-trigger" onclick="toggleNav(event)">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
     </div>
 
     <div id="side-panel">
@@ -285,7 +208,7 @@
                 <label>Theme Manager</label>
                 <div style="display: flex; gap: 10px;">
                     <input type="text" id="theme-name" placeholder="Save as..." style="margin-top: 10px; flex-grow: 1;">
-                    <button onclick="saveTheme()" class="update-btn" style="width: auto; padding: 0 20px; margin-top: 10px;">SAVE</button>
+                    <button onclick="saveTheme()" class="update-btn" style="margin-top: 10px;">SAVE</button>
                 </div>
                 <div id="theme-list" style="margin-top: 15px;"></div>
             </div>
@@ -300,7 +223,6 @@
                 <label>Background</label>
                 <label for="bg-upload" class="file-upload-btn" style="margin-top: 15px;">CHOOSE FILE</label>
                 <input type="file" id="bg-upload" style="display:none;" onchange="handleBg(this)">
-                
                 <div class="wallpaper-grid">
                     <div id="static-bg-preview">
                         <input type="color" id="static-bg-picker" oninput="setStatic(this.value)">
@@ -311,17 +233,10 @@
 
             <div class="control-group">
                 <label>Background Effects</label>
-                <div class="row" style="margin-top: 15px;">
-                    <label style="font-size: 0.5rem;">Blur</label>
-                </div>
+                <div class="row" style="margin-top: 15px;"><label style="font-size: 0.5rem;">Blur</label></div>
                 <input type="range" min="0" max="40" step="1" value="0" oninput="state.blur=this.value; applyAll(); save();">
-                
-                <div class="row" style="margin-top: 10px;">
-                    <label style="font-size: 0.5rem;">Opacity</label>
-                </div>
+                <div class="row" style="margin-top: 10px;"><label style="font-size: 0.5rem;">Opacity</label></div>
                 <input type="range" min="0" max="1" step="0.01" value="1" oninput="state.bgOpacity=this.value; applyAll(); save();">
-
-                <div class="row" style="margin-top:15px;"><label>3D Parallax</label><div id="sw-parallax" class="ios-switch active" onclick="toggle('parallax')"></div></div>
             </div>
 
             <div class="control-group">
@@ -386,8 +301,7 @@
             nudgeclock: 0, nudgedate: 0, nudgeweather: 0,
             scale: 1, accent: '#007AFF', city: 'Calgary', bg: '', history: [],
             isStatic: false, staticColor: '#000000', blur: 0, bgOpacity: 1,
-            presets: {},
-            parallax: true, burnProtect: true // New default states
+            presets: {}, burnProtect: true
         };
 
         const icons = {
@@ -398,10 +312,10 @@
             storm: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9M13 11l-4 6h6l-4 6"></path></svg>`
         };
 
-        function save() { localStorage.setItem('prism_ultra_v2', JSON.stringify(state)); }
+        function save() { localStorage.setItem('prism_ultra_static', JSON.stringify(state)); }
 
         function load() {
-            const saved = localStorage.getItem('prism_ultra_v2');
+            const saved = localStorage.getItem('prism_ultra_static');
             if(saved) state = JSON.parse(saved);
             applyAll();
             renderHistory();
@@ -410,16 +324,7 @@
             fetchWeather();
         }
 
-        // --- NEW FEATURE: PARALLAX ENGINE ---
-        document.addEventListener('mousemove', (e) => {
-            if(!state.parallax) return;
-            const x = (window.innerWidth / 2 - e.clientX) / 30;
-            const y = (window.innerHeight / 2 - e.clientY) / 30;
-            const bg = document.getElementById('bg-layer');
-            bg.style.transform = `translate(${x}px, ${y}px) scale(1.1)`;
-        });
-
-        // --- NEW FEATURE: OLED BURN PROTECTION ---
+        // BURN PROTECTION LOGIC (MAINTAINED)
         function runOledSafety() {
             const wrapper = document.getElementById('safety-wrapper');
             if(!state.burnProtect) {
@@ -427,15 +332,12 @@
                 wrapper.style.opacity = '1';
                 return;
             }
-            // Visible move: 1-5 pixels randomly to shift static pixels
             const ox = (Math.random() - 0.5) * 6;
             const oy = (Math.random() - 0.5) * 6;
             wrapper.style.transform = `translate(${ox}px, ${oy}px)`;
-            
-            // Pulsing opacity slightly varies voltage across subpixels
             wrapper.style.opacity = 0.85 + (Math.random() * 0.15);
         }
-        setInterval(runOledSafety, 20000); // Shift every 20 seconds
+        setInterval(runOledSafety, 20000);
 
         async function searchCities(query) {
             const resultsBox = document.getElementById('weather-results');
@@ -453,41 +355,35 @@
                         resultsBox.appendChild(div);
                     });
                     resultsBox.style.display = 'block';
-                } else {
-                    resultsBox.style.display = 'none';
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) {}
         }
 
         function selectCity(name) {
             state.city = name;
             document.getElementById('city-input').value = name;
             document.getElementById('weather-results').style.display = 'none';
-            fetchWeather();
-            save();
+            fetchWeather(); save();
         }
 
         function saveTheme() {
             const name = document.getElementById('theme-name').value.trim();
             if (!name) return;
             const themeData = JSON.parse(JSON.stringify(state));
-            delete themeData.presets; 
+            delete themeData.presets;
             state.presets[name] = themeData;
             document.getElementById('theme-name').value = "";
             renderThemeList(); save();
         }
 
         function loadTheme(name) {
-            const savedPresets = state.presets; 
+            const savedPresets = state.presets;
             state = JSON.parse(JSON.stringify(state.presets[name]));
-            state.presets = savedPresets; 
+            state.presets = savedPresets;
             applyAll(); renderHistory(); save();
         }
 
-        function deleteTheme(name) {
-            delete state.presets[name];
-            renderThemeList(); save();
-        }
+        function deleteTheme(name) { delete state.presets[name]; renderThemeList(); save(); }
 
         function renderThemeList() {
             const list = document.getElementById('theme-list');
@@ -495,7 +391,7 @@
             Object.keys(state.presets).forEach(name => {
                 const item = document.createElement("div");
                 item.className = "theme-item";
-                item.innerHTML = `<span>${name}</span><div class="theme-actions"><button onclick="loadTheme('${name}')" style="color:var(--accent);">LOAD</button><button onclick="deleteTheme('${name}')" style="color:#ff4444;">✕</button></div>`;
+                item.innerHTML = `<span>${name}</span><div><button onclick="loadTheme('${name}')" style="background:none; border:none; color:var(--accent); cursor:pointer;">LOAD</button><button onclick="deleteTheme('${name}')" style="background:none; border:none; color:#ff4444; margin-left:10px; cursor:pointer;">✕</button></div>`;
                 list.appendChild(item);
             });
         }
@@ -508,34 +404,26 @@
             
             if(state.isStatic) {
                 document.body.style.backgroundColor = state.staticColor;
-                document.getElementById('static-bg-preview').style.backgroundColor = state.staticColor;
                 bgl.style.backgroundImage = 'none';
             } else {
                 document.body.style.backgroundColor = '#000';
                 bgl.style.backgroundImage = `url(${state.bg})`;
             }
 
-            document.getElementById('static-bg-preview').classList.toggle('active', state.isStatic);
             bgl.style.filter = `blur(${state.blur}px)`;
             bgl.style.opacity = state.bgOpacity;
 
             document.getElementById('sw-mirrored').classList.toggle('active', state.mirrored);
             document.getElementById('sw-is24h').classList.toggle('active', state.is24h);
-            
-            // New UI Switches state apply
-            document.getElementById('sw-parallax').classList.toggle('active', state.parallax);
             document.getElementById('sw-burnProtect').classList.toggle('active', state.burnProtect);
-            if(!state.parallax) bgl.style.transform = 'none';
 
             ['clock', 'date', 'weather'].forEach(key => {
                 const el = document.getElementById(key + '-widget');
                 const show = state['show' + key.charAt(0).toUpperCase() + key.slice(1)];
                 el.style.opacity = show ? 1 : 0;
                 el.style.transform = `translateY(${state['nudge' + key]}px)`;
-                
                 const sw = document.getElementById('sw-show' + key.charAt(0).toUpperCase() + key.slice(1));
                 if(sw) sw.classList.toggle('active', show);
-                
                 const statusTag = document.getElementById('st-' + key);
                 if(statusTag) {
                     statusTag.innerText = show ? 'SHOWN' : 'HIDDEN';
@@ -544,18 +432,16 @@
                 document.getElementById('range-' + key).value = state['nudge' + key];
             });
             document.getElementById('range-scale').value = state.scale;
-            document.getElementById('city-input').value = state.city;
         }
 
-        function setStatic(val) { state.staticColor = val; state.isStatic = true; applyAll(); renderHistory(); save(); }
+        function setStatic(val) { state.staticColor = val; state.isStatic = true; applyAll(); save(); }
 
         function handleBg(input) {
             const reader = new FileReader();
             reader.onload = e => {
-                const data = e.target.result;
-                state.bg = data;
+                state.bg = e.target.result;
                 state.isStatic = false;
-                state.history = [data, ...state.history.filter(x => x !== data)].slice(0, 3);
+                state.history = [state.bg, ...state.history.filter(x => x !== state.bg)].slice(0, 3);
                 applyAll(); renderHistory(); save();
             };
             reader.readAsDataURL(input.files[0]);
