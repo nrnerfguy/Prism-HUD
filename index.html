@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
+    <link rel="icon" type="image/png" href="logo.png">
+    <link rel="apple-touch-icon" href="logo.png">
+    
     <title>Prism OS Final</title>
     <style>
         :root {
@@ -85,6 +88,7 @@
         #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.8; font-weight: 300; margin-top: 10px; }
         #weather-widget { gap: 20px; opacity: 0.8; font-size: 2.4rem; font-weight: 200; margin-top: 10px;}
 
+        /* Settings Button & Ghost Logic */
         #nav-trigger {
             position: absolute; bottom: 40px; right: 40px;
             width: 65px; height: 65px;
@@ -92,11 +96,21 @@
             backdrop-filter: blur(15px);
             border: 1px solid rgba(255,255,255,0.2);
             border-radius: 50%; display: flex; justify-content: center; align-items: center;
-            z-index: 1000; cursor: pointer; transition: all 0.3s var(--smooth-ease);
+            z-index: 1000; cursor: pointer; 
+            transition: opacity 0.8s var(--smooth-ease), transform 0.3s var(--smooth-ease), background 0.3s, border-color 0.3s;
             opacity: 0.6; color: #fff;
         }
-        #nav-trigger:hover {
-            opacity: 1;
+        
+        /* Ghost container allows hovering over invisible button */
+        #nav-ghost-zone {
+            position: absolute;
+            bottom: 0; right: 0;
+            width: 150px; height: 150px;
+            z-index: 999;
+        }
+
+        #nav-trigger:hover, #nav-trigger.active-ui {
+            opacity: 1 !important;
             transform: scale(1.1) rotate(15deg);
             background: rgba(255, 255, 255, 0.2);
             border-color: var(--accent);
@@ -258,6 +272,8 @@
         </div>
     </div>
 
+    <div id="nav-ghost-zone" onmousemove="wakeNav()" onclick="wakeNav()"></div>
+    
     <div id="nav-trigger" onclick="toggleNav(event)">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
     </div>
@@ -372,6 +388,8 @@
             presets: {}, burnShield: true
         };
 
+        let navTimer;
+
         const icons = {
             sun: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>`,
             cloud: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`,
@@ -391,16 +409,28 @@
             updateClock();
             fetchWeather();
             startBurnShield();
+            wakeNav(); // Initialize the ghost timer
+        }
+
+        // Settings Button Ghost Logic
+        function wakeNav() {
+            const btn = document.getElementById('nav-trigger');
+            btn.style.opacity = "0.6";
+            clearTimeout(navTimer);
+            navTimer = setTimeout(() => {
+                // Fade out only if panel is closed
+                if(!document.getElementById('side-panel').classList.contains('open')) {
+                    btn.style.opacity = "0";
+                }
+            }, 3000);
         }
 
         async function searchCities(query) {
             const resultsBox = document.getElementById('weather-results');
             if (query.length < 2) { resultsBox.style.display = 'none'; return; }
-            
             try {
                 const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${query}&count=5&language=en&format=json`);
                 const data = await res.json();
-                
                 if (data.results) {
                     resultsBox.innerHTML = '';
                     data.results.forEach(city => {
@@ -514,7 +544,7 @@
                     hud.style.marginTop = "0px";
                     hud.style.marginLeft = "0px";
                 }
-            }, 60000); // Shift every 1 minute
+            }, 60000);
         }
 
         function setStatic(val) { state.staticColor = val; state.isStatic = true; applyAll(); renderHistory(); save(); }
@@ -577,7 +607,21 @@
         function nudge(id, v) { state['nudge' + id] = v; applyAll(); save(); }
         function resetWidget(id) { state['nudge' + id] = 0; state['show' + id.charAt(0).toUpperCase() + id.slice(1)] = true; applyAll(); save(); }
         function toggle(key) { state[key] = !state[key]; applyAll(); save(); }
-        function toggleNav(e) { if(e) e.stopPropagation(); const isOpen = document.getElementById('side-panel').classList.toggle('open'); document.getElementById('overlay').style.display = isOpen ? 'block' : 'none'; }
+        
+        function toggleNav(e) { 
+            if(e) e.stopPropagation(); 
+            const panel = document.getElementById('side-panel');
+            const isOpen = panel.classList.toggle('open'); 
+            document.getElementById('overlay').style.display = isOpen ? 'block' : 'none'; 
+            
+            // Manage ghost logic when opening/closing
+            if(isOpen) {
+                clearTimeout(navTimer);
+                document.getElementById('nav-trigger').style.opacity = "1";
+            } else {
+                wakeNav();
+            }
+        }
 
         load();
     </script>
