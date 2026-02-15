@@ -87,6 +87,7 @@
 
         #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.8; font-weight: 300; margin-top: 10px; }
         #weather-widget { gap: 20px; opacity: 0.8; font-size: 2.4rem; font-weight: 200; margin-top: 10px;}
+        #battery-widget { font-size: 1.2rem; font-weight: 700; opacity: 0.7; margin-top: 10px; letter-spacing: 2px; }
 
         /* Settings Button & Ghost Logic */
         #nav-trigger {
@@ -270,6 +271,7 @@
             <div id="icon-container"></div>
             <span id="temp">--°</span>
         </div>
+        <div id="battery-widget" class="widget"><span id="bat-val">--%</span></div>
     </div>
 
     <div id="nav-ghost-zone" onmousemove="wakeNav()" onclick="wakeNav()"></div>
@@ -289,6 +291,10 @@
                     <button onclick="saveTheme()" class="update-btn" style="width: auto; padding: 0 20px; margin-top: 10px;">SAVE</button>
                 </div>
                 <div id="theme-list" style="margin-top: 15px;"></div>
+            </div>
+
+            <div class="control-group">
+                <div class="row"><label>Desktop Fullscreen</label><div id="sw-fullscr" class="ios-switch" onclick="toggleFullscreen()"></div></div>
             </div>
             
             <div class="control-group">
@@ -366,6 +372,18 @@
             </div>
 
             <div class="control-group">
+                <div class="row"><label>Battery Widget</label><span class="reset-link" onclick="resetWidget('battery')">Reset</span></div>
+                <div class="row" style="margin-top: 10px;">
+                    <label style="font-size: 0.5rem;">Visibility</label>
+                    <div style="display: flex; align-items: center;">
+                        <span id="st-battery" class="status-tag">SHOWN</span>
+                        <div id="sw-showBattery" class="ios-switch active" onclick="toggle('showBattery')"></div>
+                    </div>
+                </div>
+                <input type="range" id="range-battery" min="-400" max="400" value="0" oninput="nudge('battery', this.value)">
+            </div>
+
+            <div class="control-group">
                 <label>Widget Scale</label>
                 <input type="range" id="range-scale" min="0.4" max="2.0" step="0.01" value="1" oninput="state.scale = this.value; applyAll(); save();">
             </div>
@@ -381,8 +399,8 @@
 
     <script>
         let state = {
-            mirrored: false, is24h: true, showClock: true, showDate: true, showWeather: true,
-            nudgeclock: 0, nudgedate: 0, nudgeweather: 0,
+            mirrored: false, is24h: true, showClock: true, showDate: true, showWeather: true, showBattery: true,
+            nudgeclock: 0, nudgedate: 0, nudgeweather: 0, nudgebattery: 0,
             scale: 1, accent: '#007AFF', city: 'Calgary', bg: '', history: [],
             isStatic: false, staticColor: '#000000', blur: 0, bgOpacity: 1,
             presets: {}, burnShield: true
@@ -407,18 +425,17 @@
             renderHistory();
             renderThemeList();
             updateClock();
+            updateBattery();
             fetchWeather();
             startBurnShield();
-            wakeNav(); // Initialize the ghost timer
+            wakeNav();
         }
 
-        // Settings Button Ghost Logic
         function wakeNav() {
             const btn = document.getElementById('nav-trigger');
             btn.style.opacity = "0.6";
             clearTimeout(navTimer);
             navTimer = setTimeout(() => {
-                // Fade out only if panel is closed
                 if(!document.getElementById('side-panel').classList.contains('open')) {
                     btn.style.opacity = "0";
                 }
@@ -488,6 +505,16 @@
             });
         }
 
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                document.getElementById('sw-fullscr').classList.add('active');
+            } else {
+                document.exitFullscreen();
+                document.getElementById('sw-fullscr').classList.remove('active');
+            }
+        }
+
         function applyAll() {
             const bgl = document.getElementById('bg-layer');
             document.documentElement.style.setProperty('--accent', state.accent);
@@ -511,7 +538,7 @@
             document.getElementById('sw-is24h').classList.toggle('active', state.is24h);
             document.getElementById('sw-burnShield').classList.toggle('active', state.burnShield);
 
-            ['clock', 'date', 'weather'].forEach(key => {
+            ['clock', 'date', 'weather', 'battery'].forEach(key => {
                 const el = document.getElementById(key + '-widget');
                 const show = state['show' + key.charAt(0).toUpperCase() + key.slice(1)];
                 el.style.opacity = show ? 1 : 0;
@@ -583,6 +610,18 @@
         }
         setInterval(updateClock, 1000);
 
+        async function updateBattery() {
+            try {
+                const b = await navigator.getBattery();
+                const update = () => {
+                    document.getElementById('bat-val').innerText = Math.round(b.level * 100) + "%" + (b.charging ? " ⚡" : "");
+                };
+                update();
+                b.onlevelchange = update;
+                b.onchargingchange = update;
+            } catch(e) { document.getElementById('battery-widget').style.display = 'none'; }
+        }
+
         async function fetchWeather() {
             try {
                 const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${state.city}&count=1`).then(r => r.json());
@@ -614,7 +653,6 @@
             const isOpen = panel.classList.toggle('open'); 
             document.getElementById('overlay').style.display = isOpen ? 'block' : 'none'; 
             
-            // Manage ghost logic when opening/closing
             if(isOpen) {
                 clearTimeout(navTimer);
                 document.getElementById('nav-trigger').style.opacity = "1";
