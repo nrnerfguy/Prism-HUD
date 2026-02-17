@@ -108,7 +108,6 @@
             opacity: 0.6; color: #fff;
         }
         
-        /* Ghost container allows hovering over invisible button */
         #nav-ghost-zone {
             position: absolute;
             bottom: 0; right: 0;
@@ -280,6 +279,7 @@
             <span id="temp">--°</span>
         </div>
         <div id="stock-widget" class="widget"><div id="stock-display"></div></div>
+
         <div id="battery-widget" class="widget"><span id="bat-val">--%</span></div>
     </div>
 
@@ -317,6 +317,7 @@
                 <input type="text" id="stock-input" placeholder="Add Stock (AAPL, BTC)..." onkeydown="if(event.key==='Enter'){addStock(this.value); this.value=''}">
                 <div id="stock-list" style="display:flex; flex-wrap:wrap; gap:5px; margin-top:10px;"></div>
             </div>
+
             <div class="control-group">
                 <label>Background</label>
                 <label for="bg-upload" class="file-upload-btn" style="margin-top: 15px;">CHOOSE FILE</label>
@@ -384,6 +385,7 @@
                 </div>
                 <input type="range" id="range-calendar" min="-400" max="400" value="0" oninput="nudge('calendar', this.value)">
             </div>
+
             <div class="control-group">
                 <div class="row"><label>Weather Widget</label><span class="reset-link" onclick="resetWidget('weather')">Reset</span></div>
                 <div class="row" style="margin-top: 10px;">
@@ -407,6 +409,7 @@
                 </div>
                 <input type="range" id="range-stock" min="-400" max="400" value="0" oninput="nudge('stock', this.value)">
             </div>
+
             <div class="control-group">
                 <div class="row"><label>Battery Widget</label><span class="reset-link" onclick="resetWidget('battery')">Reset</span></div>
                 <div class="row" style="margin-top: 10px;">
@@ -434,17 +437,19 @@
     </div>
 
     <script>
-        let state = {
+        // The core issue: Merging saved states safely so new keys aren't undefined!
+        const defaultState = {
             mirrored: false, is24h: true, showClock: true, showDate: true, showWeather: true, showBattery: true,
-            showCalendar: true, showStock: true, // INJECTED
+            showCalendar: true, showStock: true,
             nudgeclock: 0, nudgedate: 0, nudgeweather: 0, nudgebattery: 0,
-            nudgecalendar: 0, nudgestock: 0, // INJECTED
-            stocks: ['BTC', 'AAPL'], // INJECTED
+            nudgecalendar: 0, nudgestock: 0,
+            stocks: ['BTC', 'AAPL'], 
             scale: 1, accent: '#007AFF', city: 'Calgary', bg: '', history: [],
             isStatic: false, staticColor: '#000000', blur: 0, bgOpacity: 1,
             presets: {}, burnShield: true
         };
 
+        let state = { ...defaultState };
         let navTimer;
 
         const icons = {
@@ -459,11 +464,20 @@
 
         function load() {
             const saved = localStorage.getItem('prism_ultra_v2');
-            if(saved) state = JSON.parse(saved);
+            if(saved) {
+                // Merge old save with new defaults to prevent undefined crashes
+                const parsed = JSON.parse(saved);
+                state = { ...defaultState, ...parsed };
+                // Ensure nested arrays/objects didn't get overwritten with null from older formats
+                if (!state.stocks) state.stocks = [...defaultState.stocks];
+                if (!state.presets) state.presets = {};
+                if (state.history === null) state.history = [];
+            }
+            
             applyAll();
             renderHistory();
             renderThemeList();
-            renderStockList(); // INJECTED
+            renderStockList();
             updateClock();
             updateBattery();
             fetchWeather();
@@ -471,7 +485,6 @@
             wakeNav();
         }
 
-        // INJECTED FUNCTIONS
         function addStock(s) {
             s = s.toUpperCase().trim();
             if(s && !state.stocks.includes(s)) { state.stocks.push(s); renderStockList(); save(); }
@@ -487,10 +500,12 @@
                 tag.innerHTML = `${s} &times;`;
                 tag.onclick = () => { state.stocks = state.stocks.filter(x => x!==s); renderStockList(); save(); };
                 list.appendChild(tag);
-                hud.innerHTML += `<div class="stock-item"><span>${s}</span><span class="stock-price">$${(Math.random()*500).toFixed(2)}</span></div>`; // Simulating price
+                hud.innerHTML += `<div class="stock-item"><span>${s}</span><span class="stock-price">$${(Math.random()*500).toFixed(2)}</span></div>`;
             });
         }
+
         function toggleNav(e) {
+            if(e) e.stopPropagation();
             const panel = document.getElementById('side-panel');
             const open = panel.classList.toggle('open');
             document.getElementById('overlay').style.display = open ? 'block' : 'none';
@@ -514,7 +529,6 @@
             applyAll();
             save();
         }
-        // END INJECTED FUNCTIONS
 
         function wakeNav() {
             const btn = document.getElementById('nav-trigger');
@@ -623,12 +637,14 @@
             document.getElementById('sw-is24h').classList.toggle('active', state.is24h);
             document.getElementById('sw-burnShield').classList.toggle('active', state.burnShield);
 
-            // INJECTED: Added calendar and stock to array
             ['clock', 'date', 'calendar', 'weather', 'stock', 'battery'].forEach(key => {
                 const el = document.getElementById(key + '-widget');
                 const show = state['show' + key.charAt(0).toUpperCase() + key.slice(1)];
-                el.style.opacity = show ? 1 : 0;
-                el.style.transform = `translateY(${state['nudge' + key]}px)`;
+                
+                if(el) {
+                    el.style.opacity = show ? 1 : 0;
+                    el.style.transform = `translateY(${state['nudge' + key]}px)`;
+                }
                 
                 const sw = document.getElementById('sw-show' + key.charAt(0).toUpperCase() + key.slice(1));
                 if(sw) sw.classList.toggle('active', show);
@@ -648,14 +664,13 @@
 
         function startBurnShield() {
             setInterval(() => {
+                const hud = document.getElementById('hud-master');
                 if (state.burnShield) {
-                    const hud = document.getElementById('hud-master');
                     const offsetX = (Math.random() * 4 - 2) + "px";
                     const offsetY = (Math.random() * 4 - 2) + "px";
                     hud.style.marginTop = offsetY;
                     hud.style.marginLeft = offsetX;
                 } else {
-                    const hud = document.getElementById('hud-master');
                     hud.style.marginTop = "0px";
                     hud.style.marginLeft = "0px";
                 }
@@ -665,6 +680,7 @@
         function setStatic(val) { state.staticColor = val; state.isStatic = true; applyAll(); renderHistory(); save(); }
 
         function handleBg(input) {
+            if(!input.files[0]) return;
             const reader = new FileReader();
             reader.onload = e => {
                 const data = e.target.result;
@@ -695,14 +711,13 @@
             if (!state.is24h) h = h % 12 || 12;
             document.getElementById('clock').innerText = `${h}:${m}`;
             document.getElementById('date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
-            
-            // INJECTED: Calendar update
             document.getElementById('cal-text').innerText = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + " // SESSION 0" + (now.getDay()+1);
         }
         setInterval(updateClock, 1000);
 
         async function updateBattery() {
             try {
+                if(!navigator.getBattery) throw new Error("Not supported");
                 const b = await navigator.getBattery();
                 const update = () => {
                     document.getElementById('bat-val').innerText = Math.round(b.level * 100) + "%" + (b.charging ? " ⚡" : "");
@@ -715,14 +730,16 @@
 
         async function fetchWeather() {
             try {
+                if(!state.city) return;
                 const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${state.city}&count=1`).then(r => r.json());
-                if(!geo.results) return;
+                if(!geo.results || !geo.results.length) return;
                 const { latitude, longitude } = geo.results[0];
-                const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code`).then(r => r.json());
-                document.getElementById('temp').innerText = Math.round(w.current.temperature_2m) + "°";
+                const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`).then(r => r.json());
+                if(!w.current_weather) return;
                 
-                // Keep the exact weather code logic you had, assumed cut off in your prompt but restored here based on standard open-meteo codes
-                const code = w.current.weather_code;
+                document.getElementById('temp').innerText = Math.round(w.current_weather.temperature) + "°";
+                
+                const code = w.current_weather.weathercode;
                 let icon = icons.sun;
                 if(code >= 1 && code <= 3) icon = icons.cloud;
                 if(code >= 51 && code <= 67) icon = icons.rain;
@@ -730,7 +747,7 @@
                 if(code >= 95) icon = icons.storm;
                 document.getElementById('icon-container').innerHTML = icon;
                 
-            } catch (e) { console.error(e); }
+            } catch (e) { console.error("Weather failed:", e); }
         }
 
         function openModal() { document.getElementById('confirm-modal').style.display = 'flex'; }
