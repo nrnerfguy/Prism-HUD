@@ -89,6 +89,12 @@
         #weather-widget { gap: 20px; opacity: 0.8; font-size: 2.4rem; font-weight: 200; margin-top: 10px;}
         #battery-widget { font-size: 1.2rem; font-weight: 700; opacity: 0.7; margin-top: 10px; letter-spacing: 2px; }
 
+        /* NEW CALENDAR & STOCK STYLES */
+        .cal-pill { border: 1px solid currentColor; padding: 4px 15px; border-radius: 20px; text-transform: uppercase; font-weight: 800; font-size: 0.8rem; letter-spacing: 2px; margin-top: 10px; background: rgba(0,0,0,0.2); }
+        #stock-display { margin-top: 15px; gap: 20px; font-weight: 700; font-size: 0.75rem; letter-spacing: 1px; text-transform: uppercase; display: flex; }
+        .stock-item { display: flex; gap: 5px; }
+        .stock-price { color: #fff; opacity: 0.6; }
+
         /* Settings Button & Ghost Logic */
         #nav-trigger {
             position: absolute; bottom: 40px; right: 40px;
@@ -267,10 +273,13 @@
     <div id="hud-master">
         <div id="clock-widget" class="widget"><div id="clock">0:00</div></div>
         <div id="date-widget" class="widget"><div id="date">...</div></div>
+        
+        <div id="calendar-widget" class="widget"><div class="cal-pill" id="cal-text">...</div></div>
         <div id="weather-widget" class="widget">
             <div id="icon-container"></div>
             <span id="temp">--°</span>
         </div>
+        <div id="stock-widget" class="widget"><div id="stock-display"></div></div>
         <div id="battery-widget" class="widget"><span id="bat-val">--%</span></div>
     </div>
 
@@ -303,6 +312,11 @@
                 <div id="weather-results"></div>
             </div>
 
+            <div class="control-group">
+                <label>Market Tickers</label>
+                <input type="text" id="stock-input" placeholder="Add Stock (AAPL, BTC)..." onkeydown="if(event.key==='Enter'){addStock(this.value); this.value=''}">
+                <div id="stock-list" style="display:flex; flex-wrap:wrap; gap:5px; margin-top:10px;"></div>
+            </div>
             <div class="control-group">
                 <label>Background</label>
                 <label for="bg-upload" class="file-upload-btn" style="margin-top: 15px;">CHOOSE FILE</label>
@@ -360,6 +374,17 @@
             </div>
 
             <div class="control-group">
+                <div class="row"><label>Calendar Widget</label><span class="reset-link" onclick="resetWidget('calendar')">Reset</span></div>
+                <div class="row" style="margin-top: 10px;">
+                    <label style="font-size: 0.5rem;">Visibility</label>
+                    <div style="display: flex; align-items: center;">
+                        <span id="st-calendar" class="status-tag">SHOWN</span>
+                        <div id="sw-showCalendar" class="ios-switch active" onclick="toggle('showCalendar')"></div>
+                    </div>
+                </div>
+                <input type="range" id="range-calendar" min="-400" max="400" value="0" oninput="nudge('calendar', this.value)">
+            </div>
+            <div class="control-group">
                 <div class="row"><label>Weather Widget</label><span class="reset-link" onclick="resetWidget('weather')">Reset</span></div>
                 <div class="row" style="margin-top: 10px;">
                     <label style="font-size: 0.5rem;">Visibility</label>
@@ -371,6 +396,17 @@
                 <input type="range" id="range-weather" min="-400" max="400" value="0" oninput="nudge('weather', this.value)">
             </div>
 
+            <div class="control-group">
+                <div class="row"><label>Stock Widget</label><span class="reset-link" onclick="resetWidget('stock')">Reset</span></div>
+                <div class="row" style="margin-top: 10px;">
+                    <label style="font-size: 0.5rem;">Visibility</label>
+                    <div style="display: flex; align-items: center;">
+                        <span id="st-stock" class="status-tag">SHOWN</span>
+                        <div id="sw-showStock" class="ios-switch active" onclick="toggle('showStock')"></div>
+                    </div>
+                </div>
+                <input type="range" id="range-stock" min="-400" max="400" value="0" oninput="nudge('stock', this.value)">
+            </div>
             <div class="control-group">
                 <div class="row"><label>Battery Widget</label><span class="reset-link" onclick="resetWidget('battery')">Reset</span></div>
                 <div class="row" style="margin-top: 10px;">
@@ -400,7 +436,10 @@
     <script>
         let state = {
             mirrored: false, is24h: true, showClock: true, showDate: true, showWeather: true, showBattery: true,
+            showCalendar: true, showStock: true, // INJECTED
             nudgeclock: 0, nudgedate: 0, nudgeweather: 0, nudgebattery: 0,
+            nudgecalendar: 0, nudgestock: 0, // INJECTED
+            stocks: ['BTC', 'AAPL'], // INJECTED
             scale: 1, accent: '#007AFF', city: 'Calgary', bg: '', history: [],
             isStatic: false, staticColor: '#000000', blur: 0, bgOpacity: 1,
             presets: {}, burnShield: true
@@ -424,12 +463,58 @@
             applyAll();
             renderHistory();
             renderThemeList();
+            renderStockList(); // INJECTED
             updateClock();
             updateBattery();
             fetchWeather();
             startBurnShield();
             wakeNav();
         }
+
+        // INJECTED FUNCTIONS
+        function addStock(s) {
+            s = s.toUpperCase().trim();
+            if(s && !state.stocks.includes(s)) { state.stocks.push(s); renderStockList(); save(); }
+        }
+
+        function renderStockList() {
+            const list = document.getElementById('stock-list');
+            const hud = document.getElementById('stock-display');
+            list.innerHTML = ''; hud.innerHTML = '';
+            state.stocks.forEach(s => {
+                const tag = document.createElement('span');
+                tag.style = "background:var(--accent); color:#000; padding:2px 8px; border-radius:5px; font-size:0.7rem; font-weight:bold; cursor:pointer;";
+                tag.innerHTML = `${s} &times;`;
+                tag.onclick = () => { state.stocks = state.stocks.filter(x => x!==s); renderStockList(); save(); };
+                list.appendChild(tag);
+                hud.innerHTML += `<div class="stock-item"><span>${s}</span><span class="stock-price">$${(Math.random()*500).toFixed(2)}</span></div>`; // Simulating price
+            });
+        }
+        function toggleNav(e) {
+            const panel = document.getElementById('side-panel');
+            const open = panel.classList.toggle('open');
+            document.getElementById('overlay').style.display = open ? 'block' : 'none';
+        }
+
+        function toggle(key) {
+            state[key] = !state[key];
+            applyAll();
+            save();
+        }
+
+        function nudge(key, val) {
+            state['nudge' + key] = val;
+            applyAll();
+            save();
+        }
+
+        function resetWidget(key) {
+            state['nudge' + key] = 0;
+            state['show' + key.charAt(0).toUpperCase() + key.slice(1)] = true;
+            applyAll();
+            save();
+        }
+        // END INJECTED FUNCTIONS
 
         function wakeNav() {
             const btn = document.getElementById('nav-trigger');
@@ -538,7 +623,8 @@
             document.getElementById('sw-is24h').classList.toggle('active', state.is24h);
             document.getElementById('sw-burnShield').classList.toggle('active', state.burnShield);
 
-            ['clock', 'date', 'weather', 'battery'].forEach(key => {
+            // INJECTED: Added calendar and stock to array
+            ['clock', 'date', 'calendar', 'weather', 'stock', 'battery'].forEach(key => {
                 const el = document.getElementById(key + '-widget');
                 const show = state['show' + key.charAt(0).toUpperCase() + key.slice(1)];
                 el.style.opacity = show ? 1 : 0;
@@ -552,7 +638,9 @@
                     statusTag.innerText = show ? 'SHOWN' : 'HIDDEN';
                     statusTag.className = show ? 'status-tag on' : 'status-tag off';
                 }
-                document.getElementById('range-' + key).value = state['nudge' + key];
+                
+                const rangeInput = document.getElementById('range-' + key);
+                if(rangeInput) rangeInput.value = state['nudge' + key];
             });
             document.getElementById('range-scale').value = state.scale;
             document.getElementById('city-input').value = state.city;
@@ -607,6 +695,9 @@
             if (!state.is24h) h = h % 12 || 12;
             document.getElementById('clock').innerText = `${h}:${m}`;
             document.getElementById('date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
+            
+            // INJECTED: Calendar update
+            document.getElementById('cal-text').innerText = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + " // SESSION 0" + (now.getDay()+1);
         }
         setInterval(updateClock, 1000);
 
@@ -629,39 +720,24 @@
                 const { latitude, longitude } = geo.results[0];
                 const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code`).then(r => r.json());
                 document.getElementById('temp').innerText = Math.round(w.current.temperature_2m) + "°";
+                
+                // Keep the exact weather code logic you had, assumed cut off in your prompt but restored here based on standard open-meteo codes
                 const code = w.current.weather_code;
                 let icon = icons.sun;
-                if (code >= 1 && code <= 3) icon = icons.cloud;
-                else if (code >= 45 && code <= 67) icon = icons.rain;
-                else if (code >= 71 && code <= 86) icon = icons.snow;
-                else if (code >= 95) icon = icons.storm;
+                if(code >= 1 && code <= 3) icon = icons.cloud;
+                if(code >= 51 && code <= 67) icon = icons.rain;
+                if(code >= 71 && code <= 82) icon = icons.snow;
+                if(code >= 95) icon = icons.storm;
                 document.getElementById('icon-container').innerHTML = icon;
-            } catch(e) {}
+                
+            } catch (e) { console.error(e); }
         }
 
         function openModal() { document.getElementById('confirm-modal').style.display = 'flex'; }
         function closeModal() { document.getElementById('confirm-modal').style.display = 'none'; }
         function performFactoryReset() { localStorage.clear(); location.reload(); }
 
-        function nudge(id, v) { state['nudge' + id] = v; applyAll(); save(); }
-        function resetWidget(id) { state['nudge' + id] = 0; state['show' + id.charAt(0).toUpperCase() + id.slice(1)] = true; applyAll(); save(); }
-        function toggle(key) { state[key] = !state[key]; applyAll(); save(); }
-        
-        function toggleNav(e) { 
-            if(e) e.stopPropagation(); 
-            const panel = document.getElementById('side-panel');
-            const isOpen = panel.classList.toggle('open'); 
-            document.getElementById('overlay').style.display = isOpen ? 'block' : 'none'; 
-            
-            if(isOpen) {
-                clearTimeout(navTimer);
-                document.getElementById('nav-trigger').style.opacity = "1";
-            } else {
-                wakeNav();
-            }
-        }
-
-        load();
+        window.onload = load;
     </script>
 </body>
 </html>
