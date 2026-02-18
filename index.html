@@ -87,7 +87,11 @@
 
         #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.8; font-weight: 300; margin-top: 10px; }
         #weather-widget { gap: 20px; opacity: 0.8; font-size: 2.4rem; font-weight: 200; margin-top: 10px;}
-        #battery-widget { font-size: 1.2rem; font-weight: 600; opacity: 0.8; margin-top: 10px; letter-spacing: 4px; }
+        
+        /* Updated Battery Styles */
+        #battery-widget { font-size: 1.2rem; font-weight: 600; opacity: 0.8; margin-top: 10px; letter-spacing: 4px; display: flex; align-items: center; gap: 12px; }
+        .charging-pulse { animation: batteryPulse 2s infinite ease-in-out; }
+        @keyframes batteryPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
         /* Settings Button & Ghost Logic */
         #nav-trigger {
@@ -102,7 +106,6 @@
             opacity: 0.6; color: #fff;
         }
         
-        /* Ghost container allows hovering over invisible button */
         #nav-ghost-zone {
             position: absolute;
             bottom: 0; right: 0;
@@ -271,7 +274,10 @@
             <div id="icon-container"></div>
             <span id="temp">--°</span>
         </div>
-        <div id="battery-widget" class="widget"><div id="battery">--%</div></div>
+        <div id="battery-widget" class="widget">
+            <div id="battery-icon"></div>
+            <div id="battery">--%</div>
+        </div>
     </div>
 
     <div id="nav-ghost-zone" onmousemove="wakeNav()" onclick="wakeNav()"></div>
@@ -410,6 +416,14 @@
             rain: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M16 13v8M8 13v8M12 15v8M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"></path></svg>`,
             snow: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25M8 16h.01M8 20h.01M12 18h.01M12 22h.01M16 16h.01M16 20h.01"></path></svg>`,
             storm: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9M13 11l-4 6h6l-4 6"></path></svg>`
+        };
+
+        const batIcons = {
+            bolt: `<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="currentColor" stroke="none"/>`,
+            empty: `<rect x="2" y="7" width="16" height="10" rx="2" stroke="currentColor" fill="none" stroke-width="2"/><path d="M22 11v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
+            low: `<rect x="2" y="7" width="16" height="10" rx="2" stroke="currentColor" fill="none" stroke-width="2"/><rect x="4" y="9" width="4" height="6" fill="currentColor"/><path d="M22 11v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
+            mid: `<rect x="2" y="7" width="16" height="10" rx="2" stroke="currentColor" fill="none" stroke-width="2"/><rect x="4" y="9" width="8" height="6" fill="currentColor"/><path d="M22 11v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
+            full: `<rect x="2" y="7" width="16" height="10" rx="2" stroke="currentColor" fill="none" stroke-width="2"/><rect x="4" y="9" width="12" height="6" fill="currentColor"/><path d="M22 11v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`
         };
 
         function save() { localStorage.setItem('prism_ultra_v2', JSON.stringify(state)); }
@@ -599,8 +613,28 @@
         async function updateBattery() {
             try {
                 const b = await navigator.getBattery();
-                const u = () => { document.getElementById('battery').innerText = Math.round(b.level * 100) + "%"; };
-                u(); b.onlevelchange = u;
+                const updateUI = () => {
+                    const level = Math.round(b.level * 100);
+                    const isCharging = b.charging;
+                    
+                    // Update Icon
+                    let path = batIcons.full;
+                    if(level <= 10) path = batIcons.empty;
+                    else if(level <= 30) path = batIcons.low;
+                    else if(level <= 70) path = batIcons.mid;
+                    
+                    if(isCharging) path += batIcons.bolt;
+
+                    document.getElementById('battery-icon').innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2">${path}</svg>`;
+                    
+                    // Update Text & Pulse
+                    const batText = document.getElementById('battery');
+                    batText.innerText = level + "%";
+                    batText.classList.toggle('charging-pulse', isCharging);
+                };
+                updateUI();
+                b.onlevelchange = updateUI;
+                b.onchargingchange = updateUI;
             } catch(e) { document.getElementById('battery-widget').style.display = 'none'; }
         }
 
