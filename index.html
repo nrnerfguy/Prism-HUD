@@ -5,649 +5,736 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="apple-touch-icon" href="logo.png">
-    <title>Prism OS | Ultra-Dense Kernel</title>
+    
+    <title>Prism OS</title>
     <style>
-        /* PRISM OS KERNEL STYLESHEET 
-           VERSION: 4.5.0
-           MODULE: UI-DENSITY-MAX
-        */
         :root {
             --accent: #007AFF; 
-            --accent-rgb: 0, 122, 255;
-            --bg-opacity: 1;
-            --bg-blur: 0px;
             --smooth-ease: cubic-bezier(0.4, 0, 0.2, 1);
             --slow-ease: cubic-bezier(0.65, 0, 0.35, 1);
-            --bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
-            --widget-shadow: 0px 10px 40px rgba(0,0,0,0.8);
-            --glass: rgba(255, 255, 255, 0.03);
-            --glass-border: rgba(255, 255, 255, 0.08);
+            --widget-shadow: drop-shadow(0px 0px 12px rgba(0,0,0,0.9));
         }
 
-        * { 
-            box-sizing: border-box; 
-            -webkit-tap-highlight-color: transparent; 
-            user-select: none;
-            -webkit-user-select: none;
-            outline: none;
-        }
-
-        @keyframes scanline {
-            0% { transform: translateY(-100%); }
-            100% { transform: translateY(100%); }
-        }
-
-        @keyframes noise {
-            0% { transform: translate(0,0) }
-            10% { transform: translate(-5%,-5%) }
-            20% { transform: translate(-10%,5%) }
-            30% { transform: translate(5%,-10%) }
-            40% { transform: translate(-5%,15%) }
-            50% { transform: translate(-10%,5%) }
-            60% { transform: translate(15%,0) }
-            70% { transform: translate(0,10%) }
-            80% { transform: translate(-15%,0) }
-            90% { transform: translate(10%,5%) }
-            100% { transform: translate(5%,0) }
-        }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         html, body {
-            background-color: #000; color: #fff; margin: 0; padding: 0;
-            width: 100vw; height: 100vh; height: 100dvh;
-            display: flex; justify-content: center; align-items: center;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, sans-serif;
+            background-color: #000;
+            color: #fff;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: -apple-system, system-ui, sans-serif;
             overflow: hidden;
-            perspective: 1000px;
         }
 
-        body { animation: pageEntrance 2.2s var(--slow-ease) forwards; opacity: 0; }
-        
+        body {
+            animation: pageEntrance 1.5s var(--slow-ease) forwards;
+            opacity: 0;
+        }
+
         @keyframes pageEntrance {
-            from { opacity: 0; transform: scale(1.1) translateZ(-100px); filter: blur(20px); }
-            to { opacity: 1; transform: scale(1) translateZ(0); filter: blur(0px); }
+            from { opacity: 0; transform: scale(1.03); filter: blur(5px); }
+            to { opacity: 1; transform: scale(1); filter: blur(0px); }
         }
 
         #bg-layer {
-            position: fixed; inset: -150px; z-index: -2;
-            background-size: cover; background-position: center; background-repeat: no-repeat;
-            transition: opacity 1.2s ease, filter 1.2s ease, transform 0.1s linear;
-            filter: blur(var(--bg-blur)) brightness(0.6); opacity: var(--bg-opacity);
-            will-change: transform, opacity;
-        }
-
-        #vignette {
-            position: fixed; inset: 0; z-index: -1;
-            background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.4) 100%);
+            position: fixed;
+            inset: -50px; 
+            z-index: -1;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            transition: opacity 0.3s, filter 0.3s;
             pointer-events: none;
         }
 
         #hud-master {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            text-align: center; transition: transform 1s var(--smooth-ease), opacity 0.5s ease;
-            will-change: transform; position: relative; z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            transition: transform 0.8s var(--smooth-ease), margin 1s ease-in-out;
+            will-change: transform, margin;
         }
 
         .widget { 
-            transition: all 0.6s var(--smooth-ease); 
+            transition: opacity 0.4s ease; 
             color: var(--accent); 
-            filter: drop-shadow(var(--widget-shadow)); 
+            filter: var(--widget-shadow);
             width: 100%;
-            display: flex; justify-content: center; align-items: center;
-            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
 
-        /* --- CLOCK MODULE --- */
-        #clock-container { position: relative; margin-bottom: 10px; }
         #clock { 
-            font-size: clamp(6rem, 30vw, 16rem); 
+            font-size: clamp(5rem, 25vw, 12rem); 
             font-weight: 900; 
             font-style: italic; 
-            letter-spacing: -8px; 
-            line-height: 0.85; 
-            text-shadow: 0px 15px 45px rgba(0,0,0,0.7);
-            padding: 0 30px;
-            background: linear-gradient(180deg, #fff 30%, rgba(255,255,255,0.4) 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
+            letter-spacing: -4px; 
+            line-height: 1; 
+            text-shadow: 0px 0px 20px rgba(0,0,0,0.5);
         }
 
-        #date { 
-            font-size: 1.6rem; 
-            text-transform: uppercase; 
-            letter-spacing: 12px; 
-            opacity: 0.8; 
-            font-weight: 200; 
-            margin-top: -10px;
-            color: var(--accent);
-            text-shadow: 0 0 20px rgba(var(--accent-rgb), 0.5);
-        }
+        #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.8; font-weight: 300; margin-top: 10px; }
+        #weather-widget { gap: 20px; opacity: 0.8; font-size: 2.4rem; font-weight: 200; margin-top: 10px;}
+        #battery-widget { font-size: 1.2rem; font-weight: 700; opacity: 0.7; margin-top: 10px; letter-spacing: 2px; }
 
-        /* --- APPLE CALENDAR ENGINE --- */
-        #calendar-widget { 
-            margin-top: 30px; 
-            flex-direction: column; 
-            background: var(--glass); 
-            padding: 25px; 
-            border-radius: 32px; 
-            backdrop-filter: blur(30px); 
-            border: 1px solid var(--glass-border); 
-            width: 320px; 
-            box-shadow: inset 0 0 20px rgba(255,255,255,0.02);
-        }
-        .cal-header { 
-            font-size: 0.85rem; 
-            font-weight: 900; 
-            letter-spacing: 4px; 
-            margin-bottom: 15px; 
-            color: #fff;
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-        }
-        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; width: 100%; }
-        .cal-day { font-size: 0.8rem; padding: 8px; text-align: center; border-radius: 10px; color: rgba(255,255,255,0.9); font-weight: 500; transition: 0.3s; }
-        .cal-day.today { 
-            background: var(--accent); 
-            color: #000; 
-            font-weight: 900; 
-            box-shadow: 0 8px 20px rgba(var(--accent-rgb), 0.4); 
-            transform: scale(1.1);
-        }
-        .cal-label { font-size: 0.65rem; opacity: 0.3; font-weight: 900; text-transform: uppercase; }
+        /* --- NEW INTEGRATED STYLES --- */
+        #calendar-widget { margin-top: 20px; flex-direction: column; background: rgba(255,255,255,0.05); padding: 20px; border-radius: 20px; backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); width: 280px; display: none; }
+        .cal-header { font-size: 0.7rem; font-weight: 900; letter-spacing: 3px; margin-bottom: 10px; color: #fff; display: flex; justify-content: space-between; width: 100%; opacity: 0.6; }
+        .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; width: 100%; }
+        .cal-day { font-size: 0.7rem; padding: 5px; text-align: center; color: #fff; }
+        .cal-day.today { background: var(--accent); color: #fff; border-radius: 6px; font-weight: 900; }
 
-        /* --- MARKET TICKER MODULE --- */
-        #market-widget { 
-            margin-top: 40px; 
-            gap: 20px; 
-            display: flex; 
-            flex-wrap: wrap; 
-            justify-content: center; 
-            max-width: 500px;
-        }
-        .ticker-box { 
-            background: var(--glass); 
-            padding: 15px 20px; 
-            border-radius: 20px; 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            min-width: 100px;
-            border: 1px solid var(--glass-border);
-            transition: transform 0.4s var(--bounce);
-        }
-        .ticker-box:hover { transform: translateY(-10px) scale(1.05); background: rgba(255,255,255,0.06); }
-        .t-sym { font-size: 0.65rem; font-weight: 900; opacity: 0.5; color: #fff; letter-spacing: 1px; }
-        .t-val { font-size: 1.1rem; font-weight: 800; color: #fff; margin: 4px 0; font-variant-numeric: tabular-nums; }
-        .t-pct { font-size: 0.7rem; font-weight: 900; padding: 2px 8px; border-radius: 6px; }
-        .t-up { color: #30D158; background: rgba(48, 209, 88, 0.1); } 
-        .t-down { color: #FF453A; background: rgba(255, 69, 58, 0.1); }
+        #market-widget { margin-top: 15px; gap: 10px; display: none; flex-wrap: wrap; justify-content: center; max-width: 400px; }
+        .ticker { background: rgba(0,0,0,0.3); padding: 8px 12px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.05); display: flex; flex-direction: column; min-width: 80px; }
+        .t-sym { font-size: 0.55rem; font-weight: 900; opacity: 0.4; }
+        .t-val { font-size: 0.8rem; font-weight: 800; color: #fff; }
+        .t-pct { font-size: 0.6rem; font-weight: 900; }
+        .up { color: #30D158; } .down { color: #FF453A; }
 
-        /* --- WEATHER & BIO-SYSTEMS --- */
-        #weather-widget { gap: 20px; font-size: 3.2rem; font-weight: 100; margin-top: 25px; }
-        #weather-widget svg { width: 55px; height: 55px; filter: drop-shadow(0 0 10px var(--accent)); }
-        #temp { font-variant-numeric: tabular-nums; letter-spacing: -2px; }
-        
-        #battery-widget { 
-            font-size: 1rem; 
-            font-weight: 900; 
-            opacity: 0.5; 
-            margin-top: 20px; 
-            letter-spacing: 5px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .bat-icon { width: 35px; height: 18px; border: 2px solid #fff; border-radius: 4px; position: relative; padding: 2px; }
-        .bat-level { height: 100%; background: var(--accent); border-radius: 1px; transition: width 1s ease; }
-
-        /* --- SETTINGS NAVIGATION --- */
+        /* Settings Button & Ghost Logic */
         #nav-trigger {
-            position: absolute; bottom: 50px; right: 50px; width: 80px; height: 80px;
-            background: rgba(255, 255, 255, 0.05); backdrop-filter: blur(25px);
-            border: 1px solid var(--glass-border); border-radius: 50%;
-            display: flex; justify-content: center; align-items: center; z-index: 1000;
-            cursor: pointer; transition: 0.7s var(--bounce); opacity: 0; color: #fff;
+            position: absolute; bottom: 40px; right: 40px;
+            width: 65px; height: 65px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50%; display: flex; justify-content: center; align-items: center;
+            z-index: 1000; cursor: pointer; 
+            transition: opacity 0.8s var(--smooth-ease), transform 0.3s var(--smooth-ease), background 0.3s, border-color 0.3s;
+            opacity: 0.6; color: #fff;
+        }
+        
+        /* Ghost container allows hovering over invisible button */
+        #nav-ghost-zone {
+            position: absolute;
+            bottom: 0; right: 0;
+            width: 150px; height: 150px;
+            z-index: 999;
+        }
+
+        #nav-trigger:hover, #nav-trigger.active-ui {
+            opacity: 1 !important;
+            transform: scale(1.1) rotate(15deg);
+            background: rgba(255, 255, 255, 0.2);
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(255,255,255,0.1);
+        }
+
+        #side-panel {
+            position: fixed; 
+            right: -380px; 
+            top: 0; 
+            bottom: 0; 
+            width: 360px; 
+            background: rgba(10, 10, 10, 0.98); 
+            backdrop-filter: blur(60px);
+            padding: 40px 25px; 
+            transition: right 0.4s var(--smooth-ease); 
+            z-index: 2000; 
+            overflow-y: auto;
+            border-left: 1px solid rgba(255,255,255,0.1); 
+            color: #fff;
+            scrollbar-width: none;
+        }
+        #side-panel.open { right: 0 !important; }
+        #side-panel::-webkit-scrollbar { display: none; }
+
+        .panel-content { display: flex; flex-direction: column; gap: 15px; padding-bottom: 80px; }
+        
+        .control-group { 
+            padding: 18px; 
+            background: rgba(255,255,255,0.05); 
+            border-radius: 20px; 
+            border: 1px solid transparent;
+            transition: 0.2s;
+            position: relative;
+        }
+        .control-group:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.1); }
+
+        #weather-results {
+            position: absolute;
+            top: 95%; left: 18px; right: 18px;
+            background: rgba(20, 20, 20, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 15px;
+            z-index: 3000;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        #nav-ghost-zone { position: absolute; bottom: 0; right: 0; width: 220px; height: 220px; z-index: 999; }
-        #nav-trigger:hover { opacity: 1 !important; transform: scale(1.15) rotate(90deg); border-color: var(--accent); }
-
-        /* --- ULTRA SIDE PANEL --- */
-        #side-panel {
-            position: fixed; right: -460px; top: 0; bottom: 0; width: 440px;
-            background: rgba(5, 5, 5, 0.98); backdrop-filter: blur(100px);
-            padding: 60px 40px; transition: right 0.7s var(--slow-ease); z-index: 2000;
-            overflow-y: auto; border-left: 1px solid var(--glass-border); 
-            scrollbar-width: none; box-shadow: -20px 0 50px rgba(0,0,0,0.9);
+        .city-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: 0.2s;
+            text-align: left;
         }
-        #side-panel::-webkit-scrollbar { display: none; }
-        #side-panel.open { right: 0 !important; }
-        #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; z-index: 1500; backdrop-filter: blur(10px); }
+        .city-item:hover { background: var(--accent); color: white; }
+        .city-item span { opacity: 0.6; font-size: 0.7rem; display: block; }
 
-        /* --- CONTROL SYSTEM --- */
-        .control-group { 
-            padding: 25px; background: rgba(255,255,255,0.02); 
-            border-radius: 28px; border: 1px solid var(--glass-border); 
-            margin-bottom: 25px; position: relative; overflow: hidden;
+        .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.5; font-weight: 800; }
+
+        .status-tag { font-size: 0.55rem; font-weight: 900; letter-spacing: 1px; margin-right: 10px; transition: 0.3s; }
+        .status-tag.off { opacity: 0.3; color: #fff; }
+        .status-tag.on { opacity: 1; color: var(--accent); }
+
+        .reset-link { 
+            font-size: 0.65rem; color: var(--accent); cursor: pointer; 
+            text-transform: uppercase; font-weight: 900; 
+            padding: 4px 8px; background: rgba(0,0,0,0.3); border-radius: 6px;
+            transition: all 0.2s ease;
         }
-        .section-title { font-size: 0.75rem; font-weight: 900; text-transform: uppercase; letter-spacing: 3px; color: var(--accent); margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
-        .section-title::after { content: ''; flex: 1; height: 1px; background: rgba(255,255,255,0.1); }
-        
-        .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        label { font-size: 0.8rem; font-weight: 600; opacity: 0.6; }
-        
-        /* --- IOS TOGGLES & INPUTS --- */
-        .ios-switch { position: relative; width: 56px; height: 32px; background: rgba(255,255,255,0.08); border-radius: 20px; cursor: pointer; transition: 0.4s var(--smooth-ease); }
-        .ios-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; background: #fff; border-radius: 50%; transition: 0.4s var(--bounce); box-shadow: 0 2px 10px rgba(0,0,0,0.3); }
+        .reset-link:hover {
+            background: var(--accent);
+            color: #fff;
+            box-shadow: 0 0 10px var(--accent);
+            transform: scale(1.05);
+        }
+
+        .ios-switch {
+            position: relative; width: 50px; height: 28px; background: rgba(255,255,255,0.1); border-radius: 20px; cursor: pointer; transition: all 0.3s ease;
+        }
+        .ios-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 24px; height: 24px; background: #fff; border-radius: 50%; transition: 0.3s; }
         .ios-switch.active { background: var(--accent); }
-        .ios-switch.active::after { transform: translateX(24px); }
+        .ios-switch.active::after { transform: translateX(22px); }
+        
+        .ios-switch:hover { filter: brightness(1.3); box-shadow: 0 0 12px rgba(255,255,255,0.1); }
+        .ios-switch.active:hover { box-shadow: 0 0 15px var(--accent); }
 
-        .tag-cloud { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
-        .tag { background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border); color: #fff; padding: 8px 14px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; cursor: pointer; transition: 0.3s; }
-        .tag:hover { border-color: var(--accent); color: var(--accent); transform: scale(1.05); }
-
-        input[type="text"], input[type="number"] { 
-            width: 100%; background: rgba(0,0,0,0.4); border: 1px solid var(--glass-border); 
-            color: #fff; padding: 16px; border-radius: 16px; outline: none; font-weight: 600; transition: 0.3s;
+        .file-upload-btn {
+            display: block; width: 100%; padding: 12px;
+            background: rgba(255,255,255,0.1); border: 1px dashed rgba(255,255,255,0.3);
+            border-radius: 12px; color: #fff; text-align: center; font-size: 0.75rem; font-weight: 600; cursor: pointer; margin-bottom: 15px;
+            transition: all 0.3s var(--smooth-ease);
         }
-        input[type="text"]:focus { border-color: var(--accent); background: rgba(0,0,0,0.6); }
+        .file-upload-btn:hover { background: rgba(255, 255, 255, 0.15); border-color: var(--accent); box-shadow: 0 0 15px var(--accent); transform: translateY(-1px); }
 
-        input[type="range"] { -webkit-appearance: none; width: 100%; height: 6px; background: rgba(255,255,255,0.08); border-radius: 10px; margin: 20px 0; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 26px; width: 26px; background: #fff; border-radius: 50%; cursor: pointer; box-shadow: 0 0 15px rgba(0,0,0,0.5); border: 2px solid var(--accent); }
+        .wallpaper-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 5px; }
+        #static-bg-preview { width: 70px; height: 70px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; position: relative; overflow: hidden; transition: 0.3s; }
+        #static-bg-preview.active { border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
+        #static-bg-preview input { position: absolute; opacity: 0; inset: 0; cursor: pointer; width: 100%; height: 100%; }
 
-        .preset-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
-        .preset-btn { background: rgba(255,255,255,0.03); border: 1px solid var(--glass-border); color: #fff; padding: 15px; border-radius: 16px; font-size: 0.75rem; font-weight: 800; cursor: pointer; transition: 0.3s; }
-        .preset-btn:hover { background: var(--accent); color: #000; transform: translateY(-3px); }
+        .bg-thumb { width: 70px; height: 70px; border-radius: 12px; background-size: cover; background-position: center; border: 2px solid transparent; cursor: pointer; transition: 0.3s; opacity: 0.5; }
+        .bg-thumb.active { border-color: var(--accent); opacity: 1; transform: scale(1.05); }
 
-        /* --- POWER MODULE --- */
-        .power-btn { 
-            width: 100%; padding: 20px; border-radius: 20px; 
-            background: rgba(255,69,58,0.05); color: #FF453A; 
-            border: 1px solid rgba(255,69,58,0.2); font-weight: 900; 
-            cursor: pointer; transition: 0.4s; letter-spacing: 2px;
-            margin-top: 20px;
+        .theme-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.4); padding: 10px 12px; border-radius: 10px; margin-top: 8px; }
+        .theme-actions button { background: none; border: none; color: #fff; font-size: 0.7rem; font-weight: bold; cursor: pointer; opacity: 0.7; margin-left: 10px; }
+
+        input[type="text"] { width: 100%; background: #000; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 12px; border-radius: 12px; margin-top: 10px; outline: none; transition: 0.3s; }
+        input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(0,122,255,0.2); }
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); margin-top: 10px; border-radius: 2px; }
+        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; background: #fff; border-radius: 50%; cursor: pointer; }
+
+        #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; z-index: 1500; }
+        
+        .update-btn { 
+            background: var(--accent); color: white; border: none; width: 100%; padding: 12px; 
+            border-radius: 12px; margin-top: 10px; font-weight: bold; cursor: pointer; 
+            transition: all 0.3s var(--smooth-ease);
         }
-        .power-btn:hover { background: #FF453A; color: #fff; box-shadow: 0 10px 30px rgba(255,69,58,0.3); }
+        .update-btn:hover { filter: brightness(1.2); box-shadow: 0 0 15px var(--accent); transform: translateY(-1px); }
 
-        /* --- RESPONSIVE OPTIMIZATION --- */
-        @media (max-width: 768px) {
-            #side-panel { width: 100vw; right: -100vw; padding: 40px 20px; }
-            #clock { font-size: 22vw; }
-            #nav-trigger { bottom: 20px; right: 20px; width: 60px; height: 60px; }
+        .factory-reset-btn {
+            color: #ff4444; background: none; border: 1px solid rgba(255, 68, 68, 0.2); 
+            font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; 
+            padding: 10px; border-radius: 10px; transition: all 0.3s ease;
         }
+        .factory-reset-btn:hover { color: #fff; background: #ff4444; border-color: #ff4444; box-shadow: 0 0 20px rgba(255, 68, 68, 0.6); transform: scale(0.98); }
+
+        #confirm-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 3000; backdrop-filter: blur(10px); }
+        .modal-box { background: #111; border: 1px solid rgba(255,255,255,0.1); padding: 30px; border-radius: 25px; text-align: center; max-width: 300px; }
+        .modal-box h3 { margin-top: 0; color: #ff4444; }
+        .modal-box p { font-size: 0.85rem; opacity: 0.7; margin-bottom: 25px; }
+        .modal-btn { width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
     <div id="bg-layer"></div>
-    <div id="vignette"></div>
     <div id="overlay" onclick="toggleNav()"></div>
 
-    <div id="hud-master">
-        <div id="clock-container">
-            <div id="clock-widget" class="widget"><div id="clock">00:00</div></div>
-            <div id="date-widget" class="widget"><div id="date">SYSTEM BOOTING</div></div>
-        </div>
-        
-        <div id="calendar-widget" class="widget">
-            <div class="cal-header">
-                <span id="cal-mo">JANUARY</span>
-                <span style="opacity:0.4" id="cal-yr">2026</span>
-            </div>
-            <div class="cal-grid" id="cal-body"></div>
-        </div>
-
-        <div id="market-widget" class="widget"></div>
-
-        <div id="weather-widget" class="widget">
-            <div id="w-icon"></div>
-            <span id="temp">--°C</span>
-        </div>
-
-        <div id="battery-widget" class="widget">
-            <div class="bat-icon"><div id="bat-fill" class="bat-level" style="width: 0%"></div></div>
-            <span id="bat-val">--%</span>
+    <div id="confirm-modal">
+        <div class="modal-box">
+            <h3>Reset System?</h3>
+            <p>This will permanently delete all saved themes and background settings.</p>
+            <button class="modal-btn" style="background: #ff4444; color: #fff;" onclick="performFactoryReset()">RESET EVERYTHING</button>
+            <button class="modal-btn" style="background: rgba(255,255,255,0.1); color: #fff;" onclick="closeModal()">CANCEL</button>
         </div>
     </div>
 
+    <div id="hud-master">
+        <div id="clock-widget" class="widget"><div id="clock">0:00</div></div>
+        <div id="date-widget" class="widget"><div id="date">...</div></div>
+        
+        <div id="calendar-widget" class="widget">
+            <div class="cal-header"><span id="cal-mo">JAN</span><span id="cal-yr">2026</span></div>
+            <div class="cal-grid" id="cal-body"></div>
+        </div>
+        <div id="market-widget" class="widget"></div>
+
+        <div id="weather-widget" class="widget">
+            <div id="icon-container"></div>
+            <span id="temp">--°</span>
+        </div>
+        <div id="battery-widget" class="widget"><span id="bat-val">--%</span></div>
+    </div>
+
     <div id="nav-ghost-zone" onmousemove="wakeNav()" onclick="wakeNav()"></div>
-    <div id="nav-trigger" onclick="toggleNav()">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+    
+    <div id="nav-trigger" onclick="toggleNav(event)">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
     </div>
 
     <div id="side-panel">
         <div class="panel-content">
-            <h1 style="margin:0; font-size: 2.5rem; font-weight: 900; letter-spacing: -2px;">Prism<span style="color:var(--accent)">OS</span></h1>
-            <p style="opacity:0.3; font-size: 0.7rem; font-weight: 800; margin-bottom: 40px; letter-spacing: 2px;">ULTRA-CORE V4.5 // STABLE_BUILD</p>
+            <h2 style="margin:0; font-size: 1.5rem; font-weight: 900;">Settings</h2>
+
+            <div class="control-group">
+                <label>Theme Manager</label>
+                <div style="display: flex; gap: 10px;">
+                    <input type="text" id="theme-name" placeholder="Save as..." style="margin-top: 10px; flex-grow: 1;">
+                    <button onclick="saveTheme()" class="update-btn" style="width: auto; padding: 0 20px; margin-top: 10px;">SAVE</button>
+                </div>
+                <div id="theme-list" style="margin-top: 15px;"></div>
+            </div>
+
+            <div class="control-group">
+                <div class="row"><label>Desktop Fullscreen</label><div id="sw-fullscr" class="ios-switch" onclick="toggleFullscreen()"></div></div>
+            </div>
             
             <div class="control-group">
-                <div class="section-title">System Modules</div>
+                <label>Weather City</label>
+                <input type="text" id="city-input" placeholder="Search City..." oninput="searchCities(this.value)">
+                <div id="weather-results"></div>
+            </div>
+
+            <div class="control-group">
                 <div class="row"><label>Show Calendar</label><div id="sw-showCalendar" class="ios-switch" onclick="toggle('showCalendar')"></div></div>
-                <div class="row"><label>Live Markets</label><div id="sw-showMarket" class="ios-switch" onclick="toggle('showMarket')"></div></div>
-                <div class="row"><label>OLED Pixel Shifter</label><div id="sw-burnShield" class="ios-switch" onclick="toggle('burnShield')"></div></div>
-                <div class="row"><label>24H Military Time</label><div id="sw-is24h" class="ios-switch" onclick="toggle('is24h')"></div></div>
+                <div class="row" style="margin-top:10px;"><label>Show Markets</label><div id="sw-showMarket" class="ios-switch" onclick="toggle('showMarket')"></div></div>
             </div>
 
             <div class="control-group">
-                <div class="section-title">Market Configuration</div>
-                <p style="font-size: 0.6rem; opacity: 0.4; margin-bottom: 10px;">Enter ticker symbols (e.g., TSLA, BTC-USD, ETH-USD):</p>
-                <input type="text" id="m-in" placeholder="ADD SYMBOL..." onkeydown="if(event.key==='Enter')addStock(this.value)">
-                <div id="stock-tags" class="tag-cloud"></div>
-            </div>
-
-            <div class="control-group">
-                <div class="section-title">Visual Interface</div>
-                <div class="row">
-                    <label>Accent Tone</label>
-                    <input type="color" id="color-accent" style="width:60px; height:34px; border:none; background:none; cursor:pointer;" onchange="state.accent=this.value; applyAll(); save();">
-                </div>
-                <label>Kernel Scaling</label>
-                <input type="range" min="0.4" max="1.8" step="0.01" value="1" id="sl-scale" oninput="state.scale=this.value; applyAll();">
-                <label>Gaussian Blur Strength</label>
-                <input type="range" min="0" max="120" step="1" value="0" id="sl-blur" oninput="state.blur=this.value; applyAll();">
-            </div>
-
-            <div class="control-group">
-                <div class="section-title">Wallpaper Engine</div>
-                <input type="text" id="bg-url" placeholder="IMAGE SOURCE URL..." onkeydown="if(event.key==='Enter')setBG(this.value)">
-                <div class="preset-grid">
-                    <button class="preset-btn" onclick="setBG('https://images.unsplash.com/photo-1614850523296-d8c1af93d400')">NEBULA</button>
-                    <button class="preset-btn" onclick="setBG('https://images.unsplash.com/photo-1534796636912-3b95b3ab5986')">DEEP SPACE</button>
-                    <button class="preset-btn" onclick="setBG('https://images.unsplash.com/photo-1502657877623-f66bf489d236')">MINIMAL FOG</button>
-                    <button class="preset-btn" onclick="setBG('https://images.unsplash.com/photo-1444703686981-a3abbc4d4fe3')">ASTRO</button>
+                <label>Background</label>
+                <label for="bg-upload" class="file-upload-btn" style="margin-top: 15px;">CHOOSE FILE</label>
+                <input type="file" id="bg-upload" style="display:none;" onchange="handleBg(this)">
+                
+                <div class="wallpaper-grid">
+                    <div id="static-bg-preview">
+                        <input type="color" id="static-bg-picker" oninput="setStatic(this.value)">
+                    </div>
+                    <div id="bg-history" style="display:contents;"></div>
                 </div>
             </div>
 
             <div class="control-group">
-                <div class="section-title">Geospatial Data</div>
-                <input type="text" id="loc-in" placeholder="CITY, COUNTRY..." onkeydown="if(event.key==='Enter')updateLocation(this.value)">
+                <label>Background Effects</label>
+                <div class="row" style="margin-top: 15px;">
+                    <label style="font-size: 0.5rem;">Blur</label>
+                </div>
+                <input type="range" min="0" max="40" step="1" value="0" oninput="state.blur=this.value; applyAll(); save();">
+                
+                <div class="row" style="margin-top: 10px;">
+                    <label style="font-size: 0.5rem;">Opacity</label>
+                </div>
+                <input type="range" min="0" max="1" step="0.01" value="1" oninput="state.bgOpacity=this.value; applyAll(); save();">
             </div>
 
-            <button class="power-btn" onclick="factoryReset()">WIPE CORE & REBOOT</button>
-            <div style="height:100px"></div>
+            <div class="control-group">
+                <div class="row"><label>OLED Burn Shield</label><div id="sw-burnShield" class="ios-switch" onclick="toggle('burnShield')"></div></div>
+                <div class="row" style="margin-top:10px;"><label>Flip Widgets</label><div id="sw-mirrored" class="ios-switch" onclick="toggle('mirrored')"></div></div>
+                <div class="row" style="margin-top:10px;"><label>24 Hour Time</label><div id="sw-is24h" class="ios-switch" onclick="toggle('is24h')"></div></div>
+            </div>
+
+            <div class="control-group">
+                <div class="row"><label>Clock Widget</label><span class="reset-link" onclick="resetWidget('clock')">Reset</span></div>
+                <div class="row" style="margin-top: 10px;">
+                    <label style="font-size: 0.5rem;">Visibility</label>
+                    <div style="display: flex; align-items: center;">
+                        <span id="st-clock" class="status-tag">SHOWN</span>
+                        <div id="sw-showClock" class="ios-switch active" onclick="toggle('showClock')"></div>
+                    </div>
+                </div>
+                <input type="range" id="range-clock" min="-400" max="400" value="0" oninput="nudge('clock', this.value)">
+            </div>
+
+            <div class="control-group">
+                <div class="row"><label>Date Widget</label><span class="reset-link" onclick="resetWidget('date')">Reset</span></div>
+                <div class="row" style="margin-top: 10px;">
+                    <label style="font-size: 0.5rem;">Visibility</label>
+                    <div style="display: flex; align-items: center;">
+                        <span id="st-date" class="status-tag">SHOWN</span>
+                        <div id="sw-showDate" class="ios-switch active" onclick="toggle('showDate')"></div>
+                    </div>
+                </div>
+                <input type="range" id="range-date" min="-400" max="400" value="0" oninput="nudge('date', this.value)">
+            </div>
+
+            <div class="control-group">
+                <div class="row"><label>Weather Widget</label><span class="reset-link" onclick="resetWidget('weather')">Reset</span></div>
+                <div class="row" style="margin-top: 10px;">
+                    <label style="font-size: 0.5rem;">Visibility</label>
+                    <div style="display: flex; align-items: center;">
+                        <span id="st-weather" class="status-tag">SHOWN</span>
+                        <div id="sw-showWeather" class="ios-switch active" onclick="toggle('showWeather')"></div>
+                    </div>
+                </div>
+                <input type="range" id="range-weather" min="-400" max="400" value="0" oninput="nudge('weather', this.value)">
+            </div>
+
+            <div class="control-group">
+                <div class="row"><label>Battery Widget</label><span class="reset-link" onclick="resetWidget('battery')">Reset</span></div>
+                <div class="row" style="margin-top: 10px;">
+                    <label style="font-size: 0.5rem;">Visibility</label>
+                    <div style="display: flex; align-items: center;">
+                        <span id="st-battery" class="status-tag">SHOWN</span>
+                        <div id="sw-showBattery" class="ios-switch active" onclick="toggle('showBattery')"></div>
+                    </div>
+                </div>
+                <input type="range" id="range-battery" min="-400" max="400" value="0" oninput="nudge('battery', this.value)">
+            </div>
+
+            <div class="control-group">
+                <label>Widget Scale</label>
+                <input type="range" id="range-scale" min="0.4" max="2.0" step="0.01" value="1" oninput="state.scale = this.value; applyAll(); save();">
+            </div>
+
+            <div class="control-group">
+                <label>Accent Color</label>
+                <input type="color" id="color-accent" style="height:45px; width:100%; border:none; background:none;" onchange="state.accent = this.value; applyAll(); save();">
+            </div>
+
+            <button onclick="openModal()" class="factory-reset-btn">FACTORY RESET</button>
         </div>
     </div>
 
     <script>
-        /* PRISM OS KERNEL LOGIC
-           HANDLES: PERSISTENCE, API BRIDGING, CALENDAR MATH, & PIXEL SHIFTING
-        */
-
         let state = {
-            is24h: true, 
-            showMarket: true, 
-            showCalendar: true, 
-            burnShield: true,
-            scale: 1, 
-            accent: '#007AFF', 
-            city: 'Calgary', 
-            stocks: ['BTC-USD', 'ETH-USD', 'AAPL', 'NVDA', 'TSLA', 'MSFT'],
-            bg: 'https://images.unsplash.com/photo-1614850523296-d8c1af93d400', 
-            blur: 0, 
-            nudgeX: 0, 
-            nudgeY: 0
+            mirrored: false, is24h: true, showClock: true, showDate: true, showWeather: true, showBattery: true,
+            showCalendar: false, showMarket: false,
+            nudgeclock: 0, nudgedate: 0, nudgeweather: 0, nudgebattery: 0,
+            scale: 1, accent: '#007AFF', city: 'Calgary', bg: '', history: [],
+            isStatic: false, staticColor: '#000000', blur: 0, bgOpacity: 1,
+            presets: {}, burnShield: true
         };
 
-        const STORAGE_KEY = 'prism_ultra_kernel_v4_5';
+        let navTimer;
 
-        // --- CORE KERNEL START ---
-        function init() {
-            loadPersistence();
-            startUpdateCycles();
-            renderStockTags();
+        const icons = {
+            sun: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>`,
+            cloud: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`,
+            rain: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M16 13v8M8 13v8M12 15v8M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"></path></svg>`,
+            snow: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25M8 16h.01M8 20h.01M12 18h.01M12 22h.01M16 16h.01M16 20h.01"></path></svg>`,
+            storm: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9M13 11l-4 6h6l-4 6"></path></svg>`
+        };
+
+        function save() { localStorage.setItem('prism_ultra_v2', JSON.stringify(state)); }
+
+        function load() {
+            const saved = localStorage.getItem('prism_ultra_v2');
+            if(saved) state = JSON.parse(saved);
             applyAll();
-            
-            // Interaction listeners
-            window.addEventListener('mousemove', (e) => {
-                if(!state.burnShield) return;
-                const moveX = (e.clientX - window.innerWidth / 2) * 0.01;
-                const moveY = (e.clientY - window.innerHeight / 2) * 0.01;
-                document.getElementById('bg-layer').style.transform = `translate(${moveX}px, ${moveY}px) scale(1.1)`;
-            });
-        }
-
-        function loadPersistence() {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if(saved) {
-                try {
-                    state = Object.assign(state, JSON.parse(saved));
-                } catch(e) { console.error("Kernel Load Error", e); }
-            }
-            
-            // Sync DOM to state
-            document.getElementById('sl-scale').value = state.scale;
-            document.getElementById('sl-blur').value = state.blur;
-            document.getElementById('color-accent').value = state.accent;
-            document.getElementById('bg-url').value = state.bg;
-            document.getElementById('loc-in').value = state.city;
-        }
-
-        function save() {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-        }
-
-        function startUpdateCycles() {
+            renderHistory();
+            renderThemeList();
             updateClock();
-            fetchWeather();
-            fetchMarkets();
             updateBattery();
-            
-            setInterval(updateClock, 1000);
-            setInterval(fetchMarkets, 60000); // 1 min market refresh
-            setInterval(fetchWeather, 900000); // 15 min weather refresh
-            
-            // OLED Burn Shield Algorithm (shifts pixels slightly every 30s)
-            setInterval(() => {
-                if(state.burnShield) {
-                    state.nudgeX = (Math.random() * 6) - 3;
-                    state.nudgeY = (Math.random() * 6) - 3;
-                    document.getElementById('hud-master').style.transform = `scale(${state.scale}) translate(${state.nudgeX}px, ${state.nudgeY}px)`;
-                }
-            }, 30000);
+            fetchWeather();
+            startBurnShield();
+            wakeNav();
+            // Start the new features
+            renderCalendar();
+            updateMarkets();
         }
 
-        // --- INTERFACE ENGINE ---
-        function applyAll() {
-            const root = document.documentElement;
-            root.style.setProperty('--accent', state.accent);
-            root.style.setProperty('--bg-blur', state.blur + 'px');
-            
-            // Convert Hex to RGB for transparency usage
-            const hex = state.accent.replace('#','');
-            const r = parseInt(hex.substring(0,2), 16);
-            const g = parseInt(hex.substring(2,4), 16);
-            const b = parseInt(hex.substring(4,6), 16);
-            root.style.setProperty('--accent-rgb', `${r}, ${g}, ${b}`);
-
-            document.getElementById('hud-master').style.transform = `scale(${state.scale})`;
-            document.getElementById('bg-layer').style.backgroundImage = `url('${state.bg}')`;
-            
-            // Toggle Logic
-            const keys = ['showCalendar', 'showMarket', 'is24h', 'burnShield'];
-            keys.forEach(k => {
-                document.getElementById(`sw-${k}`).classList.toggle('active', state[k]);
-            });
-
-            document.getElementById('calendar-widget').style.display = state.showCalendar ? 'flex' : 'none';
-            document.getElementById('market-widget').style.display = state.showMarket ? 'flex' : 'none';
-            
-            if(state.showCalendar) renderCalendar();
-        }
-
-        function toggle(k) {
-            state[k] = !state[k];
-            applyAll();
-            save();
-        }
-
-        function toggleNav() {
-            const sp = document.getElementById('side-panel');
-            const ov = document.getElementById('overlay');
-            const isOpen = sp.classList.toggle('open');
-            ov.style.display = isOpen ? 'block' : 'none';
+        function toggleNav(e) {
+            const panel = document.getElementById('side-panel');
+            const overlay = document.getElementById('overlay');
+            const isOpen = panel.classList.toggle('open');
+            overlay.style.display = isOpen ? 'block' : 'none';
         }
 
         function wakeNav() {
             const btn = document.getElementById('nav-trigger');
-            btn.style.opacity = "0.8";
-            clearTimeout(window.navTimer);
-            window.navTimer = setTimeout(() => { 
-                if(!document.getElementById('side-panel').classList.contains('open')) btn.style.opacity = "0"; 
+            btn.style.opacity = "0.6";
+            clearTimeout(navTimer);
+            navTimer = setTimeout(() => {
+                if(!document.getElementById('side-panel').classList.contains('open')) {
+                    btn.style.opacity = "0";
+                }
             }, 3000);
         }
 
-        // --- DATA VISUALIZERS ---
+        async function searchCities(query) {
+            const resultsBox = document.getElementById('weather-results');
+            if (query.length < 2) { resultsBox.style.display = 'none'; return; }
+            try {
+                const res = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${query}&count=5&language=en&format=json`);
+                const data = await res.json();
+                if (data.results) {
+                    resultsBox.innerHTML = '';
+                    data.results.forEach(city => {
+                        const div = document.createElement('div');
+                        div.className = 'city-item';
+                        div.innerHTML = `${city.name} <span>${city.admin1 || ''}, ${city.country_code.toUpperCase()}</span>`;
+                        div.onclick = () => selectCity(city.name);
+                        resultsBox.appendChild(div);
+                    });
+                    resultsBox.style.display = 'block';
+                } else {
+                    resultsBox.style.display = 'none';
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        function selectCity(name) {
+            state.city = name;
+            document.getElementById('city-input').value = name;
+            document.getElementById('weather-results').style.display = 'none';
+            fetchWeather();
+            save();
+        }
+
+        function saveTheme() {
+            const name = document.getElementById('theme-name').value.trim();
+            if (!name) return;
+            const themeData = JSON.parse(JSON.stringify(state));
+            delete themeData.presets; 
+            state.presets[name] = themeData;
+            document.getElementById('theme-name').value = "";
+            renderThemeList(); save();
+        }
+
+        function loadTheme(name) {
+            const savedPresets = state.presets; 
+            state = JSON.parse(JSON.stringify(state.presets[name]));
+            state.presets = savedPresets; 
+            applyAll(); renderHistory(); save();
+        }
+
+        function deleteTheme(name) {
+            delete state.presets[name];
+            renderThemeList(); save();
+        }
+
+        function renderThemeList() {
+            const list = document.getElementById('theme-list');
+            list.innerHTML = "";
+            if(!state.presets) state.presets = {};
+            Object.keys(state.presets).forEach(name => {
+                const item = document.createElement("div");
+                item.className = "theme-item";
+                item.innerHTML = `<span>${name}</span><div class="theme-actions"><button onclick="loadTheme('${name}')" style="color:var(--accent);">LOAD</button><button onclick="deleteTheme('${name}')" style="color:#ff4444;">✕</button></div>`;
+                list.appendChild(item);
+            });
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen();
+                document.getElementById('sw-fullscr').classList.add('active');
+            } else {
+                document.exitFullscreen();
+                document.getElementById('sw-fullscr').classList.remove('active');
+            }
+        }
+
+        function nudge(type, val) {
+            state['nudge' + type] = val;
+            applyAll();
+            save();
+        }
+
+        function toggle(key) {
+            state[key] = !state[key];
+            applyAll();
+            save();
+        }
+
+        function resetWidget(type) {
+            state['nudge' + type] = 0;
+            state['show' + type.charAt(0).toUpperCase() + type.slice(1)] = true;
+            applyAll();
+            save();
+        }
+
+        function openModal() { document.getElementById('confirm-modal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('confirm-modal').style.display = 'none'; }
+        function performFactoryReset() { localStorage.removeItem('prism_ultra_v2'); location.reload(); }
+
+        function applyAll() {
+            const bgl = document.getElementById('bg-layer');
+            document.documentElement.style.setProperty('--accent', state.accent);
+            const m = state.mirrored ? -1 : 1;
+            document.getElementById('hud-master').style.transform = `scale(${state.scale}) scaleX(${m})`;
+            
+            if(state.isStatic) {
+                document.body.style.backgroundColor = state.staticColor;
+                document.getElementById('static-bg-preview').style.backgroundColor = state.staticColor;
+                bgl.style.backgroundImage = 'none';
+            } else {
+                document.body.style.backgroundColor = '#000';
+                bgl.style.backgroundImage = `url(${state.bg})`;
+            }
+
+            document.getElementById('static-bg-preview').classList.toggle('active', state.isStatic);
+            bgl.style.filter = `blur(${state.blur}px)`;
+            bgl.style.opacity = state.bgOpacity;
+
+            document.getElementById('sw-mirrored').classList.toggle('active', state.mirrored);
+            document.getElementById('sw-is24h').classList.toggle('active', state.is24h);
+            document.getElementById('sw-burnShield').classList.toggle('active', state.burnShield);
+            
+            // Apply switches for new features
+            if(document.getElementById('sw-showCalendar')) document.getElementById('sw-showCalendar').classList.toggle('active', state.showCalendar);
+            if(document.getElementById('sw-showMarket')) document.getElementById('sw-showMarket').classList.toggle('active', state.showMarket);
+            
+            document.getElementById('calendar-widget').style.display = state.showCalendar ? 'flex' : 'none';
+            document.getElementById('market-widget').style.display = state.showMarket ? 'flex' : 'none';
+
+            ['clock', 'date', 'weather', 'battery'].forEach(key => {
+                const el = document.getElementById(key + '-widget');
+                const show = state['show' + key.charAt(0).toUpperCase() + key.slice(1)];
+                el.style.opacity = show ? 1 : 0;
+                el.style.transform = `translateY(${state['nudge' + key]}px)`;
+                
+                const sw = document.getElementById('sw-show' + key.charAt(0).toUpperCase() + key.slice(1));
+                if(sw) sw.classList.toggle('active', show);
+                
+                const statusTag = document.getElementById('st-' + key);
+                if(statusTag) {
+                    statusTag.innerText = show ? 'SHOWN' : 'HIDDEN';
+                    statusTag.className = show ? 'status-tag on' : 'status-tag off';
+                }
+                const range = document.getElementById('range-' + key);
+                if(range) range.value = state['nudge' + key];
+            });
+            document.getElementById('range-scale').value = state.scale;
+            document.getElementById('city-input').value = state.city;
+        }
+
+        function startBurnShield() {
+            setInterval(() => {
+                const hud = document.getElementById('hud-master');
+                if (state.burnShield) {
+                    hud.style.marginTop = (Math.random() * 4 - 2) + "px";
+                    hud.style.marginLeft = (Math.random() * 4 - 2) + "px";
+                } else {
+                    hud.style.marginTop = "0px";
+                    hud.style.marginLeft = "0px";
+                }
+            }, 60000);
+        }
+
+        function setStatic(val) { state.staticColor = val; state.isStatic = true; applyAll(); renderHistory(); save(); }
+
+        function handleBg(input) {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const data = e.target.result;
+                state.bg = data;
+                state.isStatic = false;
+                if(!state.history) state.history = [];
+                state.history = [data, ...state.history.filter(x => x !== data)].slice(0, 3);
+                applyAll(); renderHistory(); save();
+            };
+            reader.readAsDataURL(input.files[0]);
+        }
+
+        function renderHistory() {
+            const container = document.getElementById('bg-history');
+            container.innerHTML = '';
+            if(!state.history) return;
+            state.history.forEach(data => {
+                const thumb = document.createElement('div');
+                thumb.className = `bg-thumb ${(!state.isStatic && state.bg === data) ? 'active' : ''}`;
+                thumb.style.backgroundImage = `url(${data})`;
+                thumb.onclick = () => { state.bg = data; state.isStatic = false; applyAll(); renderHistory(); save(); };
+                container.appendChild(thumb);
+            });
+        }
+
         function updateClock() {
             const now = new Date();
             let h = now.getHours();
             const m = String(now.getMinutes()).padStart(2, '0');
-            const s = String(now.getSeconds()).padStart(2, '0');
-            
             if (!state.is24h) h = h % 12 || 12;
-            
-            document.getElementById('clock').innerHTML = `${h}:${m}<span style="font-size:0.2em; opacity:0.3; margin-left:10px">${s}</span>`;
-            document.getElementById('date').innerText = now.toLocaleDateString('en-US', { 
-                weekday: 'long', month: 'long', day: '2-digit' 
-            }).toUpperCase();
+            document.getElementById('clock').innerText = `${h}:${m}`;
+            document.getElementById('date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
+        }
+        setInterval(updateClock, 1000);
+
+        async function updateBattery() {
+            try {
+                const b = await navigator.getBattery();
+                const update = () => {
+                    document.getElementById('bat-val').innerText = Math.round(b.level * 100) + "%" + (b.charging ? " ⚡" : "");
+                };
+                update();
+                b.onlevelchange = update;
+                b.onchargingchange = update;
+            } catch(e) { document.getElementById('battery-widget').style.display = 'none'; }
         }
 
         function renderCalendar() {
             const now = new Date();
             const body = document.getElementById('cal-body');
-            document.getElementById('cal-mo').innerText = now.toLocaleString('default', { month: 'long' }).toUpperCase();
+            document.getElementById('cal-mo').innerText = now.toLocaleString('default', { month: 'short' }).toUpperCase();
             document.getElementById('cal-yr').innerText = now.getFullYear();
-            
-            body.innerHTML = 'SMTWTFS'.split('').map(l => `<div class="cal-day cal-label">${l}</div>`).join('');
-            
-            const firstDay = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
-            const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
-            
-            for(let i=0; i<firstDay; i++) body.innerHTML += '<div></div>';
-            for(let d=1; d<=daysInMonth; d++) {
-                const isToday = (d === now.getDate()) ? 'today' : '';
-                body.innerHTML += `<div class="cal-day ${isToday}">${d}</div>`;
+            body.innerHTML = 'SMTWTFS'.split('').map(l => `<div class="cal-day" style="opacity:0.3; font-weight:900">${l}</div>`).join('');
+            const start = new Date(now.getFullYear(), now.getMonth(), 1).getDay();
+            const days = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+            for(let i=0; i<start; i++) body.innerHTML += '<div></div>';
+            for(let d=1; d<=days; d++) {
+                const today = (d === now.getDate()) ? 'today' : '';
+                body.innerHTML += `<div class="cal-day ${today}">${d}</div>`;
             }
         }
 
-        async function fetchMarkets() {
-            if(!state.showMarket || state.stocks.length === 0) return;
+        async function updateMarkets() {
+            const tickers = ['BTC-USD', 'AAPL', 'TSLA', 'SPY'];
             try {
-                // Yahoo Finance Query Bridge
-                const res = await fetch(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${state.stocks.join(',')}`);
+                const res = await fetch(`https://query1.finance.yahoo.com/v7/finance/quote?symbols=${tickers.join(',')}`);
                 const data = await res.json();
                 const container = document.getElementById('market-widget');
                 container.innerHTML = '';
-                
                 data.quoteResponse.result.forEach(q => {
-                    const chg = q.regularMarketChangePercent || 0;
-                    const isUp = chg >= 0;
-                    container.innerHTML += `
-                        <div class="ticker-box">
-                            <span class="t-sym">${q.symbol}</span>
-                            <span class="t-val">$${q.regularMarketPrice.toLocaleString(undefined, {minimumFractionDigits: 2})}</span>
-                            <span class="t-pct ${isUp ? 't-up' : 't-down'}">
-                                ${isUp ? '▲' : '▼'} ${Math.abs(chg).toFixed(2)}%
-                            </span>
-                        </div>`;
+                    const isUp = q.regularMarketChangePercent >= 0;
+                    container.innerHTML += `<div class="ticker">
+                        <span class="t-sym">${q.symbol}</span>
+                        <span class="t-val">$${q.regularMarketPrice.toFixed(2)}</span>
+                        <span class="t-pct ${isUp?'up':'down'}">${isUp?'▲':'▼'}${Math.abs(q.regularMarketChangePercent).toFixed(2)}%</span>
+                    </div>`;
                 });
-            } catch(e) { 
-                console.warn("Market API Offline"); 
-                document.getElementById('market-widget').innerHTML = '<p style="opacity:0.2; font-size:0.7rem">MARKET DATA UNAVAILABLE</p>';
-            }
+            } catch(e) {}
+            setTimeout(updateMarkets, 60000);
         }
 
         async function fetchWeather() {
             try {
-                // Step 1: Geocoding
                 const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${state.city}&count=1`).then(r => r.json());
                 if(!geo.results) return;
-                
                 const { latitude, longitude } = geo.results[0];
-                
-                // Step 2: Forecast
                 const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code`).then(r => r.json());
-                
-                document.getElementById('temp').innerText = Math.round(w.current.temperature_2m) + "°C";
-                
-                // Weather Icon Mapping
-                const code = w.current.weather_code;
-                let iconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>'; // Clear
-                
-                if(code > 0) {
-                    iconSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17.5 19c2.5 0 4.5-2 4.5-4.5 0-2.5-2-4.5-4.5-4.5-.1 0-.3 0-.4 0-0.6-3.1-3.3-5.5-6.6-5.5-3.7 0-6.7 3-6.7 6.7 0 .2 0 .3 0 .5C1.6 12.4 0 14.5 0 17c0 3.3 2.7 6 6 6h11.5"/></svg>'; // Clouds
-                }
-                document.getElementById('w-icon').innerHTML = iconSvg;
-            } catch(e) { console.warn("Weather API Offline"); }
+                document.getElementById('temp').innerText = Math.round(w.current.temperature_2m) + "°";
+            } catch (e) { console.error(e); }
         }
 
-        // --- UTILITY KERNEL ---
-        function addStock(v) {
-            const s = v.toUpperCase().trim();
-            if(s && !state.stocks.includes(s)) {
-                state.stocks.push(s);
-                renderStockTags();
-                fetchMarkets();
-                save();
-            }
-            document.getElementById('m-in').value = '';
-        }
-
-        function renderStockTags() {
-            const div = document.getElementById('stock-tags');
-            div.innerHTML = '';
-            state.stocks.forEach(s => {
-                const span = document.createElement('span'); 
-                span.className = 'tag'; 
-                span.innerHTML = `${s} <span style="opacity:0.3; margin-left:5px">×</span>`;
-                span.onclick = () => { 
-                    state.stocks = state.stocks.filter(x => x !== s); 
-                    renderStockTags(); 
-                    fetchMarkets(); 
-                    save(); 
-                };
-                div.appendChild(span);
-            });
-        }
-
-        async function updateBattery() {
-            if(navigator.getBattery) {
-                const b = await navigator.getBattery();
-                const update = () => {
-                    const lvl = Math.round(b.level * 100);
-                    document.getElementById('bat-val').innerText = lvl + "%" + (b.charging ? " ⚡" : "");
-                    document.getElementById('bat-fill').style.width = lvl + "%";
-                    document.getElementById('bat-fill').style.background = lvl < 20 ? "#FF453A" : "var(--accent)";
-                };
-                update();
-                b.onlevelchange = update;
-                b.onchargingchange = update;
-            }
-        }
-
-        function setBG(url) {
-            if(!url) return;
-            state.bg = url;
-            applyAll();
-            save();
-        }
-
-        function updateLocation(c) {
-            if(!c) return;
-            state.city = c;
-            fetchWeather();
-            save();
-        }
-
-        function factoryReset() {
-            if(confirm("CRITICAL: This will destroy all system configurations and return to kernel defaults. Proceed?")) {
-                localStorage.removeItem(STORAGE_KEY);
-                location.reload();
-            }
-        }
-
-        window.onload = init;
+        load();
     </script>
 </body>
 </html>
