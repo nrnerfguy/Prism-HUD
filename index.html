@@ -88,12 +88,10 @@
         #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.8; font-weight: 300; margin-top: 10px; }
         #weather-widget { gap: 20px; opacity: 0.8; font-size: 2.4rem; font-weight: 200; margin-top: 10px;}
         
-        /* Updated Battery Styles */
         #battery-widget { font-size: 1.2rem; font-weight: 600; opacity: 0.8; margin-top: 10px; letter-spacing: 4px; display: flex; align-items: center; gap: 12px; }
         .charging-pulse { animation: batteryPulse 2s infinite ease-in-out; }
         @keyframes batteryPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
-        /* Settings Button & Ghost Logic */
         #nav-trigger {
             position: absolute; bottom: 40px; right: 40px;
             width: 65px; height: 65px;
@@ -419,11 +417,8 @@
         };
 
         const batIcons = {
-            bolt: `<path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="currentColor" stroke="none"/>`,
-            empty: `<rect x="2" y="7" width="16" height="10" rx="2" stroke="currentColor" fill="none" stroke-width="2"/><path d="M22 11v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
-            low: `<rect x="2" y="7" width="16" height="10" rx="2" stroke="currentColor" fill="none" stroke-width="2"/><rect x="4" y="9" width="4" height="6" fill="currentColor"/><path d="M22 11v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
-            mid: `<rect x="2" y="7" width="16" height="10" rx="2" stroke="currentColor" fill="none" stroke-width="2"/><rect x="4" y="9" width="8" height="6" fill="currentColor"/><path d="M22 11v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`,
-            full: `<rect x="2" y="7" width="16" height="10" rx="2" stroke="currentColor" fill="none" stroke-width="2"/><rect x="4" y="9" width="12" height="6" fill="currentColor"/><path d="M22 11v2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`
+            bolt: `<path d="M11 7L6 13h5l-1 6 5-6h-5l1-6z" fill="white" stroke="black" stroke-width="0.5"/>`,
+            frame: `<rect x="2" y="7" width="16" height="10" rx="2.5" stroke="currentColor" fill="none" stroke-width="2"/><path d="M20 11c1.5 0 1.5 2 0 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>`
         };
 
         function save() { localStorage.setItem('prism_ultra_v2', JSON.stringify(state)); }
@@ -616,18 +611,15 @@
                 const updateUI = () => {
                     const level = Math.round(b.level * 100);
                     const isCharging = b.charging;
+                    const fillWidth = (level / 100) * 12.5; // Max inner width is approx 13px
                     
-                    // Update Icon
-                    let path = batIcons.full;
-                    if(level <= 10) path = batIcons.empty;
-                    else if(level <= 30) path = batIcons.low;
-                    else if(level <= 70) path = batIcons.mid;
-                    
-                    if(isCharging) path += batIcons.bolt;
+                    let svg = `<svg width="32" height="32" viewBox="0 0 24 24" fill="none">`;
+                    svg += batIcons.frame;
+                    svg += `<rect x="3.8" y="8.8" width="${fillWidth}" height="6.4" rx="1" fill="currentColor"/>`;
+                    if(isCharging) svg += batIcons.bolt;
+                    svg += `</svg>`;
 
-                    document.getElementById('battery-icon').innerHTML = `<svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke-width="2">${path}</svg>`;
-                    
-                    // Update Text & Pulse
+                    document.getElementById('battery-icon').innerHTML = svg;
                     const batText = document.getElementById('battery');
                     batText.innerText = level + "%";
                     batText.classList.toggle('charging-pulse', isCharging);
