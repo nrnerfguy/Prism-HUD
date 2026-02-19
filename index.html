@@ -23,10 +23,11 @@
 
         html, body {
             background-color: #000; color: #fff; margin: 0; padding: 0;
-            width: 100vw; height: 100vh; height: 100dvh;
+            width: 100%; height: 100%;
             display: flex; justify-content: center; align-items: center;
             font-family: -apple-system, system-ui, sans-serif;
             overflow: hidden;
+            position: fixed; /* locks iOS rubber-band scroll */
         }
 
         body { animation: pageEntrance 1.5s var(--slow-ease) forwards; opacity: 0; }
@@ -65,15 +66,19 @@
         }
 
         /* Snap zone ghost indicators — shown while dragging */
+        :root { --ghost-size: 38px; }
+        @media (max-width: 600px) { :root { --ghost-size: 28px; } }
+
         .snap-ghost {
             position: fixed;
-            width: 90px; height: 90px;
-            border: 2px dashed rgba(255,255,255,0.12);
-            border-radius: 22px;
+            width: var(--ghost-size);
+            height: var(--ghost-size);
+            border: 1.5px dashed rgba(255,255,255,0.18);
+            border-radius: 10px;
             pointer-events: none; z-index: 5;
             opacity: 0;
-            transition: opacity 0.25s ease, border-color 0.2s, background 0.2s, transform 0.2s;
-            transform: translate(-50%, -50%) scale(0.9);
+            transition: opacity 0.2s ease, border-color 0.15s, background 0.15s, transform 0.2s;
+            transform: translate(-50%, -50%) scale(0.8);
         }
         .snap-ghost.visible {
             opacity: 1;
@@ -82,9 +87,9 @@
         .snap-ghost.nearest {
             border-color: var(--accent);
             border-style: solid;
-            background: rgba(0,122,255,0.12);
-            transform: translate(-50%, -50%) scale(1.18);
-            box-shadow: 0 0 20px rgba(0,122,255,0.2);
+            background: rgba(0,122,255,0.15);
+            transform: translate(-50%, -50%) scale(1.3);
+            box-shadow: 0 0 14px rgba(0,122,255,0.3);
         }
 
         /* ── CLOCK STYLES ── */
@@ -194,6 +199,7 @@
             padding: 40px 25px;
             transition: right 0.4s var(--smooth-ease);
             z-index: 2000; overflow-y: auto;
+            touch-action: pan-y; /* re-enable vertical scroll inside panel */
             border-left: 1px solid rgba(255,255,255,0.1); color: #fff; scrollbar-width: none;
         }
         #side-panel.open { right: 0 !important; }
@@ -437,16 +443,8 @@
         <div class="control-group">
             <label>Spotify Now Playing</label>
             <div id="spotify-status-row" style="margin-top:10px;"></div>
-            <input type="text" id="spotify-client-id" placeholder="Spotify Client ID..." style="margin-top:10px;">
-            <button onclick="connectSpotify()" class="update-btn" style="background:#1DB954;">CONNECT SPOTIFY</button>
+            <button onclick="connectSpotify()" class="update-btn" style="background:#1DB954;margin-top:10px;">CONNECT SPOTIFY</button>
             <button onclick="disconnectSpotify()" class="update-btn" style="background:rgba(255,255,255,0.08);margin-top:6px;" id="spotify-disconnect-btn">DISCONNECT</button>
-            <div class="spotify-note">
-                1. Go to <a href="https://developer.spotify.com/dashboard" target="_blank">developer.spotify.com/dashboard</a><br>
-                2. Create an app → copy your <strong>Client ID</strong><br>
-                3. Add your GitHub Pages URL as a Redirect URI<br>
-                &nbsp;&nbsp;&nbsp;&nbsp;e.g. <code>https://yourname.github.io/repo/</code><br>
-                4. Paste Client ID above and hit Connect
-            </div>
         </div>
 
         <!-- Weather -->
@@ -542,11 +540,11 @@ let state = {
     showClock: true, showDate: true, showWeather: true, showBattery: true, showNowplaying: true,
     // Widget snap-zone positions (% of viewport, widget centered at this point)
     widgetPos: {
-        clock:      { x: 50, y: 38 },
-        date:       { x: 50, y: 61 },
-        weather:    { x: 50, y: 69 },
-        battery:    { x: 50, y: 75 },
-        nowplaying: { x: 50, y: 84 }
+        clock:      { x: 50, y: 25 },
+        date:       { x: 50, y: 50 },
+        weather:    { x: 50, y: 75 },
+        battery:    { x: 75, y: 10 },
+        nowplaying: { x: 50, y: 90 }
     },
     scale: 1, accent: '#007AFF',
     city: 'Calgary', bg: '', history: [],
@@ -1218,9 +1216,10 @@ async function sha256(plain) {
     return btoa(String.fromCharCode(...new Uint8Array(hash))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+const SPOTIFY_CLIENT_ID = '34d7e2f46d844a3ab643ab3529b2c9ab';
+
 async function connectSpotify() {
-    const clientId = document.getElementById('spotify-client-id').value.trim();
-    if (!clientId) { alert('Please enter your Spotify Client ID first.'); return; }
+    const clientId = SPOTIFY_CLIENT_ID;
     state.spotifyClientId = clientId;
     save();
 
@@ -1228,10 +1227,11 @@ async function connectSpotify() {
     const challenge = await sha256(verifier);
     localStorage.setItem('spotify_verifier', verifier);
 
+    const redirectUri = window.location.href.split('?')[0].split('#')[0];
     const params = new URLSearchParams({
         client_id: clientId,
         response_type: 'code',
-        redirect_uri: window.location.href.split('?')[0].split('#')[0],
+        redirect_uri: redirectUri,
         scope: 'user-read-currently-playing user-read-playback-state user-modify-playback-state',
         code_challenge_method: 'S256',
         code_challenge: challenge
@@ -1410,7 +1410,6 @@ function updateSpotifyUI() {
     const loaded   = loadStoredSpotifyTokens();
     const statusEl = document.getElementById('spotify-status-row');
     const discBtn  = document.getElementById('spotify-disconnect-btn');
-
     if (loaded && spotify.accessToken) {
         statusEl.innerHTML = `<div class="spotify-connected"><span class="dot"></span> Connected to Spotify</div>`;
         discBtn.style.display = 'block';
@@ -1418,7 +1417,6 @@ function updateSpotifyUI() {
         statusEl.innerHTML = `<div style="font-size:0.7rem;opacity:0.35;margin-bottom:8px;">Not connected</div>`;
         discBtn.style.display = 'none';
     }
-    if (state.spotifyClientId) document.getElementById('spotify-client-id').value = state.spotifyClientId;
 }
 
 // ─────────────────────────────────────────────────
@@ -1487,6 +1485,7 @@ function renderThemeList() {
 // ─────────────────────────────────────────────────
 function applyAll() {
     document.documentElement.style.setProperty('--accent', state.accent);
+    document.documentElement.style.setProperty('--widget-scale', state.scale);
 
     const bgl = document.getElementById('bg-layer');
     if (state.isStatic) {
@@ -1534,23 +1533,29 @@ function applyAll() {
 
     // Color picker
     document.getElementById('color-accent').value = state.accent;
+
+    // Update ghost dot size to match scale
+    updateGhostSize();
 }
 
 // ─────────────────────────────────────────────────
-// SNAP ZONES — 9 iPhone-style anchor points
+// SNAP ZONES — 5×5 iPhone-style anchor grid
 // ─────────────────────────────────────────────────
-const ZONES = [
-    { x: 18, y: 18 }, { x: 50, y: 14 }, { x: 82, y: 18 },  // top row
-    { x: 14, y: 50 }, { x: 50, y: 50 }, { x: 86, y: 50 },  // middle row
-    { x: 18, y: 82 }, { x: 50, y: 86 }, { x: 82, y: 82 },  // bottom row
-];
+const ZONES = (() => {
+    const xs = [10, 25, 50, 75, 90];
+    const ys = [10, 25, 50, 75, 90];
+    const z = [];
+    ys.forEach(y => xs.forEach(x => z.push({ x, y })));
+    return z;
+})(); // 25 zones
+
 const WIDGET_KEYS = ['clock', 'date', 'weather', 'battery', 'nowplaying'];
 const DEFAULT_POS = {
-    clock:      { x: 50, y: 38 },
-    date:       { x: 50, y: 61 },
-    weather:    { x: 50, y: 69 },
-    battery:    { x: 50, y: 75 },
-    nowplaying: { x: 50, y: 84 }
+    clock:      { x: 50, y: 25 },
+    date:       { x: 50, y: 50 },
+    weather:    { x: 50, y: 75 },
+    battery:    { x: 75, y: 10 },
+    nowplaying: { x: 50, y: 90 }
 };
 
 // Position a widget at its stored snap position, applying scale + mirror
@@ -1566,37 +1571,69 @@ function positionWidget(key) {
 }
 
 // ─────────────────────────────────────────────────
-// SNAP GHOST INDICATORS
+// SNAP GHOST INDICATORS — pixel-positioned for mobile accuracy
 // ─────────────────────────────────────────────────
 let ghostEls = [];
+
+function updateGhostSize() {
+    // Base size in px, scaled by state.scale, clamped smaller on mobile
+    const isMobile = window.innerWidth < 600;
+    const base = isMobile ? 24 : 36;
+    const size = Math.round(base * Math.min(Math.max(state.scale, 0.5), 1.8));
+    document.documentElement.style.setProperty('--ghost-size', size + 'px');
+}
+
+function repositionGhosts() {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    ZONES.forEach((z, i) => {
+        if (!ghostEls[i]) return;
+        ghostEls[i].style.left = (z.x / 100 * vw) + 'px';
+        ghostEls[i].style.top  = (z.y / 100 * vh) + 'px';
+    });
+}
 
 function createSnapGhosts() {
     ghostEls.forEach(g => g.remove());
     ghostEls = [];
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
     ZONES.forEach(z => {
         const g = document.createElement('div');
         g.className = 'snap-ghost';
-        g.style.left = z.x + '%';
-        g.style.top  = z.y + '%';
+        // Use pixel positions — percentages can misbehave on mobile fixed layouts
+        g.style.left = (z.x / 100 * vw) + 'px';
+        g.style.top  = (z.y / 100 * vh) + 'px';
         document.body.appendChild(g);
         ghostEls.push(g);
     });
+    updateGhostSize();
 }
+
+// Reposition on resize/orientation change
+window.addEventListener('resize', () => { repositionGhosts(); updateGhostSize(); });
+window.addEventListener('orientationchange', () => {
+    setTimeout(() => { repositionGhosts(); updateGhostSize(); }, 300);
+});
 
 function showGhosts() { ghostEls.forEach(g => g.classList.add('visible')); }
 function hideGhosts() { ghostEls.forEach(g => g.classList.remove('visible', 'nearest')); }
 
-function nearestZoneIdx(x, y) {
+function nearestZoneIdx(pxX, pxY) {
+    // Compare in px space — ghosts are now pixel-positioned
+    const vw = window.innerWidth, vh = window.innerHeight;
     let best = 0, bestDist = Infinity;
     ZONES.forEach((z, i) => {
-        const d = Math.hypot(z.x - x, z.y - y);
+        const gx = z.x / 100 * vw;
+        const gy = z.y / 100 * vh;
+        const d  = Math.hypot(gx - pxX, gy - pxY);
         if (d < bestDist) { bestDist = d; best = i; }
     });
     return best;
 }
 
-function highlightGhost(x, y) {
-    const idx = nearestZoneIdx(x, y);
+function highlightGhost(pxX, pxY) {
+    const idx = nearestZoneIdx(pxX, pxY);
     ghostEls.forEach((g, i) => g.classList.toggle('nearest', i === idx));
 }
 
@@ -1608,11 +1645,10 @@ function initWidgetDrag(key) {
     if (!el) return;
 
     const onStart = (e) => {
-        // Don't drag if clicking a button inside the widget (Spotify controls, etc.)
         if (e.target.closest('button, input, a')) return;
 
-        const isTouch  = e.type === 'touchstart';
-        const getXY    = ev => isTouch
+        const isTouch = e.type === 'touchstart';
+        const getXY   = ev => isTouch
             ? { cx: ev.touches[0].clientX, cy: ev.touches[0].clientY }
             : { cx: ev.clientX, cy: ev.clientY };
 
@@ -1620,12 +1656,14 @@ function initWidgetDrag(key) {
         if (!state.widgetPos) state.widgetPos = JSON.parse(JSON.stringify(DEFAULT_POS));
         const origPos = { ...state.widgetPos[key] };
         let moved = false;
+        let curPxX = origPos.x / 100 * window.innerWidth;
+        let curPxY = origPos.y / 100 * window.innerHeight;
 
         const onMove = (ev) => {
             if (isTouch) ev.preventDefault();
             const { cx, cy } = getXY(ev);
             const dx = cx - startX, dy = cy - startY;
-            if (!moved && Math.hypot(dx, dy) < 6) return;
+            if (!moved && Math.hypot(dx, dy) < 8) return;
 
             if (!moved) {
                 moved = true;
@@ -1633,32 +1671,32 @@ function initWidgetDrag(key) {
                 showGhosts();
             }
 
-            const vw = window.innerWidth, vh = window.innerHeight;
-            const newX = Math.min(95, Math.max(5, origPos.x + (dx / vw * 100)));
-            const newY = Math.min(95, Math.max(5, origPos.y + (dy / vh * 100)));
+            curPxX = Math.min(window.innerWidth  * 0.95, Math.max(window.innerWidth  * 0.05, (origPos.x / 100 * window.innerWidth)  + dx));
+            curPxY = Math.min(window.innerHeight * 0.95, Math.max(window.innerHeight * 0.05, (origPos.y / 100 * window.innerHeight) + dy));
 
-            // Move without spring while dragging
-            el.style.left = newX + '%';
-            el.style.top  = newY + '%';
-            highlightGhost(newX, newY);
+            // Move freely while dragging — skip spring
+            el.style.transition = 'opacity 0.15s ease';
+            el.style.left = (curPxX / window.innerWidth  * 100) + '%';
+            el.style.top  = (curPxY / window.innerHeight * 100) + '%';
+            highlightGhost(curPxX, curPxY);
         };
 
-        const onEnd = (ev) => {
+        const onEnd = () => {
             document.removeEventListener('mousemove', onMove);
             document.removeEventListener('mouseup',   onEnd);
             document.removeEventListener('touchmove', onMove);
             document.removeEventListener('touchend',  onEnd);
             el.classList.remove('dragging');
+            // Restore spring transition
+            el.style.transition = '';
             hideGhosts();
 
             if (!moved) return;
 
-            // Snap to nearest zone with spring animation
-            const curX = parseFloat(el.style.left);
-            const curY = parseFloat(el.style.top);
-            const zone = ZONES[nearestZoneIdx(curX, curY)];
+            // Snap to nearest zone
+            const zone = ZONES[nearestZoneIdx(curPxX, curPxY)];
             state.widgetPos[key] = { x: zone.x, y: zone.y };
-            positionWidget(key);  // triggers CSS spring via transition
+            positionWidget(key);
             save();
         };
 
@@ -1709,6 +1747,19 @@ function toggle(key) { state[key] = !state[key]; applyAll(); save(); }
 function openModal()  { document.getElementById('confirm-modal').style.display = 'flex'; }
 function closeModal() { document.getElementById('confirm-modal').style.display = 'none'; }
 function performFactoryReset() { localStorage.clear(); location.reload(); }
+
+// ─────────────────────────────────────────────────
+// PREVENT PAGE SCROLL (all devices, especially iOS)
+// ─────────────────────────────────────────────────
+document.addEventListener('touchmove', e => {
+    // Allow scrolling only inside the side panel
+    if (e.target.closest('#side-panel')) return;
+    e.preventDefault();
+}, { passive: false });
+
+document.addEventListener('wheel', e => {
+    if (!e.target.closest('#side-panel')) e.preventDefault();
+}, { passive: false });
 
 // ─────────────────────────────────────────────────
 // BOOT
