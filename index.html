@@ -88,7 +88,7 @@
         #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.8; font-weight: 300; margin-top: 10px; }
         #weather-widget { gap: 20px; opacity: 0.8; font-size: 2.4rem; font-weight: 200; margin-top: 10px;}
         
-        #battery-widget { font-size: 1.2rem; font-weight: 600; opacity: 0.8; margin-top: 10px; letter-spacing: 4px; display: flex; align-items: center; justify-content: center; gap: 8px; }
+        #battery-widget { font-size: 1.4rem; font-weight: 600; opacity: 0.8; margin-top: 10px; letter-spacing: 4px; display: flex; align-items: center; justify-content: center; gap: 8px; }
         .charging-pulse { animation: batteryPulse 2s infinite ease-in-out; }
         @keyframes batteryPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
@@ -612,13 +612,13 @@
                 const updateUI = () => {
                     const level = Math.round(b.level * 100);
                     const isCharging = b.charging;
-                    const fillWidth = (level / 100) * 13; 
+                    const fillWidth = (level / 100) * 14; 
                     
                     let fillColor = state.accent;
                     if(level <= 20) fillColor = "#ff4444";
                     if(level === 100) fillColor = "#34C759";
                     
-                    let svg = `<svg width="34" height="24" viewBox="0 0 24 24" fill="none" style="display: block; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5))">`;
+                    let svg = `<svg width="40" height="28" viewBox="0 0 24 24" fill="none" style="display: block; filter: drop-shadow(0 0 2px rgba(0,0,0,0.5))">`;
                     svg += batIcons.frame;
                     svg += `<rect x="3.5" y="8.5" width="${fillWidth}" height="7" rx="1.5" fill="${fillColor}"/>`;
                     if(isCharging) svg += batIcons.bolt;
