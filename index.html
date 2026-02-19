@@ -42,13 +42,50 @@
             transition: opacity 0.3s, filter 0.3s; pointer-events: none;
         }
 
-        #hud-master {
-            display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;
-            transition: transform 0.8s var(--smooth-ease), margin 1s ease-in-out;
-            will-change: transform, margin;
+        /* #hud-master is now a transparent passthrough — widgets position themselves */
+        #hud-master { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+
+        .widget {
+            position: fixed;
+            display: flex; justify-content: center; align-items: center;
+            color: var(--accent); filter: var(--widget-shadow);
+            pointer-events: all;
+            cursor: grab;
+            user-select: none; -webkit-user-select: none;
+            /* spring snap animation */
+            transition: left 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                        top  0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+                        opacity 0.4s ease, transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .widget:hover { filter: var(--widget-shadow) brightness(1.08); }
+        .widget.dragging {
+            transition: opacity 0.15s ease;
+            cursor: grabbing; z-index: 500;
+            opacity: 0.8;
         }
 
-        .widget { transition: opacity 0.4s ease; color: var(--accent); filter: var(--widget-shadow); width: 100%; display: flex; justify-content: center; align-items: center; }
+        /* Snap zone ghost indicators — shown while dragging */
+        .snap-ghost {
+            position: fixed;
+            width: 90px; height: 90px;
+            border: 2px dashed rgba(255,255,255,0.12);
+            border-radius: 22px;
+            pointer-events: none; z-index: 5;
+            opacity: 0;
+            transition: opacity 0.25s ease, border-color 0.2s, background 0.2s, transform 0.2s;
+            transform: translate(-50%, -50%) scale(0.9);
+        }
+        .snap-ghost.visible {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1);
+        }
+        .snap-ghost.nearest {
+            border-color: var(--accent);
+            border-style: solid;
+            background: rgba(0,122,255,0.12);
+            transform: translate(-50%, -50%) scale(1.18);
+            box-shadow: 0 0 20px rgba(0,122,255,0.2);
+        }
 
         /* ── CLOCK STYLES ── */
         #clock { line-height: 1; transition: all 0.4s ease; text-shadow: 0px 0px 20px rgba(0,0,0,0.5); }
@@ -116,6 +153,39 @@
         }
         #nav-ghost-zone { position: absolute; bottom: 0; right: 0; width: 150px; height: 150px; z-index: 999; }
         #nav-trigger:hover, #nav-trigger.active-ui { opacity: 1 !important; transform: scale(1.1) rotate(15deg); background: rgba(255,255,255,0.2); border-color: var(--accent); box-shadow: 0 0 20px rgba(255,255,255,0.1); }
+
+        /* ── FULLSCREEN BUTTON ── */
+        #fullscreen-btn {
+            position: absolute; bottom: 40px; left: 40px;
+            width: 44px; height: 44px;
+            background: rgba(255,255,255,0.07); backdrop-filter: blur(15px);
+            border: 1px solid rgba(255,255,255,0.15); border-radius: 50%;
+            display: flex; justify-content: center; align-items: center;
+            z-index: 1000; cursor: pointer; color: #fff;
+            transition: opacity 0.8s var(--smooth-ease), transform 0.3s var(--smooth-ease), background 0.3s, border-color 0.3s;
+            opacity: 0;
+        }
+        #fullscreen-btn:hover { opacity: 1 !important; background: rgba(255,255,255,0.15); border-color: var(--accent); transform: scale(1.1); }
+
+        /* ── KEYBOARD SHORTCUT TOAST ── */
+        #kb-toast {
+            position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(20px);
+            background: rgba(20,20,20,0.92); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 14px;
+            padding: 10px 18px; font-size: 0.7rem; letter-spacing: 1px;
+            color: rgba(255,255,255,0.6); z-index: 4000; pointer-events: none;
+            opacity: 0; transition: opacity 0.3s, transform 0.3s;
+            white-space: nowrap;
+        }
+        #kb-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+        /* ── AUTO-DIM ── */
+        #dim-overlay {
+            position: fixed; inset: 0; background: #000;
+            opacity: 0; pointer-events: none;
+            transition: opacity 2s ease; z-index: 900;
+        }
+        #dim-overlay.dimmed { opacity: 0.82; pointer-events: none; }
 
         /* ── SIDE PANEL ── */
         #side-panel {
@@ -237,6 +307,21 @@
 
 <div id="bg-layer"></div>
 <div id="overlay" onclick="toggleNav()"></div>
+<div id="dim-overlay"></div>
+<canvas id="art-canvas" style="display:none;" width="1" height="1"></canvas>
+
+<!-- Keyboard shortcut toast -->
+<div id="kb-toast"></div>
+
+<!-- Fullscreen button (bottom-left, fades in on mouse move) -->
+<div id="fullscreen-btn" onclick="toggleFullscreen()" title="Fullscreen (F)">
+    <svg id="fs-enter-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+    </svg>
+    <svg id="fs-exit-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+    </svg>
+</div>
 
 <div id="confirm-modal">
     <div class="modal-box">
@@ -400,43 +485,38 @@
 
         <!-- Widget Controls -->
         <div class="control-group">
-            <div class="row"><label>Clock Widget</label><span class="reset-link" onclick="resetWidget('clock')">Reset</span></div>
+            <div class="row"><label>Clock Widget</label><span class="reset-link" onclick="resetWidget('clock')">Reset Position</span></div>
             <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Visibility</label>
                 <div style="display:flex;align-items:center;"><span id="st-clock" class="status-tag">SHOWN</span><div id="sw-showClock" class="ios-switch active" onclick="toggle('showClock')"></div></div>
             </div>
-            <input type="range" id="range-clock" min="-400" max="400" value="0" oninput="nudge('clock',this.value)">
         </div>
 
         <div class="control-group">
-            <div class="row"><label>Date Widget</label><span class="reset-link" onclick="resetWidget('date')">Reset</span></div>
+            <div class="row"><label>Date Widget</label><span class="reset-link" onclick="resetWidget('date')">Reset Position</span></div>
             <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Visibility</label>
                 <div style="display:flex;align-items:center;"><span id="st-date" class="status-tag">SHOWN</span><div id="sw-showDate" class="ios-switch active" onclick="toggle('showDate')"></div></div>
             </div>
-            <input type="range" id="range-date" min="-400" max="400" value="0" oninput="nudge('date',this.value)">
         </div>
 
         <div class="control-group">
-            <div class="row"><label>Weather Widget</label><span class="reset-link" onclick="resetWidget('weather')">Reset</span></div>
+            <div class="row"><label>Weather Widget</label><span class="reset-link" onclick="resetWidget('weather')">Reset Position</span></div>
             <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Visibility</label>
                 <div style="display:flex;align-items:center;"><span id="st-weather" class="status-tag">SHOWN</span><div id="sw-showWeather" class="ios-switch active" onclick="toggle('showWeather')"></div></div>
             </div>
-            <input type="range" id="range-weather" min="-400" max="400" value="0" oninput="nudge('weather',this.value)">
         </div>
 
         <div class="control-group">
-            <div class="row"><label>Battery Widget</label><span class="reset-link" onclick="resetWidget('battery')">Reset</span></div>
+            <div class="row"><label>Battery Widget</label><span class="reset-link" onclick="resetWidget('battery')">Reset Position</span></div>
             <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Visibility</label>
                 <div style="display:flex;align-items:center;"><span id="st-battery" class="status-tag">SHOWN</span><div id="sw-showBattery" class="ios-switch active" onclick="toggle('showBattery')"></div></div>
             </div>
-            <input type="range" id="range-battery" min="-400" max="400" value="0" oninput="nudge('battery',this.value)">
         </div>
 
         <div class="control-group">
-            <div class="row"><label>Now Playing Widget</label><span class="reset-link" onclick="resetWidget('nowplaying')">Reset</span></div>
+            <div class="row"><label>Now Playing Widget</label><span class="reset-link" onclick="resetWidget('nowplaying')">Reset Position</span></div>
             <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Visibility</label>
                 <div style="display:flex;align-items:center;"><span id="st-nowplaying" class="status-tag">SHOWN</span><div id="sw-showNowplaying" class="ios-switch active" onclick="toggle('showNowplaying')"></div></div>
             </div>
-            <input type="range" id="range-nowplaying" min="-400" max="400" value="0" oninput="nudge('nowplaying',this.value)">
         </div>
 
         <div class="control-group">
@@ -460,7 +540,14 @@
 let state = {
     mirrored: false, is24h: true, burnShield: true,
     showClock: true, showDate: true, showWeather: true, showBattery: true, showNowplaying: true,
-    nudgeclock: 0, nudgedate: 0, nudgeweather: 0, nudgebattery: 0, nudgenowplaying: 0,
+    // Widget snap-zone positions (% of viewport, widget centered at this point)
+    widgetPos: {
+        clock:      { x: 50, y: 38 },
+        date:       { x: 50, y: 61 },
+        weather:    { x: 50, y: 69 },
+        battery:    { x: 50, y: 75 },
+        nowplaying: { x: 50, y: 84 }
+    },
     scale: 1, accent: '#007AFF',
     city: 'Calgary', bg: '', history: [],
     isStatic: false, staticColor: '#000000', blur: 0, bgOpacity: 1,
@@ -497,6 +584,10 @@ function load() {
         document.getElementById('nowplaying-widget').style.display = 'flex';
         pollSpotify();
     }
+
+    resetDimTimer();
+    createSnapGhosts();
+    initAllDrag();
 }
 
 // ─────────────────────────────────────────────────
@@ -505,10 +596,15 @@ function load() {
 let navTimer;
 function wakeNav() {
     const btn = document.getElementById('nav-trigger');
+    const fsBtn = document.getElementById('fullscreen-btn');
     btn.style.opacity = '0.6';
+    fsBtn.style.opacity = '0.5';
     clearTimeout(navTimer);
     navTimer = setTimeout(() => {
-        if (!document.getElementById('side-panel').classList.contains('open')) btn.style.opacity = '0';
+        if (!document.getElementById('side-panel').classList.contains('open')) {
+            btn.style.opacity = '0';
+            fsBtn.style.opacity = '0';
+        }
     }, 3000);
 }
 
@@ -521,6 +617,160 @@ function toggleNav(e) {
         clearTimeout(navTimer);
         document.getElementById('nav-trigger').style.opacity = '1';
     } else { wakeNav(); }
+}
+
+// ─────────────────────────────────────────────────
+// FULLSCREEN
+// ─────────────────────────────────────────────────
+function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+        document.exitFullscreen().catch(() => {});
+    }
+}
+
+document.addEventListener('fullscreenchange', () => {
+    const isFs = !!document.fullscreenElement;
+    document.getElementById('fs-enter-icon').style.display = isFs ? 'none'  : 'block';
+    document.getElementById('fs-exit-icon').style.display  = isFs ? 'block' : 'none';
+});
+
+// ─────────────────────────────────────────────────
+// AUTO-DIM ON INACTIVITY
+// ─────────────────────────────────────────────────
+const dim = { timer: null, isDimmed: false, DELAY_MS: 3 * 60 * 1000 }; // 3 min
+
+function resetDimTimer() {
+    if (dim.isDimmed) undim();
+    clearTimeout(dim.timer);
+    dim.timer = setTimeout(doDim, dim.DELAY_MS);
+}
+
+function doDim() {
+    dim.isDimmed = true;
+    document.getElementById('dim-overlay').classList.add('dimmed');
+}
+
+function undim() {
+    dim.isDimmed = false;
+    document.getElementById('dim-overlay').classList.remove('dimmed');
+}
+
+['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'].forEach(evt =>
+    document.addEventListener(evt, resetDimTimer, { passive: true })
+);
+document.addEventListener('mousemove', wakeNav, { passive: true });
+
+// ─────────────────────────────────────────────────
+// KEYBOARD SHORTCUTS
+// ─────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+    const t = document.getElementById('kb-toast');
+    t.innerText = msg;
+    t.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => t.classList.remove('show'), 1800);
+}
+
+document.addEventListener('keydown', e => {
+    // Don't fire if user is typing in an input
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+    switch (e.key) {
+        case ' ':
+        case 'k':
+            e.preventDefault();
+            spotifyPlayPause();
+            showToast('⏯  Play / Pause');
+            break;
+        case 'ArrowRight':
+        case 'l':
+            spotifyNext();
+            showToast('⏭  Next Track');
+            break;
+        case 'ArrowLeft':
+        case 'j':
+            spotifyPrev();
+            showToast('⏮  Previous Track');
+            break;
+        case 'f':
+        case 'F':
+            toggleFullscreen();
+            showToast(document.fullscreenElement ? '⤡  Exit Fullscreen' : '⤢  Fullscreen');
+            break;
+        case 'Escape':
+            if (document.getElementById('side-panel').classList.contains('open')) toggleNav();
+            break;
+        case 'd':
+            if (dim.isDimmed) { undim(); clearTimeout(dim.timer); } else doDim();
+            showToast(dim.isDimmed ? '🌙  Dimmed' : '☀︎  Undimmed');
+            break;
+    }
+});
+
+// ─────────────────────────────────────────────────
+// ALBUM ART ACCENT COLOR EXTRACTION
+// ─────────────────────────────────────────────────
+let accentFromArt = false; // track whether accent is from art or user setting
+
+function extractAccentFromArt(imgUrl) {
+    if (!imgUrl) { restoreUserAccent(); return; }
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+        try {
+            const canvas = document.getElementById('art-canvas');
+            const ctx    = canvas.getContext('2d');
+            // Downsample to 1×1 for a very fast average — gives the dominant tone
+            canvas.width = 50; canvas.height = 50;
+            ctx.drawImage(img, 0, 0, 50, 50);
+            const data = ctx.getImageData(0, 0, 50, 50).data;
+
+            // Weighted sample: favour saturated pixels over grey ones
+            let rSum = 0, gSum = 0, bSum = 0, weight = 0;
+            for (let i = 0; i < data.length; i += 4) {
+                const r = data[i], g = data[i+1], b = data[i+2];
+                const max = Math.max(r, g, b), min = Math.min(r, g, b);
+                const sat = max === 0 ? 0 : (max - min) / max;
+                const lum = (max + min) / 510;
+                // Ignore near-black, near-white, and grey pixels
+                if (sat < 0.25 || lum < 0.12 || lum > 0.88) continue;
+                const w = sat * sat; // square weight to really prefer saturated colours
+                rSum += r * w; gSum += g * w; bSum += b * w; weight += w;
+            }
+            if (weight === 0) { restoreUserAccent(); return; }
+
+            let r = Math.round(rSum / weight);
+            let g = Math.round(gSum / weight);
+            let b = Math.round(bSum / weight);
+
+            // Boost saturation so it feels vivid on the dark background
+            const max = Math.max(r, g, b), min2 = Math.min(r, g, b), delta = max - min2;
+            if (delta > 0) {
+                const factor = 1.4;
+                const mid = (max + min2) / 2;
+                r = Math.round(mid + (r - mid) * factor);
+                g = Math.round(mid + (g - mid) * factor);
+                b = Math.round(mid + (b - mid) * factor);
+                r = Math.min(255, Math.max(0, r));
+                g = Math.min(255, Math.max(0, g));
+                b = Math.min(255, Math.max(0, b));
+            }
+
+            const hex = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+            accentFromArt = true;
+            document.documentElement.style.setProperty('--accent', hex);
+        } catch (err) { restoreUserAccent(); }
+    };
+    img.onerror = () => restoreUserAccent();
+    img.src = imgUrl;
+}
+
+function restoreUserAccent() {
+    accentFromArt = false;
+    document.documentElement.style.setProperty('--accent', state.accent);
 }
 
 // ─────────────────────────────────────────────────
@@ -1100,9 +1350,11 @@ function updateNowPlayingUI(data) {
     if (art) {
         artEl.innerHTML = `<img src="${art}" alt="album art">`;
         artEl.classList.add('has-art');
+        extractAccentFromArt(art);
     } else {
         artEl.innerHTML = '♫';
         artEl.classList.remove('has-art');
+        restoreUserAccent();
     }
 
     const pct = data.progress_ms / track.duration_ms * 100;
@@ -1235,8 +1487,6 @@ function renderThemeList() {
 // ─────────────────────────────────────────────────
 function applyAll() {
     document.documentElement.style.setProperty('--accent', state.accent);
-    const m = state.mirrored ? -1 : 1;
-    document.getElementById('hud-master').style.transform = `scale(${state.scale}) scaleX(${m})`;
 
     const bgl = document.getElementById('bg-layer');
     if (state.isStatic) {
@@ -1259,18 +1509,17 @@ function applyAll() {
     widgets.forEach(key => {
         const el   = document.getElementById(key + '-widget');
         const show = state['show' + key.charAt(0).toUpperCase() + key.slice(1)];
-        el.style.opacity   = show ? 1 : 0;
-        el.style.transform = `translateY(${state['nudge' + key] || 0}px)`;
-        const sw  = document.getElementById('sw-show' + key.charAt(0).toUpperCase() + key.slice(1));
+        el.style.opacity = show ? 1 : 0;
+        el.style.pointerEvents = show ? 'all' : 'none';
+        positionWidget(key);
+        const sw = document.getElementById('sw-show' + key.charAt(0).toUpperCase() + key.slice(1));
         if (sw) sw.classList.toggle('active', show);
-        const st  = document.getElementById('st-' + key);
+        const st = document.getElementById('st-' + key);
         if (st) { st.innerText = show ? 'SHOWN' : 'HIDDEN'; st.className = show ? 'status-tag on' : 'status-tag off'; }
-        const rng = document.getElementById('range-' + key);
-        if (rng) rng.value = state['nudge' + key] || 0;
     });
 
-    document.getElementById('range-scale').value = state.scale;
     document.getElementById('city-input').value  = state.city;
+    document.getElementById('range-scale').value = state.scale;
 
     // Clock style — use internal helper to avoid setClockStyle→applyAll recursion
     applyClockStyle(state.clockStyle || 'bold');
@@ -1279,8 +1528,8 @@ function applyAll() {
     document.getElementById('amb-vol').value = state.ambientVolume;
     const ambStatus = document.getElementById('amb-status');
     if (state.ambientSound) {
-        ambStatus.innerText  = state.ambientSound.toUpperCase();
-        ambStatus.className  = 'status-tag on';
+        ambStatus.innerText = state.ambientSound.toUpperCase();
+        ambStatus.className = 'status-tag on';
     }
 
     // Color picker
@@ -1288,26 +1537,170 @@ function applyAll() {
 }
 
 // ─────────────────────────────────────────────────
-// BURN SHIELD
+// SNAP ZONES — 9 iPhone-style anchor points
+// ─────────────────────────────────────────────────
+const ZONES = [
+    { x: 18, y: 18 }, { x: 50, y: 14 }, { x: 82, y: 18 },  // top row
+    { x: 14, y: 50 }, { x: 50, y: 50 }, { x: 86, y: 50 },  // middle row
+    { x: 18, y: 82 }, { x: 50, y: 86 }, { x: 82, y: 82 },  // bottom row
+];
+const WIDGET_KEYS = ['clock', 'date', 'weather', 'battery', 'nowplaying'];
+const DEFAULT_POS = {
+    clock:      { x: 50, y: 38 },
+    date:       { x: 50, y: 61 },
+    weather:    { x: 50, y: 69 },
+    battery:    { x: 50, y: 75 },
+    nowplaying: { x: 50, y: 84 }
+};
+
+// Position a widget at its stored snap position, applying scale + mirror
+function positionWidget(key) {
+    if (!state.widgetPos) state.widgetPos = JSON.parse(JSON.stringify(DEFAULT_POS));
+    const pos = state.widgetPos[key] || DEFAULT_POS[key];
+    const el  = document.getElementById(key + '-widget');
+    if (!el) return;
+    el.style.left = pos.x + '%';
+    el.style.top  = pos.y + '%';
+    const sx = state.mirrored ? -state.scale : state.scale;
+    el.style.transform = `translate(-50%, -50%) scale(${sx}, ${state.scale})`;
+}
+
+// ─────────────────────────────────────────────────
+// SNAP GHOST INDICATORS
+// ─────────────────────────────────────────────────
+let ghostEls = [];
+
+function createSnapGhosts() {
+    ghostEls.forEach(g => g.remove());
+    ghostEls = [];
+    ZONES.forEach(z => {
+        const g = document.createElement('div');
+        g.className = 'snap-ghost';
+        g.style.left = z.x + '%';
+        g.style.top  = z.y + '%';
+        document.body.appendChild(g);
+        ghostEls.push(g);
+    });
+}
+
+function showGhosts() { ghostEls.forEach(g => g.classList.add('visible')); }
+function hideGhosts() { ghostEls.forEach(g => g.classList.remove('visible', 'nearest')); }
+
+function nearestZoneIdx(x, y) {
+    let best = 0, bestDist = Infinity;
+    ZONES.forEach((z, i) => {
+        const d = Math.hypot(z.x - x, z.y - y);
+        if (d < bestDist) { bestDist = d; best = i; }
+    });
+    return best;
+}
+
+function highlightGhost(x, y) {
+    const idx = nearestZoneIdx(x, y);
+    ghostEls.forEach((g, i) => g.classList.toggle('nearest', i === idx));
+}
+
+// ─────────────────────────────────────────────────
+// DRAG ENGINE
+// ─────────────────────────────────────────────────
+function initWidgetDrag(key) {
+    const el = document.getElementById(key + '-widget');
+    if (!el) return;
+
+    const onStart = (e) => {
+        // Don't drag if clicking a button inside the widget (Spotify controls, etc.)
+        if (e.target.closest('button, input, a')) return;
+
+        const isTouch  = e.type === 'touchstart';
+        const getXY    = ev => isTouch
+            ? { cx: ev.touches[0].clientX, cy: ev.touches[0].clientY }
+            : { cx: ev.clientX, cy: ev.clientY };
+
+        const { cx: startX, cy: startY } = getXY(e);
+        if (!state.widgetPos) state.widgetPos = JSON.parse(JSON.stringify(DEFAULT_POS));
+        const origPos = { ...state.widgetPos[key] };
+        let moved = false;
+
+        const onMove = (ev) => {
+            if (isTouch) ev.preventDefault();
+            const { cx, cy } = getXY(ev);
+            const dx = cx - startX, dy = cy - startY;
+            if (!moved && Math.hypot(dx, dy) < 6) return;
+
+            if (!moved) {
+                moved = true;
+                el.classList.add('dragging');
+                showGhosts();
+            }
+
+            const vw = window.innerWidth, vh = window.innerHeight;
+            const newX = Math.min(95, Math.max(5, origPos.x + (dx / vw * 100)));
+            const newY = Math.min(95, Math.max(5, origPos.y + (dy / vh * 100)));
+
+            // Move without spring while dragging
+            el.style.left = newX + '%';
+            el.style.top  = newY + '%';
+            highlightGhost(newX, newY);
+        };
+
+        const onEnd = (ev) => {
+            document.removeEventListener('mousemove', onMove);
+            document.removeEventListener('mouseup',   onEnd);
+            document.removeEventListener('touchmove', onMove);
+            document.removeEventListener('touchend',  onEnd);
+            el.classList.remove('dragging');
+            hideGhosts();
+
+            if (!moved) return;
+
+            // Snap to nearest zone with spring animation
+            const curX = parseFloat(el.style.left);
+            const curY = parseFloat(el.style.top);
+            const zone = ZONES[nearestZoneIdx(curX, curY)];
+            state.widgetPos[key] = { x: zone.x, y: zone.y };
+            positionWidget(key);  // triggers CSS spring via transition
+            save();
+        };
+
+        document.addEventListener('mousemove', onMove);
+        document.addEventListener('mouseup',   onEnd);
+        document.addEventListener('touchmove', onMove, { passive: false });
+        document.addEventListener('touchend',  onEnd);
+    };
+
+    el.addEventListener('mousedown',  onStart);
+    el.addEventListener('touchstart', onStart, { passive: false });
+}
+
+function initAllDrag() {
+    WIDGET_KEYS.forEach(key => initWidgetDrag(key));
+}
+
+// ─────────────────────────────────────────────────
+// BURN SHIELD — tiny random drift via CSS var
 // ─────────────────────────────────────────────────
 function startBurnShield() {
     setInterval(() => {
-        const hud = document.getElementById('hud-master');
-        if (state.burnShield) {
-            hud.style.marginTop  = (Math.random() * 4 - 2) + 'px';
-            hud.style.marginLeft = (Math.random() * 4 - 2) + 'px';
-        } else {
-            hud.style.marginTop  = '0px';
-            hud.style.marginLeft = '0px';
-        }
+        WIDGET_KEYS.forEach(key => {
+            const el = document.getElementById(key + '-widget');
+            if (!el || !state.burnShield) return;
+            const dx = (Math.random() * 3 - 1.5).toFixed(1);
+            const dy = (Math.random() * 3 - 1.5).toFixed(1);
+            el.style.marginLeft = dx + 'px';
+            el.style.marginTop  = dy + 'px';
+        });
     }, 60000);
 }
 
 // ─────────────────────────────────────────────────
 // WIDGET HELPERS
 // ─────────────────────────────────────────────────
-function nudge(id, v) { state['nudge' + id] = parseFloat(v); applyAll(); save(); }
-function resetWidget(id) { state['nudge' + id] = 0; state['show' + id.charAt(0).toUpperCase() + id.slice(1)] = true; applyAll(); save(); }
+function resetWidget(key) {
+    if (!state.widgetPos) state.widgetPos = {};
+    state.widgetPos[key] = { ...DEFAULT_POS[key] };
+    state['show' + key.charAt(0).toUpperCase() + key.slice(1)] = true;
+    applyAll(); save();
+}
 function toggle(key) { state[key] = !state[key]; applyAll(); save(); }
 
 // ─────────────────────────────────────────────────
