@@ -504,18 +504,22 @@ function updateClock() {
 }
 setInterval(updateClock, 1000);
 
-function setClockStyle(style) {
-    state.clockStyle = style;
+// DOM-only clock style update — safe to call from applyAll()
+function applyClockStyle(style) {
     document.querySelectorAll('.style-btn').forEach(b => b.classList.toggle('active', b.dataset.style === style));
-    const clockEl     = document.getElementById('clock');
-    const analogEl    = document.getElementById('analog-clock');
-    const isAnalog    = style === 'analog';
+    const clockEl  = document.getElementById('clock');
+    const analogEl = document.getElementById('analog-clock');
+    const isAnalog = style === 'analog';
     clockEl.style.display  = isAnalog ? 'none' : 'block';
     analogEl.style.display = isAnalog ? 'block' : 'none';
-    if (!isAnalog) {
-        clockEl.className = `style-${style}`;
-    }
-    applyAll(); save();
+    if (!isAnalog) clockEl.className = `style-${style}`;
+}
+
+// Public setter called from UI buttons — saves state then applies
+function setClockStyle(style) {
+    state.clockStyle = style;
+    applyClockStyle(style);
+    save();
 }
 
 // ─────────────────────────────────────────────────
@@ -1204,8 +1208,8 @@ function applyAll() {
     document.getElementById('range-scale').value = state.scale;
     document.getElementById('city-input').value  = state.city;
 
-    // Clock style
-    setClockStyle(state.clockStyle || 'bold');
+    // Clock style — use internal helper to avoid setClockStyle→applyAll recursion
+    applyClockStyle(state.clockStyle || 'bold');
 
     // Ambient
     document.getElementById('amb-vol').value = state.ambientVolume;
