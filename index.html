@@ -88,9 +88,30 @@
         #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.8; font-weight: 300; margin-top: 10px; }
         #weather-widget { gap: 20px; opacity: 0.8; font-size: 2.4rem; font-weight: 200; margin-top: 10px;}
         
-        #battery-widget { font-size: 1.2rem; font-weight: 600; opacity: 0.8; margin-top: 10px; letter-spacing: 4px; display: flex; align-items: center; gap: 12px; }
+        /* CLEANED BATTERY UI */
+        #battery-widget { 
+            margin-top: 15px; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center;
+            gap: 10px;
+            height: 40px;
+        }
+        #battery-icon {
+            display: flex;
+            align-items: center;
+        }
+        #battery { 
+            font-size: 1.1rem; 
+            font-weight: 700; 
+            opacity: 0.9; 
+            letter-spacing: 1px;
+            font-variant-numeric: tabular-nums;
+            min-width: 50px;
+            text-align: left;
+        }
         .charging-pulse { animation: batteryPulse 2s infinite ease-in-out; }
-        @keyframes batteryPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
+        @keyframes batteryPulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
 
         #nav-trigger {
             position: absolute; bottom: 40px; right: 40px;
@@ -416,11 +437,6 @@
             storm: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9M13 11l-4 6h6l-4 6"></path></svg>`
         };
 
-        const batIcons = {
-            bolt: `<path d="M12 7l-3.5 5h3l-1 5 4.5-6.5h-3l1-3.5z" fill="white" stroke="rgba(0,0,0,0.3)" stroke-width="0.3"/>`,
-            frame: `<rect x="2" y="7" width="16" height="10" rx="3" stroke="currentColor" fill="none" stroke-width="1.5" opacity="0.6"/><path d="M19 10.5c1 0 1 3 0 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>`
-        };
-
         function save() { localStorage.setItem('prism_ultra_v2', JSON.stringify(state)); }
 
         function load() {
@@ -434,24 +450,6 @@
             fetchWeather();
             startBurnShield();
             wakeNav();
-        }
-
-        function toggle(key) {
-            state[key] = !state[key];
-            applyAll();
-            save();
-        }
-
-        function nudge(key, val) {
-            state['nudge' + key] = val;
-            applyAll();
-            save();
-        }
-
-        function resetWidget(key) {
-            state['nudge' + key] = 0;
-            applyAll();
-            save();
         }
 
         function wakeNav() {
@@ -565,8 +563,7 @@
                     statusTag.innerText = show ? 'SHOWN' : 'HIDDEN';
                     statusTag.className = show ? 'status-tag on' : 'status-tag off';
                 }
-                const range = document.getElementById('range-' + key);
-                if(range) range.value = state['nudge' + key];
+                document.getElementById('range-' + key).value = state['nudge' + key];
             });
             document.getElementById('range-scale').value = state.scale;
             document.getElementById('city-input').value = state.city;
@@ -623,6 +620,7 @@
             document.getElementById('clock').innerText = `${h}:${m}`;
             document.getElementById('date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
         }
+        setInterval(updateClock, 1000);
 
         async function updateBattery() {
             try {
@@ -630,17 +628,20 @@
                 const updateUI = () => {
                     const level = Math.round(b.level * 100);
                     const isCharging = b.charging;
-                    const fillWidth = (level / 100) * 13; 
                     
+                    // High-fidelity Battery UI Drawing
                     let fillColor = state.accent;
                     if(level <= 20) fillColor = "#ff4444";
                     if(level === 100) fillColor = "#34C759";
                     
-                    let svg = `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" style="filter: drop-shadow(0 0 2px rgba(0,0,0,0.5))">`;
-                    svg += batIcons.frame;
-                    svg += `<rect x="3.5" y="8.5" width="${fillWidth}" height="7" rx="1.5" fill="${fillColor}"/>`;
-                    if(isCharging) svg += batIcons.bolt;
-                    svg += `</svg>`;
+                    const fillWidth = (level / 100) * 16.5; 
+
+                    let svg = `<svg width="42" height="24" viewBox="0 0 24 14" fill="none" class="${isCharging ? 'charging-pulse' : ''}">
+                        <rect x="0.5" y="0.5" width="20" height="13" rx="3.5" stroke="white" stroke-opacity="0.3" stroke-width="1.2"/>
+                        <path d="M22 4.5C22.8 4.5 23.5 5.2 23.5 6V8C23.5 8.8 22.8 9.5 22 9.5" stroke="white" stroke-opacity="0.3" stroke-width="1.2" stroke-linecap="round"/>
+                        <rect x="2.2" y="2.2" width="${fillWidth}" height="9.6" rx="1.5" fill="${fillColor}"/>
+                        ${isCharging ? '<path d="M12.5 3L8 8H11L10 12L14.5 7H11.5L12.5 3Z" fill="white" stroke="black" stroke-width="0.5"/>' : ''}
+                    </svg>`;
 
                     document.getElementById('battery-icon').innerHTML = svg;
                     document.getElementById('battery').innerText = level + "%";
@@ -648,44 +649,61 @@
                 updateUI();
                 b.onlevelchange = updateUI;
                 b.onchargingchange = updateUI;
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                document.getElementById('battery-widget').style.display = 'none';
+            }
         }
 
         async function fetchWeather() {
             try {
-                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=51.0447&longitude=-114.0719&current_weather=true`);
+                const geoRes = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${state.city}&count=1&language=en&format=json`);
+                const geoData = await geoRes.json();
+                if(!geoData.results) return;
+                const { latitude, longitude } = geoData.results[0];
+                const res = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current_weather=true`);
                 const data = await res.json();
                 const temp = Math.round(data.current_weather.temperature);
                 const code = data.current_weather.weathercode;
                 document.getElementById('temp').innerText = temp + "°";
                 let icon = icons.sun;
-                if (code > 3) icon = icons.cloud;
-                if (code > 60) icon = icons.rain;
-                if (code > 70) icon = icons.snow;
-                if (code > 90) icon = icons.storm;
+                if(code > 0) icon = icons.cloud;
+                if(code > 50) icon = icons.rain;
+                if(code > 70) icon = icons.snow;
+                if(code > 90) icon = icons.storm;
                 document.getElementById('icon-container').innerHTML = icon;
-            } catch (e) { console.error(e); }
+            } catch(e) { console.error(e); }
         }
+
+        function toggle(key) {
+            state[key] = !state[key];
+            if(key === 'burnShield' && !state[key]) {
+                const hud = document.getElementById('hud-master');
+                hud.style.marginTop = "0px"; hud.style.marginLeft = "0px";
+            }
+            applyAll(); save();
+        }
+
+        function nudge(type, val) { state['nudge' + type] = parseInt(val); applyAll(); save(); }
+
+        function resetWidget(type) { state['nudge' + type] = 0; state['show' + type.charAt(0).toUpperCase() + type.slice(1)] = true; applyAll(); save(); }
 
         function toggleNav(e) {
             if(e) e.stopPropagation();
             const panel = document.getElementById('side-panel');
             const overlay = document.getElementById('overlay');
             const btn = document.getElementById('nav-trigger');
-            
             panel.classList.toggle('open');
             const isOpen = panel.classList.contains('open');
             overlay.style.display = isOpen ? 'block' : 'none';
             btn.classList.toggle('active-ui', isOpen);
-            if(isOpen) btn.style.opacity = "1";
+            if(!isOpen) wakeNav();
         }
 
         function openModal() { document.getElementById('confirm-modal').style.display = 'flex'; }
         function closeModal() { document.getElementById('confirm-modal').style.display = 'none'; }
-        function performFactoryReset() { localStorage.removeItem('prism_ultra_v2'); location.reload(); }
+        function performFactoryReset() { localStorage.clear(); location.reload(); }
 
-        window.onload = load;
-        setInterval(updateClock, 1000);
+        load();
     </script>
 </body>
 </html>
