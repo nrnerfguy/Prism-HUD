@@ -14,10 +14,33 @@
     <style>
         :root {
             --accent: #007AFF;
+            --accent-fg: #fff;       /* text ON top of accent-colored elements */
             --smooth-ease: cubic-bezier(0.4, 0, 0.2, 1);
             --slow-ease: cubic-bezier(0.65, 0, 0.35, 1);
             --widget-shadow: drop-shadow(0px 0px 12px rgba(0,0,0,0.9));
         }
+
+        /* ── WIDGET PILL ── */
+        .widget-pill {
+            background: rgba(0,0,0,0); border-radius: 20px;
+            padding: 0; transition: background 0.4s ease, padding 0.4s ease, backdrop-filter 0.4s ease;
+        }
+        body.show-pills .widget-pill {
+            background: rgba(0,0,0,0.35);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            padding: 10px 20px;
+            border: 1px solid rgba(255,255,255,0.08);
+        }
+
+        /* ── WHITE ACCENT FIXES ── */
+        /* switches: when active & accent is white, use a dark thumb so it's visible */
+        .ios-switch.active { background: var(--accent); }
+        .ios-switch.active::after { background: var(--accent-fg); }
+        /* update/save buttons use accent-fg for text */
+        .update-btn { background: var(--accent); color: var(--accent-fg); }
+        /* reset-link hover uses accent-fg for text */
+        .reset-link:hover { background: var(--accent); color: var(--accent-fg); }
 
         * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
@@ -64,6 +87,12 @@
             cursor: grabbing; z-index: 500;
             opacity: 0.8;
         }
+        @keyframes wiggle {
+            0%,100% { transform: translate(-50%,-50%) rotate(0deg) scale(var(--ws,1)); }
+            25%  { transform: translate(-50%,-50%) rotate(-1.5deg) scale(var(--ws,1)); }
+            75%  { transform: translate(-50%,-50%) rotate(1.5deg)  scale(var(--ws,1)); }
+        }
+        .widget.long-press-ready { animation: wiggle 0.35s ease; }
 
         /* Snap zone ghost indicators — shown while dragging */
         :root { --ghost-size: 38px; }
@@ -120,16 +149,17 @@
         .a-sec  { stroke: #fff; stroke-width: 1.5; stroke-linecap: round; }
         .a-center { fill: var(--accent); }
 
-        #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.8; font-weight: 300; margin-top: 10px; }
-        #weather-widget { gap: 20px; opacity: 0.8; font-size: 2.4rem; font-weight: 200; margin-top: 10px; }
-        #battery-widget { font-size: 1.2rem; font-weight: 600; opacity: 0.8; margin-top: 10px; letter-spacing: 4px; display: flex; align-items: center; gap: 12px; }
+        #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.8; font-weight: 300; text-shadow: 0px 0px 20px rgba(0,0,0,0.7); }
+        #weather-widget { gap: 20px; opacity: 0.8; font-size: 2.4rem; font-weight: 200; text-shadow: 0px 0px 20px rgba(0,0,0,0.7); }
+        #battery-widget { font-size: 1.2rem; font-weight: 600; opacity: 0.8; letter-spacing: 4px; display: flex; align-items: center; gap: 12px; text-shadow: 0px 0px 20px rgba(0,0,0,0.7); }
         .charging-pulse { animation: batteryPulse 2s infinite ease-in-out; }
         @keyframes batteryPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
         /* ── NOW PLAYING WIDGET ── */
         #nowplaying-widget {
-            flex-direction: row !important; gap: 14px; margin-top: 16px;
+            flex-direction: row !important; gap: 14px;
             max-width: 380px; width: 90%; opacity: 0.9; align-items: center;
+            filter: var(--widget-shadow) drop-shadow(0px 0px 20px rgba(0,0,0,0.7));
         }
         #np-art {
             width: 56px; height: 56px; border-radius: 10px;
@@ -228,12 +258,10 @@
         .status-tag.off { opacity: 0.3; color: #fff; }
         .status-tag.on  { opacity: 1; color: var(--accent); }
 
-        .reset-link { font-size: 0.65rem; color: var(--accent); cursor: pointer; text-transform: uppercase; font-weight: 900; padding: 4px 8px; background: rgba(0,0,0,0.3); border-radius: 6px; transition: all 0.2s ease; }
-        .reset-link:hover { background: var(--accent); color: #fff; box-shadow: 0 0 10px var(--accent); transform: scale(1.05); }
+        .update-btn { border: none; width: 100%; padding: 12px; border-radius: 12px; margin-top: 10px; font-weight: bold; cursor: pointer; transition: all 0.3s var(--smooth-ease); }
 
         .ios-switch { position: relative; width: 50px; height: 28px; background: rgba(255,255,255,0.1); border-radius: 20px; cursor: pointer; transition: all 0.3s ease; }
-        .ios-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 24px; height: 24px; background: #fff; border-radius: 50%; transition: 0.3s; }
-        .ios-switch.active { background: var(--accent); }
+        .ios-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 24px; height: 24px; border-radius: 50%; transition: 0.3s; background: #fff; }
         .ios-switch.active::after { transform: translateX(22px); }
         .ios-switch:hover { filter: brightness(1.3); box-shadow: 0 0 12px rgba(255,255,255,0.1); }
         .ios-switch.active:hover { box-shadow: 0 0 15px var(--accent); }
@@ -256,8 +284,9 @@
         input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); margin-top: 10px; border-radius: 2px; }
         input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; background: #fff; border-radius: 50%; cursor: pointer; }
 
-        .update-btn { background: var(--accent); color: white; border: none; width: 100%; padding: 12px; border-radius: 12px; margin-top: 10px; font-weight: bold; cursor: pointer; transition: all 0.3s var(--smooth-ease); }
         .update-btn:hover { filter: brightness(1.2); box-shadow: 0 0 15px var(--accent); transform: translateY(-1px); }
+        .reset-link { font-size: 0.65rem; color: var(--accent); cursor: pointer; text-transform: uppercase; font-weight: 900; padding: 4px 8px; background: rgba(0,0,0,0.3); border-radius: 6px; transition: all 0.2s ease; }
+        .reset-link:hover { box-shadow: 0 0 10px var(--accent); transform: scale(1.05); }
 
         #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; z-index: 1500; }
         #confirm-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 3000; backdrop-filter: blur(10px); }
@@ -341,50 +370,55 @@
 <!-- ── HUD ── -->
 <div id="hud-master">
     <div id="clock-widget" class="widget">
-        <div id="clock" class="style-bold">0:00</div>
-        <svg id="analog-clock" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
-            <circle class="a-face" cx="100" cy="100" r="96"/>
-            <g id="a-ticks"></g>
-            <line id="a-hour" class="a-hour" x1="100" y1="100" x2="100" y2="45"/>
-            <line id="a-min"  class="a-min"  x1="100" y1="100" x2="100" y2="28"/>
-            <line id="a-sec"  class="a-sec"  x1="100" y1="115" x2="100" y2="20"/>
-            <circle class="a-center" cx="100" cy="100" r="4"/>
-        </svg>
+        <div class="widget-pill" style="display:flex;flex-direction:column;align-items:center;">
+            <div id="clock" class="style-bold">0:00</div>
+            <svg id="analog-clock" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+                <circle class="a-face" cx="100" cy="100" r="96"/>
+                <g id="a-ticks"></g>
+                <line id="a-hour" class="a-hour" x1="100" y1="100" x2="100" y2="45"/>
+                <line id="a-min"  class="a-min"  x1="100" y1="100" x2="100" y2="28"/>
+                <line id="a-sec"  class="a-sec"  x1="100" y1="115" x2="100" y2="20"/>
+                <circle class="a-center" cx="100" cy="100" r="4"/>
+            </svg>
+        </div>
     </div>
-    <div id="date-widget" class="widget"><div id="date">...</div></div>
+    <div id="date-widget" class="widget"><div class="widget-pill"><div id="date">...</div></div></div>
     <div id="weather-widget" class="widget">
-        <div id="icon-container"></div>
-        <span id="temp">--°</span>
+        <div class="widget-pill" style="display:flex;gap:20px;align-items:center;">
+            <div id="icon-container"></div>
+            <span id="temp">--°</span>
+        </div>
     </div>
     <div id="battery-widget" class="widget">
-        <div id="battery-icon"></div>
-        <div id="battery">--%</div>
+        <div class="widget-pill" style="display:flex;align-items:center;gap:12px;">
+            <div id="battery-icon"></div>
+            <div id="battery">--%</div>
+        </div>
     </div>
     <div id="nowplaying-widget" class="widget" style="display:none;">
-        <div id="np-art">♫</div>
-        <div id="np-info">
-            <div id="np-track">Nothing playing</div>
-            <div id="np-artist">—</div>
-            <div id="np-controls">
-                <!-- Previous -->
-                <button class="np-btn" onclick="spotifyPrev()" title="Previous">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
-                </button>
-                <!-- Play / Pause -->
-                <button class="np-btn" id="np-playpause" onclick="spotifyPlayPause()" title="Play/Pause">
-                    <svg id="np-play-icon" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                    <svg id="np-pause-icon" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
-                </button>
-                <!-- Next -->
-                <button class="np-btn" onclick="spotifyNext()" title="Next">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zm2-8.14 5.15 3.64L8 17.14V9.86zM16 6h2v12h-2z"/></svg>
-                </button>
-                <div>
-                    <div id="np-bar"><div id="np-bar-fill"></div></div>
-                    <div class="np-premium-note">Requires Spotify Premium</div>
+        <div class="widget-pill" style="display:flex;flex-direction:row;gap:14px;align-items:center;max-width:380px;">
+            <div id="np-art">♫</div>
+            <div id="np-info">
+                <div id="np-track">Nothing playing</div>
+                <div id="np-artist">—</div>
+                <div id="np-controls">
+                    <button class="np-btn" onclick="spotifyPrev()" title="Previous">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+                    </button>
+                    <button class="np-btn" id="np-playpause" onclick="spotifyPlayPause()" title="Play/Pause">
+                        <svg id="np-play-icon" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        <svg id="np-pause-icon" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                    </button>
+                    <button class="np-btn" onclick="spotifyNext()" title="Next">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zm2-8.14 5.15 3.64L8 17.14V9.86zM16 6h2v12h-2z"/></svg>
+                    </button>
+                    <div>
+                        <div id="np-bar"><div id="np-bar-fill"></div></div>
+                        <div class="np-premium-note">Requires Spotify Premium</div>
+                    </div>
                 </div>
+                <div id="np-label">SPOTIFY</div>
             </div>
-            <div id="np-label">SPOTIFY</div>
         </div>
     </div>
 </div>
@@ -413,14 +447,22 @@
             <div id="theme-list" style="margin-top:15px;"></div>
         </div>
 
-        <!-- Clock Style -->
+        <!-- Clock Style + Settings -->
         <div class="control-group">
-            <label>Clock Style</label>
-            <div class="style-grid">
+            <div class="row"><label>Clock Widget</label><span class="reset-link" onclick="resetWidget('clock')">Reset Position</span></div>
+            <div class="style-grid" style="margin-top:12px;">
                 <div class="style-btn active" data-style="bold"   onclick="setClockStyle('bold')">  <span class="s-icon">𝗜</span>Bold</div>
                 <div class="style-btn"        data-style="thin"   onclick="setClockStyle('thin')">  <span class="s-icon">I</span>Thin</div>
                 <div class="style-btn"        data-style="retro"  onclick="setClockStyle('retro')"> <span class="s-icon">8̤</span>Retro</div>
                 <div class="style-btn"        data-style="analog" onclick="setClockStyle('analog')"><span class="s-icon">◷</span>Analog</div>
+            </div>
+            <div class="row" style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.06);">
+                <label style="font-size:0.5rem;">Show Seconds</label>
+                <div id="sw-showSeconds" class="ios-switch" onclick="toggle('showSeconds')"></div>
+            </div>
+            <div class="row" style="margin-top:10px;">
+                <label style="font-size:0.5rem;">Visibility</label>
+                <div style="display:flex;align-items:center;"><span id="st-clock" class="status-tag">SHOWN</span><div id="sw-showClock" class="ios-switch active" onclick="toggle('showClock')"></div></div>
             </div>
         </div>
 
@@ -439,19 +481,46 @@
             </div>
         </div>
 
-        <!-- Spotify -->
+        <!-- Spotify + Now Playing (combined) -->
         <div class="control-group">
-            <label>Spotify Now Playing</label>
+            <div class="row">
+                <label>Spotify Now Playing</label>
+                <span class="reset-link" onclick="resetWidget('nowplaying')">Reset Position</span>
+            </div>
             <div id="spotify-status-row" style="margin-top:10px;"></div>
-            <button onclick="connectSpotify()" class="update-btn" style="background:#1DB954;margin-top:10px;">CONNECT SPOTIFY</button>
-            <button onclick="disconnectSpotify()" class="update-btn" style="background:rgba(255,255,255,0.08);margin-top:6px;" id="spotify-disconnect-btn">DISCONNECT</button>
+            <button onclick="connectSpotify()" class="update-btn" style="background:#1DB954;color:#fff;margin-top:10px;">CONNECT SPOTIFY</button>
+            <button onclick="disconnectSpotify()" class="update-btn" style="background:rgba(255,255,255,0.08);color:#fff;margin-top:6px;" id="spotify-disconnect-btn">DISCONNECT</button>
+            <div style="margin-top:14px; padding-top:14px; border-top:1px solid rgba(255,255,255,0.06);">
+                <div class="row">
+                    <label style="font-size:0.5rem;">Album Art as Background</label>
+                    <div id="sw-artAsBg" class="ios-switch" onclick="toggle('artAsBg')"></div>
+                </div>
+                <div class="row" style="margin-top:10px;">
+                    <label style="font-size:0.5rem;">Visibility</label>
+                    <div style="display:flex;align-items:center;">
+                        <span id="st-nowplaying" class="status-tag">SHOWN</span>
+                        <div id="sw-showNowplaying" class="ios-switch active" onclick="toggle('showNowplaying')"></div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- Weather -->
         <div class="control-group">
-            <label>Weather City</label>
-            <input type="text" id="city-input" placeholder="Search City..." oninput="searchCities(this.value)">
+            <div class="row"><label>Weather Widget</label><span class="reset-link" onclick="resetWidget('weather')">Reset Position</span></div>
+            <input type="text" id="city-input" placeholder="Search City..." oninput="searchCities(this.value)" style="margin-top:10px;">
             <div id="weather-results"></div>
+            <div class="row" style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.06);">
+                <label style="font-size:0.5rem;">Units</label>
+                <div style="display:flex;gap:6px;">
+                    <div id="unit-c" class="style-btn active" style="padding:6px 14px;font-size:0.6rem;" onclick="setWeatherUnit('C')">°C</div>
+                    <div id="unit-f" class="style-btn"        style="padding:6px 14px;font-size:0.6rem;" onclick="setWeatherUnit('F')">°F</div>
+                </div>
+            </div>
+            <div class="row" style="margin-top:10px;">
+                <label style="font-size:0.5rem;">Visibility</label>
+                <div style="display:flex;align-items:center;"><span id="st-weather" class="status-tag">SHOWN</span><div id="sw-showWeather" class="ios-switch active" onclick="toggle('showWeather')"></div></div>
+            </div>
         </div>
 
         <!-- Background -->
@@ -479,16 +548,10 @@
             <div class="row"><label>OLED Burn Shield</label><div id="sw-burnShield" class="ios-switch" onclick="toggle('burnShield')"></div></div>
             <div class="row" style="margin-top:10px;"><label>Flip Widgets</label><div id="sw-mirrored" class="ios-switch" onclick="toggle('mirrored')"></div></div>
             <div class="row" style="margin-top:10px;"><label>24 Hour Time</label><div id="sw-is24h" class="ios-switch" onclick="toggle('is24h')"></div></div>
+            <div class="row" style="margin-top:10px;"><label>Widget Background Pill</label><div id="sw-showPills" class="ios-switch" onclick="toggle('showPills')"></div></div>
         </div>
 
-        <!-- Widget Controls -->
-        <div class="control-group">
-            <div class="row"><label>Clock Widget</label><span class="reset-link" onclick="resetWidget('clock')">Reset Position</span></div>
-            <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Visibility</label>
-                <div style="display:flex;align-items:center;"><span id="st-clock" class="status-tag">SHOWN</span><div id="sw-showClock" class="ios-switch active" onclick="toggle('showClock')"></div></div>
-            </div>
-        </div>
-
+        <!-- Date Widget -->
         <div class="control-group">
             <div class="row"><label>Date Widget</label><span class="reset-link" onclick="resetWidget('date')">Reset Position</span></div>
             <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Visibility</label>
@@ -496,13 +559,7 @@
             </div>
         </div>
 
-        <div class="control-group">
-            <div class="row"><label>Weather Widget</label><span class="reset-link" onclick="resetWidget('weather')">Reset Position</span></div>
-            <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Visibility</label>
-                <div style="display:flex;align-items:center;"><span id="st-weather" class="status-tag">SHOWN</span><div id="sw-showWeather" class="ios-switch active" onclick="toggle('showWeather')"></div></div>
-            </div>
-        </div>
-
+        <!-- Battery Widget -->
         <div class="control-group">
             <div class="row"><label>Battery Widget</label><span class="reset-link" onclick="resetWidget('battery')">Reset Position</span></div>
             <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Visibility</label>
@@ -511,14 +568,7 @@
         </div>
 
         <div class="control-group">
-            <div class="row"><label>Now Playing Widget</label><span class="reset-link" onclick="resetWidget('nowplaying')">Reset Position</span></div>
-            <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Visibility</label>
-                <div style="display:flex;align-items:center;"><span id="st-nowplaying" class="status-tag">SHOWN</span><div id="sw-showNowplaying" class="ios-switch active" onclick="toggle('showNowplaying')"></div></div>
-            </div>
-        </div>
-
-        <div class="control-group">
-            <label>Widget Scale</label>
+            <div class="row"><label>Widget Scale</label></div>
             <input type="range" id="range-scale" min="0.4" max="2.0" step="0.01" value="1" oninput="state.scale=this.value;applyAll();save();">
         </div>
 
@@ -538,7 +588,7 @@
 let state = {
     mirrored: false, is24h: true, burnShield: true,
     showClock: true, showDate: true, showWeather: true, showBattery: true, showNowplaying: true,
-    // Widget snap-zone positions (% of viewport, widget centered at this point)
+    showSeconds: false, weatherUnit: 'C', artAsBg: false, showPills: false,
     widgetPos: {
         clock:      { x: 50, y: 25 },
         date:       { x: 50, y: 50 },
@@ -760,6 +810,15 @@ function extractAccentFromArt(imgUrl) {
             const hex = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
             accentFromArt = true;
             document.documentElement.style.setProperty('--accent', hex);
+            // Recompute fg contrast for the new art-derived accent
+            const lum2 = (0.299*r + 0.587*g + 0.114*b) / 255;
+            document.documentElement.style.setProperty('--accent-fg', lum2 > 0.65 ? '#111' : '#fff');
+            // Album art as background
+            if (state.artAsBg && imgUrl) {
+                const bgl = document.getElementById('bg-layer');
+                bgl.style.backgroundImage = `url(${imgUrl})`;
+                document.body.style.backgroundColor = '#000';
+            }
         } catch (err) { restoreUserAccent(); }
     };
     img.onerror = () => restoreUserAccent();
@@ -769,6 +828,16 @@ function extractAccentFromArt(imgUrl) {
 function restoreUserAccent() {
     accentFromArt = false;
     document.documentElement.style.setProperty('--accent', state.accent);
+    // Also recompute fg contrast for user accent
+    const hex = state.accent.replace('#','');
+    const r = parseInt(hex.slice(0,2),16), g = parseInt(hex.slice(2,4),16), b = parseInt(hex.slice(4,6),16);
+    const lum = (0.299*r + 0.587*g + 0.114*b) / 255;
+    document.documentElement.style.setProperty('--accent-fg', lum > 0.65 ? '#111' : '#fff');
+    // Restore user background
+    if (state.artAsBg) {
+        const bgl = document.getElementById('bg-layer');
+        bgl.style.backgroundImage = state.isStatic ? 'none' : `url(${state.bg})`;
+    }
 }
 
 // ─────────────────────────────────────────────────
@@ -778,8 +847,10 @@ function updateClock() {
     const now = new Date();
     let h = now.getHours();
     const m = String(now.getMinutes()).padStart(2, '0');
+    const s = String(now.getSeconds()).padStart(2, '0');
     if (!state.is24h) h = h % 12 || 12;
-    document.getElementById('clock').innerText = `${h}:${m}`;
+    const timeStr = state.showSeconds ? `${h}:${m}:${s}` : `${h}:${m}`;
+    document.getElementById('clock').innerText = timeStr;
     document.getElementById('date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
     updateAnalogClock(now);
 }
@@ -881,8 +952,9 @@ async function fetchWeather() {
         const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(state.city)}&count=1`).then(r => r.json());
         if (!geo.results) return;
         const { latitude, longitude } = geo.results[0];
-        const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code`).then(r => r.json());
-        document.getElementById('temp').innerText = Math.round(w.current.temperature_2m) + '°';
+        const unit = state.weatherUnit === 'F' ? 'fahrenheit' : 'celsius';
+        const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&temperature_unit=${unit}`).then(r => r.json());
+        document.getElementById('temp').innerText = Math.round(w.current.temperature_2m) + '°' + state.weatherUnit;
         const code = w.current.weather_code;
         let icon = icons.sun;
         if (code >= 1 && code <= 3)   icon = icons.cloud;
@@ -891,6 +963,13 @@ async function fetchWeather() {
         else if (code >= 95)           icon = icons.storm;
         document.getElementById('icon-container').innerHTML = icon;
     } catch (e) {}
+}
+
+function setWeatherUnit(unit) {
+    state.weatherUnit = unit;
+    document.getElementById('unit-c').classList.toggle('active', unit === 'C');
+    document.getElementById('unit-f').classList.toggle('active', unit === 'F');
+    fetchWeather(); save();
 }
 
 // ─────────────────────────────────────────────────
@@ -1484,17 +1563,25 @@ function renderThemeList() {
 // APPLY ALL
 // ─────────────────────────────────────────────────
 function applyAll() {
+    // ── Accent contrast: compute dark/light fg so UI stays readable on white accent ──
+    const hex = state.accent.replace('#','');
+    const ar = parseInt(hex.slice(0,2),16), ag = parseInt(hex.slice(2,4),16), ab = parseInt(hex.slice(4,6),16);
+    const lum = (0.299*ar + 0.587*ag + 0.114*ab) / 255;
     document.documentElement.style.setProperty('--accent', state.accent);
+    document.documentElement.style.setProperty('--accent-fg', lum > 0.65 ? '#111' : '#fff');
     document.documentElement.style.setProperty('--widget-scale', state.scale);
 
     const bgl = document.getElementById('bg-layer');
-    if (state.isStatic) {
-        document.body.style.backgroundColor = state.staticColor;
-        document.getElementById('static-bg-preview').style.backgroundColor = state.staticColor;
-        bgl.style.backgroundImage = 'none';
-    } else {
-        document.body.style.backgroundColor = '#000';
-        bgl.style.backgroundImage = `url(${state.bg})`;
+    // Only show user bg if artAsBg is off (art bg handled in extractAccentFromArt)
+    if (!state.artAsBg) {
+        if (state.isStatic) {
+            document.body.style.backgroundColor = state.staticColor;
+            document.getElementById('static-bg-preview').style.backgroundColor = state.staticColor;
+            bgl.style.backgroundImage = 'none';
+        } else {
+            document.body.style.backgroundColor = '#000';
+            bgl.style.backgroundImage = `url(${state.bg})`;
+        }
     }
     document.getElementById('static-bg-preview').classList.toggle('active', state.isStatic);
     bgl.style.filter  = `blur(${state.blur}px)`;
@@ -1503,6 +1590,15 @@ function applyAll() {
     document.getElementById('sw-mirrored').classList.toggle('active', state.mirrored);
     document.getElementById('sw-is24h').classList.toggle('active', state.is24h);
     document.getElementById('sw-burnShield').classList.toggle('active', state.burnShield);
+    document.getElementById('sw-showSeconds').classList.toggle('active', !!state.showSeconds);
+    document.getElementById('sw-showPills').classList.toggle('active', !!state.showPills);
+    document.getElementById('sw-artAsBg').classList.toggle('active', !!state.artAsBg);
+    document.body.classList.toggle('show-pills', !!state.showPills);
+
+    const unitC = document.getElementById('unit-c');
+    const unitF = document.getElementById('unit-f');
+    if (unitC) unitC.classList.toggle('active', state.weatherUnit !== 'F');
+    if (unitF) unitF.classList.toggle('active', state.weatherUnit === 'F');
 
     const widgets = ['clock', 'date', 'weather', 'battery', 'nowplaying'];
     widgets.forEach(key => {
@@ -1520,10 +1616,8 @@ function applyAll() {
     document.getElementById('city-input').value  = state.city;
     document.getElementById('range-scale').value = state.scale;
 
-    // Clock style — use internal helper to avoid setClockStyle→applyAll recursion
     applyClockStyle(state.clockStyle || 'bold');
 
-    // Ambient
     document.getElementById('amb-vol').value = state.ambientVolume;
     const ambStatus = document.getElementById('amb-status');
     if (state.ambientSound) {
@@ -1531,10 +1625,7 @@ function applyAll() {
         ambStatus.className = 'status-tag on';
     }
 
-    // Color picker
     document.getElementById('color-accent').value = state.accent;
-
-    // Update ghost dot size to match scale
     updateGhostSize();
 }
 
@@ -1644,70 +1735,96 @@ function initWidgetDrag(key) {
     const el = document.getElementById(key + '-widget');
     if (!el) return;
 
-    const onStart = (e) => {
+    // ── MOUSE (desktop): drag immediately on mousedown ──
+    el.addEventListener('mousedown', (e) => {
         if (e.target.closest('button, input, a')) return;
+        startDrag(key, el, e, false);
+    });
 
-        const isTouch = e.type === 'touchstart';
-        const getXY   = ev => isTouch
-            ? { cx: ev.touches[0].clientX, cy: ev.touches[0].clientY }
-            : { cx: ev.clientX, cy: ev.clientY };
+    // ── TOUCH (mobile): require 300ms long-press before drag activates ──
+    let longPressTimer = null;
+    let touchCancelled = false;
 
-        const { cx: startX, cy: startY } = getXY(e);
-        if (!state.widgetPos) state.widgetPos = JSON.parse(JSON.stringify(DEFAULT_POS));
-        const origPos = { ...state.widgetPos[key] };
-        let moved = false;
-        let curPxX = origPos.x / 100 * window.innerWidth;
-        let curPxY = origPos.y / 100 * window.innerHeight;
-
-        const onMove = (ev) => {
-            if (isTouch) ev.preventDefault();
-            const { cx, cy } = getXY(ev);
-            const dx = cx - startX, dy = cy - startY;
-            if (!moved && Math.hypot(dx, dy) < 8) return;
-
-            if (!moved) {
-                moved = true;
+    el.addEventListener('touchstart', (e) => {
+        if (e.target.closest('button, input, a')) return;
+        touchCancelled = false;
+        longPressTimer = setTimeout(() => {
+            if (!touchCancelled) {
+                if (navigator.vibrate) navigator.vibrate(30);
+                el.classList.add('long-press-ready');
+                setTimeout(() => el.classList.remove('long-press-ready'), 400);
                 el.classList.add('dragging');
                 showGhosts();
+                startDrag(key, el, e, true, true);
             }
+        }, 300);
+    }, { passive: true });
 
-            curPxX = Math.min(window.innerWidth  * 0.95, Math.max(window.innerWidth  * 0.05, (origPos.x / 100 * window.innerWidth)  + dx));
-            curPxY = Math.min(window.innerHeight * 0.95, Math.max(window.innerHeight * 0.05, (origPos.y / 100 * window.innerHeight) + dy));
+    el.addEventListener('touchend',   () => { clearTimeout(longPressTimer); touchCancelled = true; });
+    el.addEventListener('touchmove',  (e) => {
+        // If moved before long-press fires, cancel it (it's a scroll, not a drag)
+        clearTimeout(longPressTimer);
+        touchCancelled = true;
+    }, { passive: true });
+}
 
-            // Move freely while dragging — skip spring
-            el.style.transition = 'opacity 0.15s ease';
-            el.style.left = (curPxX / window.innerWidth  * 100) + '%';
-            el.style.top  = (curPxY / window.innerHeight * 100) + '%';
-            highlightGhost(curPxX, curPxY);
-        };
+function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
+    const getXY = ev => isTouch
+        ? { cx: ev.touches[0].clientX, cy: ev.touches[0].clientY }
+        : { cx: ev.clientX, cy: ev.clientY };
 
-        const onEnd = () => {
-            document.removeEventListener('mousemove', onMove);
-            document.removeEventListener('mouseup',   onEnd);
-            document.removeEventListener('touchmove', onMove);
-            document.removeEventListener('touchend',  onEnd);
-            el.classList.remove('dragging');
-            // Restore spring transition
-            el.style.transition = '';
-            hideGhosts();
+    const { cx: startX, cy: startY } = getXY(startEvent);
+    if (!state.widgetPos) state.widgetPos = JSON.parse(JSON.stringify(DEFAULT_POS));
+    const origPos = { ...state.widgetPos[key] };
+    let moved = alreadyActivated;
+    let curPxX = origPos.x / 100 * window.innerWidth;
+    let curPxY = origPos.y / 100 * window.innerHeight;
 
-            if (!moved) return;
+    if (alreadyActivated) {
+        curPxX = startX;
+        curPxY = startY;
+    }
 
-            // Snap to nearest zone
-            const zone = ZONES[nearestZoneIdx(curPxX, curPxY)];
-            state.widgetPos[key] = { x: zone.x, y: zone.y };
-            positionWidget(key);
-            save();
-        };
+    const onMove = (ev) => {
+        if (isTouch) ev.preventDefault();
+        const { cx, cy } = getXY(ev);
+        const dx = cx - startX, dy = cy - startY;
+        if (!moved && Math.hypot(dx, dy) < 8) return;
 
-        document.addEventListener('mousemove', onMove);
-        document.addEventListener('mouseup',   onEnd);
-        document.addEventListener('touchmove', onMove, { passive: false });
-        document.addEventListener('touchend',  onEnd);
+        if (!moved) {
+            moved = true;
+            el.classList.add('dragging');
+            showGhosts();
+        }
+
+        curPxX = Math.min(window.innerWidth  * 0.95, Math.max(window.innerWidth  * 0.05, (origPos.x / 100 * window.innerWidth)  + dx));
+        curPxY = Math.min(window.innerHeight * 0.95, Math.max(window.innerHeight * 0.05, (origPos.y / 100 * window.innerHeight) + dy));
+
+        el.style.transition = 'opacity 0.15s ease';
+        el.style.left = (curPxX / window.innerWidth  * 100) + '%';
+        el.style.top  = (curPxY / window.innerHeight * 100) + '%';
+        highlightGhost(curPxX, curPxY);
     };
 
-    el.addEventListener('mousedown',  onStart);
-    el.addEventListener('touchstart', onStart, { passive: false });
+    const onEnd = () => {
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup',   onEnd);
+        document.removeEventListener('touchmove', onMove);
+        document.removeEventListener('touchend',  onEnd);
+        el.classList.remove('dragging');
+        el.style.transition = '';
+        hideGhosts();
+        if (!moved) return;
+        const zone = ZONES[nearestZoneIdx(curPxX, curPxY)];
+        state.widgetPos[key] = { x: zone.x, y: zone.y };
+        positionWidget(key);
+        save();
+    };
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup',   onEnd);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend',  onEnd);
 }
 
 function initAllDrag() {
