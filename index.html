@@ -216,6 +216,21 @@
         @keyframes sdot { 0%,100%{opacity:1} 50%{opacity:0.3} }
         .spotify-note { font-size: 0.68rem; opacity: 0.45; line-height: 1.6; margin-top: 10px; }
         .spotify-note a { color: var(--accent); }
+
+        /* ── PLAYBACK CONTROLS ── */
+        #np-controls { display: flex; align-items: center; gap: 14px; margin-top: 8px; }
+        #np-controls > div { flex: 1; min-width: 0; }
+        .np-btn {
+            background: none; border: none; color: var(--accent);
+            cursor: pointer; padding: 0; opacity: 0.65; line-height: 1;
+            transition: opacity 0.2s, transform 0.15s;
+            filter: var(--widget-shadow);
+            flex-shrink: 0;
+        }
+        .np-btn:hover  { opacity: 1; transform: scale(1.2); }
+        .np-btn:active { transform: scale(0.88); }
+        #np-playpause  { opacity: 1; }
+        .np-premium-note { font-size: 0.46rem; opacity: 0.28; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px; color: #fff; }
     </style>
 </head>
 <body>
@@ -259,7 +274,25 @@
         <div id="np-info">
             <div id="np-track">Nothing playing</div>
             <div id="np-artist">—</div>
-            <div id="np-bar"><div id="np-bar-fill"></div></div>
+            <div id="np-controls">
+                <!-- Previous -->
+                <button class="np-btn" onclick="spotifyPrev()" title="Previous">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+                </button>
+                <!-- Play / Pause -->
+                <button class="np-btn" id="np-playpause" onclick="spotifyPlayPause()" title="Play/Pause">
+                    <svg id="np-play-icon" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    <svg id="np-pause-icon" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </button>
+                <!-- Next -->
+                <button class="np-btn" onclick="spotifyNext()" title="Next">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zm2-8.14 5.15 3.64L8 17.14V9.86zM16 6h2v12h-2z"/></svg>
+                </button>
+                <div>
+                    <div id="np-bar"><div id="np-bar-fill"></div></div>
+                    <div class="np-premium-note">Requires Spotify Premium</div>
+                </div>
+            </div>
             <div id="np-label">SPOTIFY</div>
         </div>
     </div>
@@ -949,7 +982,7 @@ async function connectSpotify() {
         client_id: clientId,
         response_type: 'code',
         redirect_uri: window.location.href.split('?')[0].split('#')[0],
-        scope: 'user-read-currently-playing user-read-playback-state',
+        scope: 'user-read-currently-playing user-read-playback-state user-modify-playback-state',
         code_challenge_method: 'S256',
         code_challenge: challenge
     });
@@ -1047,18 +1080,19 @@ async function fetchNowPlaying() {
 }
 
 function updateNowPlayingUI(data) {
-    const widget = document.getElementById('nowplaying-widget');
-    if (!data || !data.is_playing) {
+    if (!data || !data.is_playing && !data.item) {
         document.getElementById('np-track').innerText  = 'Nothing playing';
         document.getElementById('np-artist').innerText = '—';
         document.getElementById('np-bar-fill').style.width = '0%';
         document.getElementById('np-art').innerHTML    = '♫';
         document.getElementById('np-art').classList.remove('has-art');
+        document.getElementById('np-play-icon').style.display  = 'block';
+        document.getElementById('np-pause-icon').style.display = 'none';
         return;
     }
-    const track   = data.item;
-    const art     = track.album?.images?.[0]?.url;
-    const artEl   = document.getElementById('np-art');
+    const track = data.item;
+    const art   = track.album?.images?.[0]?.url;
+    const artEl = document.getElementById('np-art');
 
     document.getElementById('np-track').innerText  = track.name;
     document.getElementById('np-artist').innerText = track.artists.map(a => a.name).join(', ');
@@ -1073,7 +1107,37 @@ function updateNowPlayingUI(data) {
 
     const pct = data.progress_ms / track.duration_ms * 100;
     document.getElementById('np-bar-fill').style.width = pct + '%';
+
+    // Toggle play/pause icon
+    const isPlaying = data.is_playing;
+    document.getElementById('np-play-icon').style.display  = isPlaying ? 'none'  : 'block';
+    document.getElementById('np-pause-icon').style.display = isPlaying ? 'block' : 'none';
 }
+
+// ── Playback controls (requires Spotify Premium) ──
+async function spotifyControl(method, endpoint) {
+    if (!spotify.accessToken) return;
+    if (Date.now() > spotify.expiresAt - 60000) await refreshSpotifyToken();
+    try {
+        await fetch(`https://api.spotify.com/v1/me/player/${endpoint}`, {
+            method,
+            headers: { Authorization: `Bearer ${spotify.accessToken}` }
+        });
+        // Re-poll after a short delay so UI reflects the change
+        setTimeout(fetchNowPlaying, 400);
+    } catch (e) {}
+}
+
+function spotifyPlayPause() {
+    const isPaused = document.getElementById('np-play-icon').style.display !== 'none';
+    spotifyControl('PUT', isPaused ? 'play' : 'pause');
+    // Optimistic UI toggle
+    document.getElementById('np-play-icon').style.display  = isPaused ? 'none'  : 'block';
+    document.getElementById('np-pause-icon').style.display = isPaused ? 'block' : 'none';
+}
+
+function spotifyNext() { spotifyControl('POST', 'next'); }
+function spotifyPrev() { spotifyControl('POST', 'previous'); }
 
 function pollSpotify() {
     if (spotify.pollInterval) clearInterval(spotify.pollInterval);
