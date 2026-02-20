@@ -1066,43 +1066,71 @@ async function fetchStocks() {
     const list = document.getElementById('stocks-list');
     if (!list) return;
 
-    // Use Yahoo Finance via corsproxy.io — no API key needed
-    const symbols = state.tickers.join(',');
-    const url = `https://corsproxy.io/?url=${encodeURIComponent(
-        `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols}&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent`
-    )}`;
+    // Fetch each ticker individually via Yahoo Finance v8 chart endpoint
+    // Try multiple CORS proxies in order until one works
+    const PROXIES = [
+        url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+        url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+        url => `https://thingproxy.freeboard.io/fetch/${url}`,
+    ];
 
-    try {
-        const res  = await fetch(url);
-        const data = await res.json();
-        const quotes = data?.quoteResponse?.result;
-        if (!quotes || quotes.length === 0) { renderStockError(); return; }
+    async function fetchTicker(symbol) {
+        const target = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`;
+        for (const makeUrl of PROXIES) {
+            try {
+                const res = await fetch(makeUrl(target), { signal: AbortSignal.timeout(6000) });
+                if (!res.ok) continue;
+                const json = await res.json();
+                const meta = json?.chart?.result?.[0]?.meta;
+                if (!meta) continue;
+                const price  = meta.regularMarketPrice;
+                const prev   = meta.chartPreviousClose ?? meta.previousClose;
+                const change = price - prev;
+                const pct    = (change / prev) * 100;
+                return { symbol, price, change, pct, ok: true };
+            } catch (_) { continue; }
+        }
+        return { symbol, ok: false };
+    }
 
-        list.innerHTML = '';
-        quotes.forEach((q, i) => {
-            const price  = q.regularMarketPrice?.toFixed(2) ?? '—';
-            const change = q.regularMarketChange;
-            const pct    = q.regularMarketChangePercent;
-            const up     = change >= 0;
-            const sign   = up ? '+' : '';
-            const cls    = up ? 'up' : 'down';
-            const arrow  = up ? '▲' : '▼';
+    // Show loading state
+    list.innerHTML = state.tickers.map(t =>
+        `<div class="stock-row"><span class="stock-ticker">${t}</span><span class="stock-price" style="opacity:0.3">…</span></div>`
+    ).join('');
 
-            const row = document.createElement('div');
-            row.className = 'stock-row';
+    // Fetch all tickers in parallel
+    const results = await Promise.all(state.tickers.map(fetchTicker));
+
+    list.innerHTML = '';
+    let anyOk = false;
+    results.forEach((q, i) => {
+        const row = document.createElement('div');
+        row.className = 'stock-row';
+        if (q.ok) {
+            anyOk = true;
+            const up   = q.change >= 0;
+            const sign = up ? '+' : '';
+            const cls  = up ? 'up' : 'down';
+            const arrow = up ? '▲' : '▼';
             row.innerHTML = `
                 <span class="stock-ticker">${q.symbol}</span>
-                <span class="stock-price">$${price}</span>
-                <span class="stock-change ${cls}">${arrow} ${sign}${pct?.toFixed(2) ?? '0.00'}%</span>
+                <span class="stock-price">$${q.price.toFixed(2)}</span>
+                <span class="stock-change ${cls}">${arrow} ${sign}${q.pct.toFixed(2)}%</span>
             `;
-            list.appendChild(row);
-            if (i < quotes.length - 1) {
-                const div = document.createElement('div');
-                div.className = 'stock-divider';
-                list.appendChild(div);
-            }
-        });
-    } catch (e) { renderStockError(); }
+        } else {
+            row.innerHTML = `
+                <span class="stock-ticker">${q.symbol}</span>
+                <span class="stock-price" style="opacity:0.35">N/A</span>
+                <span class="stock-change" style="opacity:0.3">—</span>
+            `;
+        }
+        list.appendChild(row);
+        if (i < results.length - 1) {
+            const div = document.createElement('div');
+            div.className = 'stock-divider';
+            list.appendChild(div);
+        }
+    });
 }
 
 function renderStockError() {
