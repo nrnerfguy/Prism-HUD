@@ -311,6 +311,49 @@
         .np-btn:active { transform: scale(0.88); }
         #np-playpause  { opacity: 1; }
         .np-premium-note { font-size: 0.46rem; opacity: 0.28; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px; color: #fff; }
+
+        /* ── STOCKS WIDGET ── */
+        #stocks-widget { flex-direction: column !important; gap: 6px; align-items: stretch; }
+        #stocks-widget .widget-pill { flex-direction: column; gap: 5px; min-width: 180px; }
+        .stock-row {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 14px; padding: 2px 0;
+        }
+        .stock-ticker {
+            font-size: 0.78rem; font-weight: 800; letter-spacing: 1.5px;
+            color: var(--accent); min-width: 44px;
+        }
+        .stock-price {
+            font-size: 0.95rem; font-weight: 600; color: #fff;
+            text-shadow: 0 0 18px rgba(0,0,0,0.8);
+        }
+        .stock-change {
+            font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px;
+            min-width: 58px; text-align: right;
+        }
+        .stock-change.up   { color: #34C759; }
+        .stock-change.down { color: #ff4444; }
+        .stock-divider {
+            height: 1px; background: rgba(255,255,255,0.07); margin: 1px 0;
+        }
+        .stock-label {
+            font-size: 0.42rem; letter-spacing: 3px; opacity: 0.25;
+            text-transform: uppercase; text-align: right; margin-top: 2px;
+        }
+        /* settings ticker tags */
+        .ticker-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+        .ticker-tag {
+            display: flex; align-items: center; gap: 5px;
+            background: rgba(255,255,255,0.08); border-radius: 8px;
+            padding: 5px 10px; font-size: 0.65rem; font-weight: 700;
+            letter-spacing: 1px; cursor: default;
+        }
+        .ticker-tag button {
+            background: none; border: none; color: rgba(255,255,255,0.4);
+            cursor: pointer; padding: 0; font-size: 0.8rem; line-height: 1;
+            transition: color 0.15s;
+        }
+        .ticker-tag button:hover { color: #ff4444; }
     </style>
 </head>
 <body>
@@ -394,6 +437,12 @@
                 </div>
                 <div id="np-label">SPOTIFY</div>
             </div>
+        </div>
+    </div>
+    <div id="stocks-widget" class="widget" style="display:none;">
+        <div class="widget-pill">
+            <div id="stocks-list"><!-- rows injected by JS --></div>
+            <div class="stock-label">STOCKS · DELAYED</div>
         </div>
     </div>
 </div>
@@ -542,6 +591,23 @@
             </div>
         </div>
 
+        <!-- Stocks Widget -->
+        <div class="control-group">
+            <div class="row"><label>Stocks Widget</label><span class="reset-link" onclick="resetWidget('stocks')">Reset Position</span></div>
+            <div class="row" style="margin-top:10px;">
+                <label style="font-size:0.5rem;">Visibility</label>
+                <div style="display:flex;align-items:center;"><span id="st-stocks" class="status-tag">HIDDEN</span><div id="sw-showStocks" class="ios-switch" onclick="toggle('showStocks')"></div></div>
+            </div>
+            <div style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.06);">
+                <label style="font-size:0.5rem;">Tickers</label>
+                <div id="ticker-tags" class="ticker-tags"></div>
+                <div style="display:flex;gap:8px;margin-top:10px;">
+                    <input type="text" id="ticker-input" placeholder="e.g. AAPL" style="margin-top:0;text-transform:uppercase;flex:1;" maxlength="10" oninput="this.value=this.value.toUpperCase()">
+                    <button onclick="addTicker()" class="update-btn" style="width:auto;padding:0 16px;margin-top:0;">ADD</button>
+                </div>
+            </div>
+        </div>
+
         <div class="control-group">
             <div class="row"><label>Widget Scale</label></div>
             <input type="range" id="range-scale" min="0.4" max="2.0" step="0.01" value="1" oninput="state.scale=this.value;applyAll();save();">
@@ -562,14 +628,16 @@
 // ─────────────────────────────────────────────────
 let state = {
     mirrored: false, is24h: true, burnShield: true,
-    showClock: true, showDate: true, showWeather: true, showBattery: true, showNowplaying: true,
+    showClock: true, showDate: true, showWeather: true, showBattery: true, showNowplaying: true, showStocks: false,
     showSeconds: false, weatherUnit: 'C', artAsBg: false, showPills: false,
+    tickers: ['AAPL', 'TSLA', 'NVDA'],
     widgetPos: {
         clock:      { x: 50, y: 25 },
         date:       { x: 50, y: 50 },
         weather:    { x: 50, y: 75 },
-        battery:    { x: 75, y: 10 },
-        nowplaying: { x: 50, y: 90 }
+        battery:    { x: 83, y: 6  },
+        nowplaying: { x: 50, y: 94 },
+        stocks:     { x: 17, y: 50 }
     },
     scale: 1, accent: '#007AFF',
     city: 'Calgary', bg: '', history: [],
@@ -611,6 +679,13 @@ function load() {
     resetDimTimer();
     createSnapGhosts();
     initAllDrag();
+
+    // Stocks
+    if (state.showStocks) {
+        document.getElementById('stocks-widget').style.display = 'flex';
+        startStocksPolling();
+    }
+    renderTickerTags();
 }
 
 // ─────────────────────────────────────────────────
@@ -979,6 +1054,99 @@ async function updateBattery() {
         b.onlevelchange = updateUI;
         b.onchargingchange = updateUI;
     } catch (e) { document.getElementById('battery-widget').style.display = 'none'; }
+}
+
+// ─────────────────────────────────────────────────
+// STOCKS
+// ─────────────────────────────────────────────────
+let stocksRefreshTimer = null;
+
+async function fetchStocks() {
+    if (!state.tickers || state.tickers.length === 0) return;
+    const list = document.getElementById('stocks-list');
+    if (!list) return;
+
+    // Use Yahoo Finance via corsproxy.io — no API key needed
+    const symbols = state.tickers.join(',');
+    const url = `https://corsproxy.io/?url=${encodeURIComponent(
+        `https://query1.finance.yahoo.com/v7/finance/quote?symbols=${symbols}&fields=regularMarketPrice,regularMarketChange,regularMarketChangePercent`
+    )}`;
+
+    try {
+        const res  = await fetch(url);
+        const data = await res.json();
+        const quotes = data?.quoteResponse?.result;
+        if (!quotes || quotes.length === 0) { renderStockError(); return; }
+
+        list.innerHTML = '';
+        quotes.forEach((q, i) => {
+            const price  = q.regularMarketPrice?.toFixed(2) ?? '—';
+            const change = q.regularMarketChange;
+            const pct    = q.regularMarketChangePercent;
+            const up     = change >= 0;
+            const sign   = up ? '+' : '';
+            const cls    = up ? 'up' : 'down';
+            const arrow  = up ? '▲' : '▼';
+
+            const row = document.createElement('div');
+            row.className = 'stock-row';
+            row.innerHTML = `
+                <span class="stock-ticker">${q.symbol}</span>
+                <span class="stock-price">$${price}</span>
+                <span class="stock-change ${cls}">${arrow} ${sign}${pct?.toFixed(2) ?? '0.00'}%</span>
+            `;
+            list.appendChild(row);
+            if (i < quotes.length - 1) {
+                const div = document.createElement('div');
+                div.className = 'stock-divider';
+                list.appendChild(div);
+            }
+        });
+    } catch (e) { renderStockError(); }
+}
+
+function renderStockError() {
+    const list = document.getElementById('stocks-list');
+    if (list) list.innerHTML = `<div style="font-size:0.65rem;opacity:0.4;text-align:center;padding:6px 0;">Unable to load</div>`;
+}
+
+function startStocksPolling() {
+    clearInterval(stocksRefreshTimer);
+    fetchStocks();
+    stocksRefreshTimer = setInterval(fetchStocks, 60000); // refresh every minute
+}
+
+function renderTickerTags() {
+    const container = document.getElementById('ticker-tags');
+    if (!container) return;
+    if (!state.tickers) state.tickers = [];
+    container.innerHTML = '';
+    state.tickers.forEach(t => {
+        const tag = document.createElement('div');
+        tag.className = 'ticker-tag';
+        tag.innerHTML = `<span>${t}</span><button onclick="removeTicker('${t}')" title="Remove">✕</button>`;
+        container.appendChild(tag);
+    });
+}
+
+function addTicker() {
+    const input = document.getElementById('ticker-input');
+    const val = input.value.trim().toUpperCase();
+    if (!val || val.length > 10) return;
+    if (!state.tickers) state.tickers = [];
+    if (state.tickers.includes(val)) { input.value = ''; return; }
+    state.tickers.push(val);
+    input.value = '';
+    renderTickerTags();
+    save();
+    if (state.showStocks) fetchStocks();
+}
+
+function removeTicker(t) {
+    state.tickers = state.tickers.filter(x => x !== t);
+    renderTickerTags();
+    save();
+    if (state.showStocks) fetchStocks();
 }
 
 // ─────────────────────────────────────────────────
@@ -1575,18 +1743,22 @@ function applyAll() {
     if (unitC) unitC.classList.toggle('active', state.weatherUnit !== 'F');
     if (unitF) unitF.classList.toggle('active', state.weatherUnit === 'F');
 
-    const widgets = ['clock', 'date', 'weather', 'battery', 'nowplaying'];
+    const widgets = ['clock', 'date', 'weather', 'battery', 'nowplaying', 'stocks'];
     widgets.forEach(key => {
         const el   = document.getElementById(key + '-widget');
+        if (!el) return;
         const show = state['show' + key.charAt(0).toUpperCase() + key.slice(1)];
         el.style.opacity = show ? 1 : 0;
         el.style.pointerEvents = show ? 'all' : 'none';
+        if (show && key !== 'nowplaying') el.style.display = 'flex';
         positionWidget(key);
         const sw = document.getElementById('sw-show' + key.charAt(0).toUpperCase() + key.slice(1));
         if (sw) sw.classList.toggle('active', show);
         const st = document.getElementById('st-' + key);
         if (st) { st.innerText = show ? 'SHOWN' : 'HIDDEN'; st.className = show ? 'status-tag on' : 'status-tag off'; }
     });
+
+    renderTickerTags();
 
     document.getElementById('city-input').value  = state.city;
     document.getElementById('range-scale').value = state.scale;
@@ -1605,30 +1777,31 @@ function applyAll() {
 }
 
 // ─────────────────────────────────────────────────
-// SNAP ZONES — 9×9 invisible grid (81 points)
+// SNAP ZONES — 11×15 invisible grid (165 points)
+// 11 columns × 15 rows, margins kept so widgets don't clip edges
 // ─────────────────────────────────────────────────
 const ZONES = (() => {
-    const steps = 9;
+    const cols = 11, rows = 15;
     const z = [];
-    for (let r = 0; r < steps; r++) {
-        for (let c = 0; c < steps; c++) {
-            // Map 0–8 → ~6%–94% so edges don't clip widgets
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
             z.push({
-                x: 6 + (c / (steps - 1)) * 88,
-                y: 6 + (r / (steps - 1)) * 88
+                x: 5 + (c / (cols - 1)) * 90,
+                y: 4 + (r / (rows - 1)) * 92
             });
         }
     }
     return z;
-})(); // 81 zones
+})(); // 165 zones
 
-const WIDGET_KEYS = ['clock', 'date', 'weather', 'battery', 'nowplaying'];
+const WIDGET_KEYS = ['clock', 'date', 'weather', 'battery', 'nowplaying', 'stocks'];
 const DEFAULT_POS = {
     clock:      { x: 50, y: 28 },
     date:       { x: 50, y: 50 },
     weather:    { x: 50, y: 72 },
     battery:    { x: 83, y: 6  },
-    nowplaying: { x: 50, y: 94 }
+    nowplaying: { x: 50, y: 94 },
+    stocks:     { x: 17, y: 50 }
 };
 
 function positionWidget(key) {
@@ -1790,7 +1963,22 @@ function resetWidget(key) {
     state['show' + key.charAt(0).toUpperCase() + key.slice(1)] = true;
     applyAll(); save();
 }
-function toggle(key) { state[key] = !state[key]; applyAll(); save(); }
+function toggle(key) {
+    state[key] = !state[key];
+    applyAll();
+    // When stocks are turned on, start fetching; when turned off, stop
+    if (key === 'showStocks') {
+        const el = document.getElementById('stocks-widget');
+        if (state.showStocks) {
+            el.style.display = 'flex';
+            startStocksPolling();
+        } else {
+            el.style.display = 'none';
+            clearInterval(stocksRefreshTimer);
+        }
+    }
+    save();
+}
 
 // ─────────────────────────────────────────────────
 // MODALS
