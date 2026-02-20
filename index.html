@@ -96,6 +96,55 @@
 
         /* snap ghosts removed — grid is invisible, snapping still works */
 
+        /* ── ACCENT TRANSITION ── */
+        * { transition: color 0.6s ease, border-color 0.6s ease, background-color 0.6s ease, box-shadow 0.6s ease; }
+        /* Override for elements that need faster or no color transition */
+        .widget, #clock, #date, #temp, #battery, .np-btn, input, button { transition: none; }
+        .widget { transition: left 0.5s cubic-bezier(0.34,1.56,0.64,1), top 0.5s cubic-bezier(0.34,1.56,0.64,1), opacity 0.4s ease, transform 0.5s cubic-bezier(0.34,1.56,0.64,1); }
+        :root { --accent-transition: 0.8s ease; }
+
+        /* ── WIDGET ENTRANCE ── */
+        @keyframes widgetIn {
+            from { opacity: 0; transform: translate(-50%,-50%) scale(0.88); filter: blur(4px); }
+            to   { opacity: 1; transform: translate(-50%,-50%) scale(var(--ws,1)); filter: blur(0); }
+        }
+        .widget.entering { animation: widgetIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+
+        /* ── CLOCK DIGIT FLIP ── */
+        #clock { overflow: hidden; }
+        .digit-wrap { display: inline-block; position: relative; overflow: hidden; vertical-align: top; }
+        @keyframes digitOut { from { transform: translateY(0); opacity:1; } to { transform: translateY(-60%); opacity:0; } }
+        @keyframes digitIn  { from { transform: translateY(60%); opacity:0; } to { transform: translateY(0); opacity:1; } }
+        .digit-wrap.flip-out { animation: digitOut 0.18s ease-in  forwards; }
+        .digit-wrap.flip-in  { animation: digitIn  0.18s ease-out forwards; }
+
+        /* ── WORLD CLOCK WIDGET ── */
+        #worldclock-widget { flex-direction: column !important; gap: 5px; align-items: stretch; }
+        #worldclock-widget .widget-pill { flex-direction: column; gap: 4px; min-width: 160px; }
+        .wc-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+        .wc-city { font-size: 0.6rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.55; }
+        .wc-time { font-size: 1.05rem; font-weight: 300; letter-spacing: 2px; }
+        .wc-divider { height: 1px; background: rgba(255,255,255,0.07); margin: 2px 0; }
+
+        /* ── MOON PHASE WIDGET ── */
+        #moon-widget { flex-direction: column !important; align-items: center; gap: 4px; }
+        #moon-widget .widget-pill { flex-direction: column; align-items: center; gap: 4px; padding: 10px 18px; }
+        #moon-svg { display: block; }
+        #moon-label { font-size: 0.55rem; letter-spacing: 2px; opacity: 0.5; text-transform: uppercase; text-align: center; }
+
+        /* ── COUNTDOWN WIDGET ── */
+        #countdown-widget { flex-direction: column !important; align-items: center; gap: 4px; }
+        #countdown-widget .widget-pill { flex-direction: column; align-items: center; gap: 3px; }
+        #cd-days { font-size: clamp(2.5rem, 8vw, 5rem); font-weight: 900; line-height: 1; letter-spacing: -2px; }
+        #cd-unit { font-size: 0.55rem; letter-spacing: 3px; opacity: 0.45; text-transform: uppercase; }
+        #cd-event { font-size: 0.65rem; letter-spacing: 1.5px; opacity: 0.6; text-transform: uppercase; font-weight: 600; margin-top: 2px; }
+
+        /* ── SPOTIFY NEXT TRACK ── */
+        #np-next-wrap { margin-top: 5px; padding-top: 5px; border-top: 1px solid rgba(255,255,255,0.07); display: none; }
+        #np-next-label { font-size: 0.42rem; letter-spacing: 2px; opacity: 0.3; text-transform: uppercase; margin-bottom: 2px; }
+        #np-next-track { font-size: 0.7rem; font-weight: 600; opacity: 0.6; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        #np-next-artist { font-size: 0.6rem; opacity: 0.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
         /* ── CLOCK STYLES ── */
         #clock { line-height: 1; transition: all 0.4s ease; text-shadow: 0px 0px 20px rgba(0,0,0,0.5); }
         #clock.style-bold {
@@ -439,12 +488,35 @@
                     </div>
                 </div>
                 <div id="np-label">SPOTIFY</div>
+                <div id="np-next-wrap">
+                    <div id="np-next-label">Next Up</div>
+                    <div id="np-next-track">—</div>
+                    <div id="np-next-artist"></div>
+                </div>
             </div>
         </div>
     </div>
     <div id="stocks-widget" class="widget" style="display:none;">
         <div class="widget-pill">
             <div id="stocks-list"><!-- rows injected by JS --></div>
+        </div>
+    </div>
+    <div id="worldclock-widget" class="widget" style="display:none;">
+        <div class="widget-pill">
+            <div id="wc-list"><!-- rows injected by JS --></div>
+        </div>
+    </div>
+    <div id="moon-widget" class="widget" style="display:none;">
+        <div class="widget-pill">
+            <svg id="moon-svg" width="52" height="52" viewBox="0 0 52 52"></svg>
+            <div id="moon-label">Moon Phase</div>
+        </div>
+    </div>
+    <div id="countdown-widget" class="widget" style="display:none;">
+        <div class="widget-pill">
+            <div id="cd-days">—</div>
+            <div id="cd-unit">days until</div>
+            <div id="cd-event">Event</div>
         </div>
     </div>
 </div>
@@ -611,6 +683,47 @@
             </div>
         </div>
 
+        <!-- World Clock Widget -->
+        <div class="control-group">
+            <div class="row"><label>World Clock</label><span class="reset-link" onclick="resetWidget('worldclock')">Reset Position</span></div>
+            <div class="row" style="margin-top:10px;">
+                <label style="font-size:0.5rem;">Visibility</label>
+                <div style="display:flex;align-items:center;"><span id="st-worldclock" class="status-tag">HIDDEN</span><div id="sw-showWorldclock" class="ios-switch" onclick="toggle('showWorldclock')"></div></div>
+            </div>
+            <div style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.06);">
+                <label style="font-size:0.5rem;">Timezones</label>
+                <div id="tz-tags" class="ticker-tags"></div>
+                <div style="display:flex;gap:8px;margin-top:10px;">
+                    <select id="tz-select" style="flex:1;background:#000;color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:12px;padding:10px;font-size:0.7rem;outline:none;"></select>
+                    <button onclick="addTimezone()" class="update-btn" style="width:auto;padding:0 16px;margin-top:0;">ADD</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Moon Phase Widget -->
+        <div class="control-group">
+            <div class="row"><label>Moon Phase</label><span class="reset-link" onclick="resetWidget('moon')">Reset Position</span></div>
+            <div class="row" style="margin-top:10px;">
+                <label style="font-size:0.5rem;">Visibility</label>
+                <div style="display:flex;align-items:center;"><span id="st-moon" class="status-tag">HIDDEN</span><div id="sw-showMoon" class="ios-switch" onclick="toggle('showMoon')"></div></div>
+            </div>
+        </div>
+
+        <!-- Countdown Widget -->
+        <div class="control-group">
+            <div class="row"><label>Countdown</label><span class="reset-link" onclick="resetWidget('countdown')">Reset Position</span></div>
+            <div class="row" style="margin-top:10px;">
+                <label style="font-size:0.5rem;">Visibility</label>
+                <div style="display:flex;align-items:center;"><span id="st-countdown" class="status-tag">HIDDEN</span><div id="sw-showCountdown" class="ios-switch" onclick="toggle('showCountdown')"></div></div>
+            </div>
+            <div style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.06);">
+                <label style="font-size:0.5rem;">Event Name</label>
+                <input type="text" id="cd-name-input" placeholder="e.g. Summer" style="margin-top:6px;" oninput="updateCountdownSettings()">
+                <label style="font-size:0.5rem;margin-top:10px;display:block;">Target Date</label>
+                <input type="date" id="cd-date-input" style="margin-top:6px;width:100%;background:#000;color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:12px;padding:10px;font-size:0.8rem;outline:none;" oninput="updateCountdownSettings()">
+            </div>
+        </div>
+
         <!-- Stocks Widget -->
         <div class="control-group">
             <div class="row"><label>Stocks Widget</label><span class="reset-link" onclick="resetWidget('stocks')">Reset Position</span></div>
@@ -638,6 +751,14 @@
             <input type="color" id="color-accent" style="height:45px;width:100%;border:none;background:none;" onchange="state.accent=this.value;applyAll();save();">
         </div>
 
+        <!-- Export / Import -->
+        <div class="control-group">
+            <label>Backup & Restore</label>
+            <button onclick="exportSettings()" class="update-btn" style="margin-top:10px;">⬇ EXPORT SETTINGS</button>
+            <label class="update-btn" for="import-file" style="display:block;text-align:center;margin-top:8px;cursor:pointer;padding:12px;border-radius:12px;font-size:0.75rem;font-weight:bold;background:rgba(255,255,255,0.08);color:#fff;">⬆ IMPORT SETTINGS</label>
+            <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importSettings(this)">
+        </div>
+
         <button onclick="openModal()" class="factory-reset-btn">FACTORY RESET</button>
     </div>
 </div>
@@ -649,15 +770,21 @@
 let state = {
     mirrored: false, is24h: true, burnShield: true,
     showClock: true, showDate: true, showWeather: true, showBattery: true, showNowplaying: true, showStocks: false,
+    showWorldclock: false, showMoon: false, showCountdown: false,
     showSeconds: false, weatherUnit: 'C', artAsBg: false, showPills: false,
     tickers: ['AAPL', 'TSLA', 'NVDA'],
+    timezones: ['America/New_York', 'Europe/London', 'Asia/Tokyo'],
+    countdownName: 'Event', countdownDate: '',
     widgetPos: {
         clock:      { x: 50, y: 25 },
         date:       { x: 50, y: 50 },
         weather:    { x: 50, y: 75 },
         battery:    { x: 83, y: 6  },
         nowplaying: { x: 50, y: 94 },
-        stocks:     { x: 17, y: 50 }
+        stocks:     { x: 17, y: 50 },
+        worldclock: { x: 83, y: 50 },
+        moon:       { x: 17, y: 25 },
+        countdown:  { x: 83, y: 25 }
     },
     scale: 1, accent: '#007AFF',
     city: 'Calgary', bg: '', history: [],
@@ -706,6 +833,28 @@ function load() {
         startStocksPolling();
     }
     renderTickerTags();
+
+    // World clock
+    populateTzSelect();
+    renderTzTags();
+    if (state.showWorldclock) {
+        document.getElementById('worldclock-widget').style.display = 'flex';
+        updateWorldClock();
+    }
+
+    // Moon
+    if (state.showMoon) {
+        document.getElementById('moon-widget').style.display = 'flex';
+        updateMoon();
+    }
+
+    // Countdown
+    if (state.showCountdown) {
+        document.getElementById('countdown-widget').style.display = 'flex';
+    }
+    if (state.countdownName) document.getElementById('cd-name-input').value = state.countdownName;
+    if (state.countdownDate) document.getElementById('cd-date-input').value = state.countdownDate;
+    updateCountdownDisplay();
 }
 
 // ─────────────────────────────────────────────────
@@ -879,6 +1028,8 @@ function extractAccentFromArt(imgUrl) {
 
             const hex = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
             accentFromArt = true;
+            // Smooth accent transition via CSS custom property animation trick
+            document.documentElement.style.setProperty('--accent-old', document.documentElement.style.getPropertyValue('--accent') || state.accent);
             document.documentElement.style.setProperty('--accent', hex);
             // Recompute fg contrast for the new art-derived accent
             const lum2 = (0.299*r + 0.587*g + 0.114*b) / 255;
@@ -913,6 +1064,8 @@ function restoreUserAccent() {
 // ─────────────────────────────────────────────────
 // CLOCK
 // ─────────────────────────────────────────────────
+// Clock digit flip — track previous displayed string to only animate changed digits
+let _prevClockStr = '';
 function updateClock() {
     const now = new Date();
     let h = now.getHours();
@@ -920,7 +1073,49 @@ function updateClock() {
     const s = String(now.getSeconds()).padStart(2, '0');
     if (!state.is24h) h = h % 12 || 12;
     const timeStr = state.showSeconds ? `${h}:${m}:${s}` : `${h}:${m}`;
-    document.getElementById('clock').innerText = timeStr;
+
+    const clockEl = document.getElementById('clock');
+    if (state.clockStyle === 'analog') {
+        updateAnalogClock(now);
+        document.getElementById('date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
+        return;
+    }
+
+    // Split into digit-wrap spans, animate only changed characters
+    if (clockEl.children.length === 0 || timeStr.length !== _prevClockStr.length) {
+        // Initial render or length change — build spans
+        clockEl.innerHTML = '';
+        for (const ch of timeStr) {
+            const span = document.createElement('span');
+            span.className = ch === ':' ? '' : 'digit-wrap';
+            span.style.display = 'inline-block';
+            span.textContent = ch;
+            clockEl.appendChild(span);
+        }
+        _prevClockStr = timeStr;
+    } else {
+        // Update only changed characters with flip animation
+        const spans = clockEl.children;
+        for (let i = 0; i < timeStr.length; i++) {
+            if (timeStr[i] !== _prevClockStr[i] && spans[i] && spans[i].classList.contains('digit-wrap')) {
+                const span = spans[i];
+                span.classList.remove('flip-in', 'flip-out');
+                void span.offsetWidth;
+                span.classList.add('flip-out');
+                const newChar = timeStr[i];
+                setTimeout(() => {
+                    span.textContent = newChar;
+                    span.classList.remove('flip-out');
+                    span.classList.add('flip-in');
+                    setTimeout(() => span.classList.remove('flip-in'), 200);
+                }, 90);
+            } else if (spans[i]) {
+                spans[i].textContent = timeStr[i];
+            }
+        }
+        _prevClockStr = timeStr;
+    }
+
     document.getElementById('date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
     updateAnalogClock(now);
 }
@@ -1195,6 +1390,241 @@ function removeTicker(t) {
     renderTickerTags();
     save();
     if (state.showStocks) fetchStocks();
+}
+
+// ─────────────────────────────────────────────────
+// WORLD CLOCK
+// ─────────────────────────────────────────────────
+const TZ_OPTIONS = [
+    { label: 'New York',     tz: 'America/New_York'    },
+    { label: 'Los Angeles',  tz: 'America/Los_Angeles' },
+    { label: 'Chicago',      tz: 'America/Chicago'     },
+    { label: 'London',       tz: 'Europe/London'       },
+    { label: 'Paris',        tz: 'Europe/Paris'        },
+    { label: 'Berlin',       tz: 'Europe/Berlin'       },
+    { label: 'Dubai',        tz: 'Asia/Dubai'          },
+    { label: 'Mumbai',       tz: 'Asia/Kolkata'        },
+    { label: 'Singapore',    tz: 'Asia/Singapore'      },
+    { label: 'Tokyo',        tz: 'Asia/Tokyo'          },
+    { label: 'Sydney',       tz: 'Australia/Sydney'    },
+    { label: 'Auckland',     tz: 'Pacific/Auckland'    },
+    { label: 'São Paulo',    tz: 'America/Sao_Paulo'   },
+    { label: 'Mexico City',  tz: 'America/Mexico_City' },
+    { label: 'Cairo',        tz: 'Africa/Cairo'        },
+    { label: 'Johannesburg', tz: 'Africa/Johannesburg' },
+    { label: 'Moscow',       tz: 'Europe/Moscow'       },
+    { label: 'Seoul',        tz: 'Asia/Seoul'          },
+    { label: 'Hong Kong',    tz: 'Asia/Hong_Kong'      },
+    { label: 'Jakarta',      tz: 'Asia/Jakarta'        },
+    { label: 'Toronto',      tz: 'America/Toronto'     },
+    { label: 'Vancouver',    tz: 'America/Vancouver'   },
+    { label: 'Denver',       tz: 'America/Denver'      },
+];
+
+function populateTzSelect() {
+    const sel = document.getElementById('tz-select');
+    if (!sel || sel.children.length > 1) return;
+    TZ_OPTIONS.forEach(opt => {
+        const o = document.createElement('option');
+        o.value = opt.tz;
+        o.textContent = opt.label;
+        sel.appendChild(o);
+    });
+}
+
+function addTimezone() {
+    const sel = document.getElementById('tz-select');
+    const tz = sel.value;
+    if (!tz) return;
+    if (!state.timezones) state.timezones = [];
+    if (state.timezones.includes(tz)) return;
+    if (state.timezones.length >= 4) { state.timezones.shift(); } // max 4
+    state.timezones.push(tz);
+    renderTzTags();
+    save();
+    updateWorldClock();
+}
+
+function removeTimezone(tz) {
+    state.timezones = state.timezones.filter(z => z !== tz);
+    renderTzTags();
+    save();
+    updateWorldClock();
+}
+
+function renderTzTags() {
+    const container = document.getElementById('tz-tags');
+    if (!container) return;
+    if (!state.timezones) state.timezones = [];
+    container.innerHTML = '';
+    state.timezones.forEach(tz => {
+        const label = TZ_OPTIONS.find(o => o.tz === tz)?.label ?? tz.split('/').pop().replace('_', ' ');
+        const tag = document.createElement('div');
+        tag.className = 'ticker-tag';
+        tag.innerHTML = `<span>${label}</span><button onclick="removeTimezone('${tz}')" title="Remove">✕</button>`;
+        container.appendChild(tag);
+    });
+}
+
+function updateWorldClock() {
+    if (!state.showWorldclock) return;
+    const list = document.getElementById('wc-list');
+    if (!list) return;
+    if (!state.timezones || state.timezones.length === 0) {
+        list.innerHTML = '<div style="font-size:0.65rem;opacity:0.4;text-align:center;padding:4px 0;">No timezones added</div>';
+        return;
+    }
+    const now = new Date();
+    list.innerHTML = '';
+    state.timezones.forEach((tz, i) => {
+        const label = TZ_OPTIONS.find(o => o.tz === tz)?.label ?? tz.split('/').pop().replace('_', ' ');
+        const timeStr = now.toLocaleTimeString('en-US', {
+            timeZone: tz, hour: 'numeric', minute: '2-digit',
+            hour12: !state.is24h
+        });
+        const row = document.createElement('div');
+        row.className = 'wc-row';
+        row.innerHTML = `<span class="wc-city">${label}</span><span class="wc-time">${timeStr}</span>`;
+        list.appendChild(row);
+        if (i < state.timezones.length - 1) {
+            const div = document.createElement('div');
+            div.className = 'wc-divider';
+            list.appendChild(div);
+        }
+    });
+}
+setInterval(updateWorldClock, 1000);
+
+// ─────────────────────────────────────────────────
+// MOON PHASE
+// ─────────────────────────────────────────────────
+function getMoonPhase(date) {
+    // Known new moon reference: Jan 6 2000 18:14 UTC
+    const known = new Date('2000-01-06T18:14:00Z');
+    const synodicMonth = 29.53058867; // days
+    const diffDays = (date - known) / (1000 * 60 * 60 * 24);
+    const phase = ((diffDays % synodicMonth) + synodicMonth) % synodicMonth;
+    return phase; // 0=new, 7.4=first quarter, 14.75=full, 22.1=last quarter
+}
+
+function getMoonPhaseName(phase) {
+    if (phase < 1.85)  return 'New Moon';
+    if (phase < 5.55)  return 'Waxing Crescent';
+    if (phase < 9.22)  return 'First Quarter';
+    if (phase < 12.92) return 'Waxing Gibbous';
+    if (phase < 16.61) return 'Full Moon';
+    if (phase < 20.30) return 'Waning Gibbous';
+    if (phase < 23.99) return 'Last Quarter';
+    if (phase < 27.68) return 'Waning Crescent';
+    return 'New Moon';
+}
+
+function drawMoon(phase) {
+    const svg = document.getElementById('moon-svg');
+    if (!svg) return;
+    const R = 22; // radius
+    const cx = 26, cy = 26;
+    // Illuminated fraction and direction
+    const illum = 0.5 * (1 - Math.cos(2 * Math.PI * phase / 29.53));
+    const isWaxing = phase < 14.765;
+
+    // Draw full disk
+    let path = '';
+    // Left semicircle (always visible on waxing)
+    // We draw the lit side using an ellipse arc
+    const rx = Math.abs(Math.cos(Math.PI * phase / 14.765)) * R;
+
+    // Build crescent/gibbous shape
+    const sweep1 = isWaxing ? 1 : 0;
+    const sweep2 = isWaxing ? 0 : 1;
+
+    // Outer arc: always a semicircle
+    // Inner arc: ellipse that varies from concave to convex
+    path = [
+        `M ${cx} ${cy - R}`,
+        `A ${R} ${R} 0 0 1 ${cx} ${cy + R}`,  // right semicircle
+        `A ${rx} ${R} 0 0 ${sweep2} ${cx} ${cy - R}` // inner ellipse
+    ].join(' ');
+
+    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#fff';
+    svg.innerHTML = `
+        <circle cx="${cx}" cy="${cy}" r="${R}" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+        <path d="${path}" fill="${accent}" opacity="0.9"/>
+    `;
+    document.getElementById('moon-label').innerText = getMoonPhaseName(phase);
+}
+
+function updateMoon() {
+    if (!state.showMoon) return;
+    const phase = getMoonPhase(new Date());
+    drawMoon(phase);
+}
+setInterval(updateMoon, 60000); // update every minute is plenty
+
+// ─────────────────────────────────────────────────
+// COUNTDOWN TIMER
+// ─────────────────────────────────────────────────
+function updateCountdownDisplay() {
+    if (!state.showCountdown) return;
+    const el = document.getElementById('cd-days');
+    const evEl = document.getElementById('cd-event');
+    if (!el) return;
+    evEl.innerText = state.countdownName || 'Event';
+    if (!state.countdownDate) { el.innerText = '—'; return; }
+    const target = new Date(state.countdownDate + 'T00:00:00');
+    const now    = new Date(); now.setHours(0,0,0,0);
+    const days   = Math.round((target - now) / (1000 * 60 * 60 * 24));
+    el.innerText = days >= 0 ? days : Math.abs(days);
+    document.getElementById('cd-unit').innerText = days >= 0 ? 'days until' : 'days since';
+}
+
+function updateCountdownSettings() {
+    state.countdownName = document.getElementById('cd-name-input').value || 'Event';
+    state.countdownDate = document.getElementById('cd-date-input').value;
+    updateCountdownDisplay();
+    save();
+}
+setInterval(updateCountdownDisplay, 60000);
+
+// ─────────────────────────────────────────────────
+// EXPORT / IMPORT SETTINGS
+// ─────────────────────────────────────────────────
+function exportSettings() {
+    const data = JSON.stringify(state, null, 2);
+    const blob = new Blob([data], { type: 'application/json' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `prism-os-settings-${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function importSettings(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        try {
+            const imported = JSON.parse(e.target.result);
+            // Merge carefully — don't overwrite keys that don't exist in new format
+            state = Object.assign(state, imported);
+            save();
+            applyAll();
+            renderHistory();
+            renderThemeList();
+            fetchWeather();
+            updateMoon();
+            updateCountdownDisplay();
+            updateWorldClock();
+            if (state.showStocks) fetchStocks();
+            // Reset the input so same file can be re-imported
+            input.value = '';
+        } catch (err) {
+            alert('Invalid settings file.');
+        }
+    };
+    reader.readAsText(file);
 }
 
 // ─────────────────────────────────────────────────
@@ -1587,19 +2017,29 @@ async function fetchNowPlaying() {
         if (!ok) return;
     }
     try {
-        const res = await fetch('https://api.spotify.com/v1/me/player/currently-playing', {
-            headers: { Authorization: `Bearer ${spotify.accessToken}` }
-        });
-        if (res.status === 204 || res.status === 401) {
-            updateNowPlayingUI(null);
+        const [npRes, queueRes] = await Promise.all([
+            fetch('https://api.spotify.com/v1/me/player/currently-playing', {
+                headers: { Authorization: `Bearer ${spotify.accessToken}` }
+            }),
+            fetch('https://api.spotify.com/v1/me/player/queue', {
+                headers: { Authorization: `Bearer ${spotify.accessToken}` }
+            })
+        ]);
+        if (npRes.status === 204 || npRes.status === 401) {
+            updateNowPlayingUI(null, null);
             return;
         }
-        const data = await res.json();
-        updateNowPlayingUI(data);
+        const data = await npRes.json();
+        let nextTrack = null;
+        if (queueRes.ok) {
+            const queueData = await queueRes.json();
+            nextTrack = queueData?.queue?.[0] ?? null;
+        }
+        updateNowPlayingUI(data, nextTrack);
     } catch (e) {}
 }
 
-function updateNowPlayingUI(data) {
+function updateNowPlayingUI(data, nextTrack) {
     if (!data || !data.is_playing && !data.item) {
         document.getElementById('np-track').innerText  = 'Nothing playing';
         document.getElementById('np-artist').innerText = '—';
@@ -1608,6 +2048,7 @@ function updateNowPlayingUI(data) {
         document.getElementById('np-art').classList.remove('has-art');
         document.getElementById('np-play-icon').style.display  = 'block';
         document.getElementById('np-pause-icon').style.display = 'none';
+        document.getElementById('np-next-wrap').style.display  = 'none';
         return;
     }
     const track = data.item;
@@ -1630,10 +2071,19 @@ function updateNowPlayingUI(data) {
     const pct = data.progress_ms / track.duration_ms * 100;
     document.getElementById('np-bar-fill').style.width = pct + '%';
 
-    // Toggle play/pause icon
     const isPlaying = data.is_playing;
     document.getElementById('np-play-icon').style.display  = isPlaying ? 'none'  : 'block';
     document.getElementById('np-pause-icon').style.display = isPlaying ? 'block' : 'none';
+
+    // Next track
+    const nextWrap = document.getElementById('np-next-wrap');
+    if (nextTrack) {
+        document.getElementById('np-next-track').innerText  = nextTrack.name;
+        document.getElementById('np-next-artist').innerText = nextTrack.artists?.map(a => a.name).join(', ') ?? '';
+        nextWrap.style.display = 'block';
+    } else {
+        nextWrap.style.display = 'none';
+    }
 }
 
 // ── Playback controls (requires Spotify Premium) ──
@@ -1791,14 +2241,22 @@ function applyAll() {
     if (unitC) unitC.classList.toggle('active', state.weatherUnit !== 'F');
     if (unitF) unitF.classList.toggle('active', state.weatherUnit === 'F');
 
-    const widgets = ['clock', 'date', 'weather', 'battery', 'nowplaying', 'stocks'];
+    const widgets = ['clock', 'date', 'weather', 'battery', 'nowplaying', 'stocks', 'worldclock', 'moon', 'countdown'];
     widgets.forEach(key => {
         const el   = document.getElementById(key + '-widget');
         if (!el) return;
         const show = state['show' + key.charAt(0).toUpperCase() + key.slice(1)];
+        const wasHidden = el.style.opacity === '0' || el.style.display === 'none';
         el.style.opacity = show ? 1 : 0;
         el.style.pointerEvents = show ? 'all' : 'none';
         if (show && key !== 'nowplaying') el.style.display = 'flex';
+        // Entrance animation when toggling on
+        if (show && wasHidden) {
+            el.classList.remove('entering');
+            void el.offsetWidth; // force reflow
+            el.classList.add('entering');
+            setTimeout(() => el.classList.remove('entering'), 600);
+        }
         positionWidget(key);
         const sw = document.getElementById('sw-show' + key.charAt(0).toUpperCase() + key.slice(1));
         if (sw) sw.classList.toggle('active', show);
@@ -1806,7 +2264,11 @@ function applyAll() {
         if (st) { st.innerText = show ? 'SHOWN' : 'HIDDEN'; st.className = show ? 'status-tag on' : 'status-tag off'; }
     });
 
+    // Accent CSS transition on :root
+    document.documentElement.style.setProperty('--accent-transition', '0.8s ease');
     renderTickerTags();
+    updateCountdownDisplay();
+    renderTzTags();
 
     document.getElementById('city-input').value  = state.city;
     document.getElementById('range-scale').value = state.scale;
@@ -1842,14 +2304,17 @@ const ZONES = (() => {
     return z;
 })(); // 165 zones
 
-const WIDGET_KEYS = ['clock', 'date', 'weather', 'battery', 'nowplaying', 'stocks'];
+const WIDGET_KEYS = ['clock', 'date', 'weather', 'battery', 'nowplaying', 'stocks', 'worldclock', 'moon', 'countdown'];
 const DEFAULT_POS = {
     clock:      { x: 50, y: 28 },
     date:       { x: 50, y: 50 },
     weather:    { x: 50, y: 72 },
     battery:    { x: 83, y: 6  },
     nowplaying: { x: 50, y: 94 },
-    stocks:     { x: 17, y: 50 }
+    stocks:     { x: 17, y: 50 },
+    worldclock: { x: 83, y: 50 },
+    moon:       { x: 17, y: 25 },
+    countdown:  { x: 83, y: 25 }
 };
 
 function positionWidget(key) {
@@ -2014,16 +2479,25 @@ function resetWidget(key) {
 function toggle(key) {
     state[key] = !state[key];
     applyAll();
-    // When stocks are turned on, start fetching; when turned off, stop
     if (key === 'showStocks') {
         const el = document.getElementById('stocks-widget');
-        if (state.showStocks) {
-            el.style.display = 'flex';
-            startStocksPolling();
-        } else {
-            el.style.display = 'none';
-            clearInterval(stocksRefreshTimer);
-        }
+        if (state.showStocks) { el.style.display = 'flex'; startStocksPolling(); }
+        else { el.style.display = 'none'; clearInterval(stocksRefreshTimer); }
+    }
+    if (key === 'showWorldclock') {
+        const el = document.getElementById('worldclock-widget');
+        el.style.display = state.showWorldclock ? 'flex' : 'none';
+        if (state.showWorldclock) updateWorldClock();
+    }
+    if (key === 'showMoon') {
+        const el = document.getElementById('moon-widget');
+        el.style.display = state.showMoon ? 'flex' : 'none';
+        if (state.showMoon) updateMoon();
+    }
+    if (key === 'showCountdown') {
+        const el = document.getElementById('countdown-widget');
+        el.style.display = state.showCountdown ? 'flex' : 'none';
+        if (state.showCountdown) updateCountdownDisplay();
     }
     save();
 }
