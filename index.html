@@ -94,32 +94,7 @@
         }
         .widget.long-press-ready { animation: wiggle 0.35s ease; }
 
-        /* Snap zone ghost indicators — shown while dragging */
-        :root { --ghost-size: 38px; }
-        @media (max-width: 600px) { :root { --ghost-size: 28px; } }
-
-        .snap-ghost {
-            position: fixed;
-            width: var(--ghost-size);
-            height: var(--ghost-size);
-            border: 1.5px dashed rgba(255,255,255,0.18);
-            border-radius: 10px;
-            pointer-events: none; z-index: 5;
-            opacity: 0;
-            transition: opacity 0.2s ease, border-color 0.15s, background 0.15s, transform 0.2s;
-            transform: translate(-50%, -50%) scale(0.8);
-        }
-        .snap-ghost.visible {
-            opacity: 1;
-            transform: translate(-50%, -50%) scale(1);
-        }
-        .snap-ghost.nearest {
-            border-color: var(--accent);
-            border-style: solid;
-            background: rgba(0,122,255,0.15);
-            transform: translate(-50%, -50%) scale(1.3);
-            box-shadow: 0 0 14px rgba(0,122,255,0.3);
-        }
+        /* snap ghosts removed — grid is invisible, snapping still works */
 
         /* ── CLOCK STYLES ── */
         #clock { line-height: 1; transition: all 0.4s ease; text-shadow: 0px 0px 20px rgba(0,0,0,0.5); }
@@ -1630,26 +1605,32 @@ function applyAll() {
 }
 
 // ─────────────────────────────────────────────────
-// SNAP ZONES — 5×5 iPhone-style anchor grid
+// SNAP ZONES — 9×9 invisible grid (81 points)
 // ─────────────────────────────────────────────────
 const ZONES = (() => {
-    const xs = [10, 25, 50, 75, 90];
-    const ys = [10, 25, 50, 75, 90];
+    const steps = 9;
     const z = [];
-    ys.forEach(y => xs.forEach(x => z.push({ x, y })));
+    for (let r = 0; r < steps; r++) {
+        for (let c = 0; c < steps; c++) {
+            // Map 0–8 → ~6%–94% so edges don't clip widgets
+            z.push({
+                x: 6 + (c / (steps - 1)) * 88,
+                y: 6 + (r / (steps - 1)) * 88
+            });
+        }
+    }
     return z;
-})(); // 25 zones
+})(); // 81 zones
 
 const WIDGET_KEYS = ['clock', 'date', 'weather', 'battery', 'nowplaying'];
 const DEFAULT_POS = {
-    clock:      { x: 50, y: 25 },
+    clock:      { x: 50, y: 28 },
     date:       { x: 50, y: 50 },
-    weather:    { x: 50, y: 75 },
-    battery:    { x: 75, y: 10 },
-    nowplaying: { x: 50, y: 90 }
+    weather:    { x: 50, y: 72 },
+    battery:    { x: 83, y: 6  },
+    nowplaying: { x: 50, y: 94 }
 };
 
-// Position a widget at its stored snap position, applying scale + mirror
 function positionWidget(key) {
     if (!state.widgetPos) state.widgetPos = JSON.parse(JSON.stringify(DEFAULT_POS));
     const pos = state.widgetPos[key] || DEFAULT_POS[key];
@@ -1661,57 +1642,15 @@ function positionWidget(key) {
     el.style.transform = `translate(-50%, -50%) scale(${sx}, ${state.scale})`;
 }
 
-// ─────────────────────────────────────────────────
-// SNAP GHOST INDICATORS — pixel-positioned for mobile accuracy
-// ─────────────────────────────────────────────────
-let ghostEls = [];
+// Ghost system is fully removed — grid is invisible
+function updateGhostSize() {} // no-op kept so applyAll doesn't error
+function createSnapGhosts() {} // no-op
+function showGhosts() {}
+function hideGhosts() {}
+function highlightGhost() {}
 
-function updateGhostSize() {
-    // Base size in px, scaled by state.scale, clamped smaller on mobile
-    const isMobile = window.innerWidth < 600;
-    const base = isMobile ? 24 : 36;
-    const size = Math.round(base * Math.min(Math.max(state.scale, 0.5), 1.8));
-    document.documentElement.style.setProperty('--ghost-size', size + 'px');
-}
-
-function repositionGhosts() {
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    ZONES.forEach((z, i) => {
-        if (!ghostEls[i]) return;
-        ghostEls[i].style.left = (z.x / 100 * vw) + 'px';
-        ghostEls[i].style.top  = (z.y / 100 * vh) + 'px';
-    });
-}
-
-function createSnapGhosts() {
-    ghostEls.forEach(g => g.remove());
-    ghostEls = [];
-    const vw = window.innerWidth;
-    const vh = window.innerHeight;
-    ZONES.forEach(z => {
-        const g = document.createElement('div');
-        g.className = 'snap-ghost';
-        // Use pixel positions — percentages can misbehave on mobile fixed layouts
-        g.style.left = (z.x / 100 * vw) + 'px';
-        g.style.top  = (z.y / 100 * vh) + 'px';
-        document.body.appendChild(g);
-        ghostEls.push(g);
-    });
-    updateGhostSize();
-}
-
-// Reposition on resize/orientation change
-window.addEventListener('resize', () => { repositionGhosts(); updateGhostSize(); });
-window.addEventListener('orientationchange', () => {
-    setTimeout(() => { repositionGhosts(); updateGhostSize(); }, 300);
-});
-
-function showGhosts() { ghostEls.forEach(g => g.classList.add('visible')); }
-function hideGhosts() { ghostEls.forEach(g => g.classList.remove('visible', 'nearest')); }
-
+// Find nearest zone in pixel space
 function nearestZoneIdx(pxX, pxY) {
-    // Compare in px space — ghosts are now pixel-positioned
     const vw = window.innerWidth, vh = window.innerHeight;
     let best = 0, bestDist = Infinity;
     ZONES.forEach((z, i) => {
@@ -1721,11 +1660,6 @@ function nearestZoneIdx(pxX, pxY) {
         if (d < bestDist) { bestDist = d; best = i; }
     });
     return best;
-}
-
-function highlightGhost(pxX, pxY) {
-    const idx = nearestZoneIdx(pxX, pxY);
-    ghostEls.forEach((g, i) => g.classList.toggle('nearest', i === idx));
 }
 
 // ─────────────────────────────────────────────────
