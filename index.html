@@ -274,9 +274,9 @@
             z-index: 3000; max-height: 200px; overflow-y: auto; display: none;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
-        .city-item { padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; font-size: 0.8rem; transition: 0.2s; text-align: left; }
-        .city-item:hover { background: var(--accent); color: white; }
-        .city-item span { opacity: 0.6; font-size: 0.7rem; display: block; }
+        .city-item { padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; font-size: 0.8rem; transition: background 0.08s ease !important; text-align: left; }
+        .city-item:hover { background: var(--accent) !important; color: var(--accent-fg) !important; }
+        .city-item span { opacity: 0.6; font-size: 0.7rem; display: block; transition: none !important; }
 
         #ticker-results {
             position: absolute; top: calc(100% + 4px); left: 0; right: 0;
@@ -285,12 +285,18 @@
             z-index: 3000; max-height: 220px; overflow-y: auto; display: none;
             box-shadow: 0 10px 30px rgba(0,0,0,0.6);
         }
-        .ticker-item { padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; font-size: 0.8rem; transition: 0.2s; text-align: left; display: flex; align-items: center; gap: 10px; }
+        .ticker-item {
+            padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.05);
+            cursor: pointer; font-size: 0.8rem; text-align: left;
+            display: flex; align-items: center; gap: 10px;
+            /* Override global slow transition — needs to be instant */
+            transition: background 0.08s ease !important;
+        }
         .ticker-item:last-child { border-bottom: none; }
-        .ticker-item:hover { background: var(--accent); color: var(--accent-fg); }
-        .ticker-item:hover .ticker-item-sub { color: var(--accent-fg); opacity: 0.75; }
-        .ticker-item-symbol { font-weight: 800; letter-spacing: 1px; font-size: 0.78rem; min-width: 52px; }
-        .ticker-item-sub { font-size: 0.65rem; opacity: 0.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ticker-item:hover, .ticker-item.active { background: var(--accent) !important; color: var(--accent-fg) !important; }
+        .ticker-item:hover .ticker-item-sub, .ticker-item.active .ticker-item-sub { opacity: 0.75; }
+        .ticker-item-symbol { font-weight: 800; letter-spacing: 1px; font-size: 0.78rem; min-width: 52px; transition: none !important; }
+        .ticker-item-sub { font-size: 0.65rem; opacity: 0.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; transition: none !important; }
 
         .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.5; font-weight: 800; }
@@ -1386,58 +1392,116 @@ function renderTickerTags() {
     });
 }
 
-let tickerSearchTimer = null;
+// ─────────────────────────────────────────────────
+// TICKER AUTOCOMPLETE — instant local database, zero latency
+// ─────────────────────────────────────────────────
+const TICKER_DB = [
+    ['AAPL','Apple'],['MSFT','Microsoft'],['NVDA','NVIDIA'],['GOOGL','Alphabet'],['GOOG','Alphabet C'],
+    ['AMZN','Amazon'],['META','Meta'],['TSLA','Tesla'],['AVGO','Broadcom'],['ORCL','Oracle'],
+    ['AMD','AMD'],['INTC','Intel'],['QCOM','Qualcomm'],['TXN','Texas Instruments'],['MU','Micron'],
+    ['AMAT','Applied Materials'],['MRVL','Marvell'],['ARM','Arm Holdings'],['PLTR','Palantir'],
+    ['SNOW','Snowflake'],['CRM','Salesforce'],['ADBE','Adobe'],['NOW','ServiceNow'],['INTU','Intuit'],
+    ['PANW','Palo Alto Networks'],['CRWD','CrowdStrike'],['ZS','Zscaler'],['NET','Cloudflare'],
+    ['DDOG','Datadog'],['MDB','MongoDB'],['NFLX','Netflix'],['SPOT','Spotify'],['RBLX','Roblox'],
+    ['UBER','Uber'],['LYFT','Lyft'],['ABNB','Airbnb'],['DASH','DoorDash'],['COIN','Coinbase'],
+    ['DIS','Disney'],['CMCSA','Comcast'],['T','AT&T'],['VZ','Verizon'],['TMUS','T-Mobile'],
+    ['V','Visa'],['MA','Mastercard'],['PYPL','PayPal'],['SQ','Block'],['AFRM','Affirm'],
+    ['JPM','JPMorgan'],['BAC','Bank of America'],['WFC','Wells Fargo'],['GS','Goldman Sachs'],
+    ['MS','Morgan Stanley'],['C','Citigroup'],['AXP','American Express'],['BLK','BlackRock'],
+    ['BRK.B','Berkshire Hathaway B'],['BRK.A','Berkshire Hathaway A'],['SCHW','Charles Schwab'],
+    ['LLY','Eli Lilly'],['UNH','UnitedHealth'],['JNJ','Johnson & Johnson'],['PFE','Pfizer'],
+    ['ABBV','AbbVie'],['MRK','Merck'],['TMO','Thermo Fisher'],['ABT','Abbott'],['BMY','Bristol-Myers'],
+    ['AMGN','Amgen'],['GILD','Gilead'],['REGN','Regeneron'],['VRTX','Vertex Pharma'],['ISRG','Intuitive Surgical'],
+    ['XOM','Exxon Mobil'],['CVX','Chevron'],['COP','ConocoPhillips'],['SLB','SLB'],['EOG','EOG Resources'],
+    ['NEE','NextEra Energy'],['DUK','Duke Energy'],['SO','Southern Company'],['AEP','AEP'],['D','Dominion'],
+    ['CAT','Caterpillar'],['DE','John Deere'],['GE','GE'],['HON','Honeywell'],['MMM','3M'],['BA','Boeing'],
+    ['LMT','Lockheed Martin'],['RTX','RTX'],['NOC','Northrop Grumman'],['GD','General Dynamics'],
+    ['AMZN','Amazon'],['WMT','Walmart'],['COST','Costco'],['TGT','Target'],['HD','Home Depot'],
+    ['LOW','Lowe\'s'],['SBUX','Starbucks'],['MCD','McDonald\'s'],['YUM','Yum! Brands'],['CMG','Chipotle'],
+    ['NKE','Nike'],['LULU','Lululemon'],['TJX','TJX Companies'],['ROST','Ross Stores'],['GPS','Gap'],
+    ['PG','Procter & Gamble'],['KO','Coca-Cola'],['PEP','PepsiCo'],['MDLZ','Mondelez'],['GIS','General Mills'],
+    ['PM','Philip Morris'],['MO','Altria'],['CL','Colgate'],['CHD','Church & Dwight'],
+    ['UPS','UPS'],['FDX','FedEx'],['ODFL','Old Dominion Freight'],['XPO','XPO'],
+    ['AMT','American Tower'],['PLD','Prologis'],['CCI','Crown Castle'],['EQIX','Equinix'],['SPG','Simon Property'],
+    ['GLD','SPDR Gold'],['SLV','iShares Silver'],['USO','US Oil Fund'],
+    ['SPY','S&P 500 ETF'],['QQQ','Nasdaq 100 ETF'],['IWM','Russell 2000 ETF'],['DIA','Dow Jones ETF'],
+    ['VTI','Vanguard Total Market'],['VEA','Vanguard Intl'],['VWO','Vanguard Emerging Markets'],
+    ['AGG','Bond ETF'],['TLT','20yr Treasury ETF'],['HYG','High Yield Bond ETF'],
+    ['XLK','Tech Sector ETF'],['XLF','Finance Sector ETF'],['XLE','Energy Sector ETF'],
+    ['XLV','Health Sector ETF'],['XLI','Industrial Sector ETF'],['ARKK','ARK Innovation ETF'],
+    ['BTC-USD','Bitcoin'],['ETH-USD','Ethereum'],['BNB-USD','BNB'],['SOL-USD','Solana'],
+    ['XRP-USD','XRP'],['ADA-USD','Cardano'],['DOGE-USD','Dogecoin'],['AVAX-USD','Avalanche'],
+    ['TSMC','TSMC (Taiwan Semi)'],['NVO','Novo Nordisk'],['ASML','ASML'],['SAP','SAP'],
+    ['TM','Toyota'],['SONY','Sony'],['HMC','Honda'],['NIO','NIO'],['RIVN','Rivian'],['LCID','Lucid'],
+    ['GME','GameStop'],['AMC','AMC Entertainment'],['BB','BlackBerry'],['BBBY','Bed Bath & Beyond'],
+    ['F','Ford'],['GM','General Motors'],['STLA','Stellantis'],
+    ['SHOP','Shopify'],['SQ','Block'],['TWLO','Twilio'],['ZM','Zoom'],['OKTA','Okta'],
+    ['DOCU','DocuSign'],['BILL','Bill.com'],['HUBS','HubSpot'],['WDAY','Workday'],['VEEV','Veeva'],
+    ['ROP','Roper Technologies'],['ANSS','Ansys'],['CDNS','Cadence'],['SNPS','Synopsys'],
+    ['MSCI','MSCI'],['SPGI','S&P Global'],['MCO','Moody\'s'],['ICE','Intercontinental Exchange'],
+    ['CME','CME Group'],['NDAQ','Nasdaq'],['CBOE','Cboe Global Markets'],
+];
 
-async function searchTickers(query) {
+function searchTickers(query) {
     const box = document.getElementById('ticker-results');
     query = query.trim();
     if (query.length < 1) { box.style.display = 'none'; return; }
-    clearTimeout(tickerSearchTimer);
-    tickerSearchTimer = setTimeout(async () => {
-        try {
-            // Yahoo Finance search endpoint via proxy
-            const target = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=8&newsCount=0&listsCount=0`;
-            const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`;
-            const res  = await fetch(url, { signal: AbortSignal.timeout(5000) });
-            const data = await res.json();
-            const quotes = data?.quotes?.filter(q => q.symbol && q.quoteType !== 'FUTURE') ?? [];
 
-            if (quotes.length === 0) { box.style.display = 'none'; return; }
+    const q = query.toUpperCase();
+    const ql = query.toLowerCase();
 
-            box.innerHTML = '';
-            quotes.slice(0, 7).forEach(q => {
-                const name = q.shortname || q.longname || '';
-                const exchange = q.exchDisp || q.exchange || '';
-                const div = document.createElement('div');
-                div.className = 'ticker-item';
-                div.innerHTML = `
-                    <span class="ticker-item-symbol">${q.symbol}</span>
-                    <span class="ticker-item-sub">${name}${exchange ? ' · ' + exchange : ''}</span>
-                `;
-                div.onclick = () => selectTicker(q.symbol);
-                box.appendChild(div);
-            });
-            box.style.display = 'block';
-        } catch (e) {
-            // Fallback: treat the raw input as a symbol if it looks like one
-            box.style.display = 'none';
-        }
-    }, 280);
+    const scored = TICKER_DB
+        .filter(([sym, name]) => sym.includes(q) || name.toLowerCase().includes(ql))
+        .map(([sym, name]) => {
+            let score = sym === q ? 100 : sym.startsWith(q) ? 80 : sym.includes(q) ? 60 : name.toLowerCase().startsWith(ql) ? 40 : 20;
+            return { sym, name, score };
+        })
+        .sort((a, b) => b.score - a.score)
+        .slice(0, 7);
+
+    if (scored.length === 0) { box.style.display = 'none'; return; }
+
+    box.innerHTML = '';
+    scored.forEach(({ sym, name }, i) => {
+        const div = document.createElement('div');
+        div.className = 'ticker-item';
+        div.dataset.sym = sym;
+        div.innerHTML = `<span class="ticker-item-symbol">${sym}</span><span class="ticker-item-sub">${name}</span>`;
+        // pointerdown fires before blur, works on touch and mouse
+        div.addEventListener('pointerdown', (e) => { e.preventDefault(); selectTicker(sym); });
+        box.appendChild(div);
+    });
+    box.style.display = 'block';
 }
 
+let _tickerHighlight = -1;
+
 function tickerInputKey(e) {
-    // Allow pressing Enter to add the first result or typed symbol directly
-    if (e.key === 'Enter') {
-        const first = document.querySelector('.ticker-item');
-        if (first) { first.click(); }
-        else {
+    const box = document.getElementById('ticker-results');
+    const items = box.querySelectorAll('.ticker-item');
+
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        _tickerHighlight = Math.min(_tickerHighlight + 1, items.length - 1);
+        items.forEach((el, i) => el.classList.toggle('active', i === _tickerHighlight));
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        _tickerHighlight = Math.max(_tickerHighlight - 1, 0);
+        items.forEach((el, i) => el.classList.toggle('active', i === _tickerHighlight));
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const active = box.querySelector('.ticker-item.active') || items[0];
+        if (active) {
+            selectTicker(active.dataset.sym);
+        } else {
             const val = document.getElementById('ticker-input').value.trim().toUpperCase();
             if (val) selectTicker(val);
         }
-        e.preventDefault();
-    }
-    if (e.key === 'Escape') {
-        document.getElementById('ticker-results').style.display = 'none';
+    } else if (e.key === 'Escape') {
+        box.style.display = 'none';
+        _tickerHighlight = -1;
+    } else {
+        _tickerHighlight = -1; // reset highlight on new character
     }
 }
 
@@ -1452,6 +1516,8 @@ function selectTicker(symbol) {
     }
     document.getElementById('ticker-input').value = '';
     document.getElementById('ticker-results').style.display = 'none';
+    _tickerHighlight = -1;
+    document.getElementById('ticker-input').focus();
 }
 
 function addTicker() {
@@ -1459,11 +1525,10 @@ function addTicker() {
     if (val) selectTicker(val);
 }
 
-// Close dropdown when clicking outside
-document.addEventListener('click', e => {
+document.addEventListener('pointerdown', e => {
     if (!e.target.closest('#ticker-input') && !e.target.closest('#ticker-results')) {
         const box = document.getElementById('ticker-results');
-        if (box) box.style.display = 'none';
+        if (box) { box.style.display = 'none'; _tickerHighlight = -1; }
     }
 });
 
