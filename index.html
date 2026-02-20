@@ -101,15 +101,18 @@
         #clock.style-bold {
             font-size: clamp(5rem, 25vw, 12rem); font-weight: 900; font-style: italic;
             letter-spacing: -4px; font-family: -apple-system, system-ui, sans-serif;
+            margin-right: -4px;
         }
         #clock.style-thin {
             font-size: clamp(4rem, 22vw, 11rem); font-weight: 100; font-style: normal;
             font-family: 'Outfit', sans-serif; letter-spacing: 20px;
+            margin-right: -20px;
         }
         #clock.style-retro {
             font-size: clamp(3.5rem, 18vw, 9rem); font-family: 'Share Tech Mono', monospace;
             font-weight: normal; font-style: normal; letter-spacing: 10px;
             text-shadow: 0 0 8px currentColor, 0 0 25px currentColor, 0 0 60px currentColor;
+            margin-right: -10px;
         }
 
         /* Analog clock */
@@ -124,7 +127,7 @@
         .a-sec  { stroke: #fff; stroke-width: 1.5; stroke-linecap: round; }
         .a-center { fill: var(--accent); }
 
-        #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.8; font-weight: 300; text-shadow: 0px 0px 20px rgba(0,0,0,0.7); }
+        #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.8; font-weight: 300; text-shadow: 0px 0px 20px rgba(0,0,0,0.7); margin-right: -8px; }
         #weather-widget { gap: 20px; opacity: 0.8; font-size: 2.4rem; font-weight: 200; text-shadow: 0px 0px 20px rgba(0,0,0,0.7); }
         #battery-widget { font-size: 1.2rem; font-weight: 600; opacity: 0.8; letter-spacing: 4px; display: flex; align-items: center; gap: 12px; text-shadow: 0px 0px 20px rgba(0,0,0,0.7); }
         .charging-pulse { animation: batteryPulse 2s infinite ease-in-out; }
@@ -474,9 +477,27 @@
         <div class="control-group">
             <div class="row"><label>Clock Widget</label><span class="reset-link" onclick="resetWidget('clock')">Reset Position</span></div>
             <div class="style-grid" style="margin-top:12px;">
-                <div class="style-btn active" data-style="bold"   onclick="setClockStyle('bold')">  <span class="s-icon">𝗜</span>Bold</div>
-                <div class="style-btn"        data-style="thin"   onclick="setClockStyle('thin')">  <span class="s-icon">I</span>Thin</div>
-                <div class="style-btn"        data-style="retro"  onclick="setClockStyle('retro')"> <span class="s-icon">8̤</span>Retro</div>
+                <div class="style-btn active" data-style="bold"   onclick="setClockStyle('bold')">
+                    <span class="s-icon">
+                        <svg width="28" height="20" viewBox="0 0 28 20" fill="currentColor">
+                            <text x="2" y="17" font-size="18" font-weight="900" font-family="-apple-system,sans-serif" letter-spacing="-1">12</text>
+                        </svg>
+                    </span>Bold
+                </div>
+                <div class="style-btn"        data-style="thin"   onclick="setClockStyle('thin')">
+                    <span class="s-icon">
+                        <svg width="28" height="20" viewBox="0 0 28 20" fill="currentColor">
+                            <text x="1" y="17" font-size="18" font-weight="100" font-family="'Outfit',sans-serif" letter-spacing="1">12</text>
+                        </svg>
+                    </span>Thin
+                </div>
+                <div class="style-btn"        data-style="retro"  onclick="setClockStyle('retro')">
+                    <span class="s-icon">
+                        <svg width="28" height="20" viewBox="0 0 28 20" fill="currentColor">
+                            <text x="1" y="17" font-size="15" font-family="'Share Tech Mono',monospace" letter-spacing="2">12</text>
+                        </svg>
+                    </span>Retro
+                </div>
                 <div class="style-btn"        data-style="analog" onclick="setClockStyle('analog')"><span class="s-icon">◷</span>Analog</div>
             </div>
             <div class="row" style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.06);">
