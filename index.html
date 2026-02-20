@@ -278,6 +278,20 @@
         .city-item:hover { background: var(--accent); color: white; }
         .city-item span { opacity: 0.6; font-size: 0.7rem; display: block; }
 
+        #ticker-results {
+            position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+            background: rgba(20,20,20,0.98); backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 15px;
+            z-index: 3000; max-height: 220px; overflow-y: auto; display: none;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+        }
+        .ticker-item { padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; font-size: 0.8rem; transition: 0.2s; text-align: left; display: flex; align-items: center; gap: 10px; }
+        .ticker-item:last-child { border-bottom: none; }
+        .ticker-item:hover { background: var(--accent); color: var(--accent-fg); }
+        .ticker-item:hover .ticker-item-sub { color: var(--accent-fg); opacity: 0.75; }
+        .ticker-item-symbol { font-weight: 800; letter-spacing: 1px; font-size: 0.78rem; min-width: 52px; }
+        .ticker-item-sub { font-size: 0.65rem; opacity: 0.5; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
         .row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1.5px; opacity: 0.5; font-weight: 800; }
 
@@ -734,9 +748,9 @@
             <div style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.06);">
                 <label style="font-size:0.5rem;">Tickers</label>
                 <div id="ticker-tags" class="ticker-tags"></div>
-                <div style="display:flex;gap:8px;margin-top:10px;">
-                    <input type="text" id="ticker-input" placeholder="e.g. AAPL" style="margin-top:0;text-transform:uppercase;flex:1;" maxlength="10" oninput="this.value=this.value.toUpperCase()">
-                    <button onclick="addTicker()" class="update-btn" style="width:auto;padding:0 16px;margin-top:0;">ADD</button>
+                <div style="position:relative;margin-top:10px;">
+                    <input type="text" id="ticker-input" placeholder="Search stocks, e.g. Apple..." style="margin-top:0;width:100%;" oninput="searchTickers(this.value)" onkeydown="tickerInputKey(event)" autocomplete="off">
+                    <div id="ticker-results"></div>
                 </div>
             </div>
         </div>
@@ -1372,18 +1386,86 @@ function renderTickerTags() {
     });
 }
 
-function addTicker() {
-    const input = document.getElementById('ticker-input');
-    const val = input.value.trim().toUpperCase();
-    if (!val || val.length > 10) return;
-    if (!state.tickers) state.tickers = [];
-    if (state.tickers.includes(val)) { input.value = ''; return; }
-    state.tickers.push(val);
-    input.value = '';
-    renderTickerTags();
-    save();
-    if (state.showStocks) fetchStocks();
+let tickerSearchTimer = null;
+
+async function searchTickers(query) {
+    const box = document.getElementById('ticker-results');
+    query = query.trim();
+    if (query.length < 1) { box.style.display = 'none'; return; }
+    clearTimeout(tickerSearchTimer);
+    tickerSearchTimer = setTimeout(async () => {
+        try {
+            // Yahoo Finance search endpoint via proxy
+            const target = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&quotesCount=8&newsCount=0&listsCount=0`;
+            const url = `https://api.allorigins.win/raw?url=${encodeURIComponent(target)}`;
+            const res  = await fetch(url, { signal: AbortSignal.timeout(5000) });
+            const data = await res.json();
+            const quotes = data?.quotes?.filter(q => q.symbol && q.quoteType !== 'FUTURE') ?? [];
+
+            if (quotes.length === 0) { box.style.display = 'none'; return; }
+
+            box.innerHTML = '';
+            quotes.slice(0, 7).forEach(q => {
+                const name = q.shortname || q.longname || '';
+                const exchange = q.exchDisp || q.exchange || '';
+                const div = document.createElement('div');
+                div.className = 'ticker-item';
+                div.innerHTML = `
+                    <span class="ticker-item-symbol">${q.symbol}</span>
+                    <span class="ticker-item-sub">${name}${exchange ? ' · ' + exchange : ''}</span>
+                `;
+                div.onclick = () => selectTicker(q.symbol);
+                box.appendChild(div);
+            });
+            box.style.display = 'block';
+        } catch (e) {
+            // Fallback: treat the raw input as a symbol if it looks like one
+            box.style.display = 'none';
+        }
+    }, 280);
 }
+
+function tickerInputKey(e) {
+    // Allow pressing Enter to add the first result or typed symbol directly
+    if (e.key === 'Enter') {
+        const first = document.querySelector('.ticker-item');
+        if (first) { first.click(); }
+        else {
+            const val = document.getElementById('ticker-input').value.trim().toUpperCase();
+            if (val) selectTicker(val);
+        }
+        e.preventDefault();
+    }
+    if (e.key === 'Escape') {
+        document.getElementById('ticker-results').style.display = 'none';
+    }
+}
+
+function selectTicker(symbol) {
+    symbol = symbol.toUpperCase();
+    if (!state.tickers) state.tickers = [];
+    if (!state.tickers.includes(symbol)) {
+        state.tickers.push(symbol);
+        renderTickerTags();
+        save();
+        if (state.showStocks) fetchStocks();
+    }
+    document.getElementById('ticker-input').value = '';
+    document.getElementById('ticker-results').style.display = 'none';
+}
+
+function addTicker() {
+    const val = document.getElementById('ticker-input').value.trim().toUpperCase();
+    if (val) selectTicker(val);
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', e => {
+    if (!e.target.closest('#ticker-input') && !e.target.closest('#ticker-results')) {
+        const box = document.getElementById('ticker-results');
+        if (box) box.style.display = 'none';
+    }
+});
 
 function removeTicker(t) {
     state.tickers = state.tickers.filter(x => x !== t);
