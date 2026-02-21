@@ -88,9 +88,9 @@
             opacity: 0.8;
         }
         @keyframes wiggle {
-            0%,100% { transform: translate(-50%,-50%) rotate(0deg) scale(var(--ws,1)); }
-            25%  { transform: translate(-50%,-50%) rotate(-1.5deg) scale(var(--ws,1)); }
-            75%  { transform: translate(-50%,-50%) rotate(1.5deg)  scale(var(--ws,1)); }
+            0%,100% { transform: translate(-50%,-50%) rotate(0deg)    scale(var(--wmx,1), var(--ws,1)); }
+            25%  { transform: translate(-50%,-50%) rotate(-1.5deg) scale(var(--wmx,1), var(--ws,1)); }
+            75%  { transform: translate(-50%,-50%) rotate(1.5deg)  scale(var(--wmx,1), var(--ws,1)); }
         }
         .widget.long-press-ready { animation: wiggle 0.35s ease; }
 
@@ -106,13 +106,14 @@
         /* ── WIDGET ENTRANCE ── */
         @keyframes widgetIn {
             from { opacity: 0; transform: translate(-50%,-50%) scale(0.88); filter: blur(4px); }
-            to   { opacity: 1; transform: translate(-50%,-50%) scale(var(--ws,1)); filter: blur(0); }
+            to   { opacity: 1; transform: translate(-50%,-50%) scale(var(--wmx,1), var(--ws,1)); filter: blur(0); }
         }
         .widget.entering { animation: widgetIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
 
         /* ── CLOCK DIGIT FLIP ── */
-        #clock { overflow: hidden; }
-        .digit-wrap { display: inline-block; position: relative; overflow: hidden; vertical-align: top; }
+        #clock { overflow: visible; white-space: nowrap; display: block; }
+        #clock-widget .widget-pill { white-space: nowrap; min-width: max-content; }
+        .digit-wrap { display: inline-block; position: relative; overflow: hidden; vertical-align: top; white-space: nowrap; }
         @keyframes digitOut { from { transform: translateY(0); opacity:1; } to { transform: translateY(-60%); opacity:0; } }
         @keyframes digitIn  { from { transform: translateY(60%); opacity:0; } to { transform: translateY(0); opacity:1; } }
         .digit-wrap.flip-out { animation: digitOut 0.18s ease-in  forwards; }
@@ -2472,6 +2473,8 @@ function positionWidget(key) {
     el.style.left = pos.x + '%';
     el.style.top  = pos.y + '%';
     const sx = state.mirrored ? -state.scale : state.scale;
+    el.style.setProperty('--ws',  state.scale);
+    el.style.setProperty('--wmx', sx);
     el.style.transform = `translate(-50%, -50%) scale(${sx}, ${state.scale})`;
 }
 
@@ -2570,6 +2573,11 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         el.style.transition = 'opacity 0.15s ease';
         el.style.left = (curPxX / window.innerWidth  * 100) + '%';
         el.style.top  = (curPxY / window.innerHeight * 100) + '%';
+        // Always re-apply transform during drag to prevent flip state from resetting
+        const _sx = state.mirrored ? -state.scale : state.scale;
+        el.style.setProperty('--wmx', _sx);
+        el.style.setProperty('--ws',  state.scale);
+        el.style.transform = `translate(-50%, -50%) scale(${_sx}, ${state.scale})`;
         highlightGhost(curPxX, curPxY);
     };
 
