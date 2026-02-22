@@ -23,7 +23,7 @@
         /* ── WIDGET PILL ── */
         .widget-pill {
             background: rgba(0,0,0,0); border-radius: 20px;
-            padding: 0; transition: background 0.4s ease, padding 0.4s ease, backdrop-filter 0.4s ease;
+            padding: 0; transition: background 0.4s ease, padding 0.4s ease;
         }
         body.show-pills .widget-pill {
             background: rgba(0,0,0,0.55);
@@ -74,15 +74,15 @@
             pointer-events: all;
             cursor: grab;
             user-select: none; -webkit-user-select: none;
-            will-change: transform;
-            /* only animate transform — left/top are set instantly, no layout cost */
-            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
-                        opacity 0.4s ease;
+            /* No will-change here — only set during active drag to avoid permanent GPU layer overhead */
         }
         .widget.dragging {
-            transition: opacity 0.15s ease;
+            will-change: transform;
             cursor: grabbing; z-index: 500;
-            opacity: 0.85;
+            opacity: 0.95;
+        }
+        .widget.snapping {
+            transition: transform 0.2s ease-out, opacity 0.2s ease;
         }
         @keyframes wiggle {
             0%,100% { transform: translate(-50%,-50%) rotate(0deg)    scale(var(--wmx,1), var(--ws,1)); }
@@ -99,20 +99,25 @@
         }
         /* Override for elements that need faster or no color transition */
         .widget, #clock, #date, #temp, #battery, .np-btn, input, button { transition: none; }
-        .widget { transition: transform 0.5s cubic-bezier(0.34,1.56,0.64,1), opacity 0.4s ease; }
         :root { --accent-transition: 0.8s ease; }
 
         /* ── WIDGET ENTRANCE ── */
         @keyframes widgetIn {
-            from { opacity: 0; transform: translate(-50%,-50%) scale(0.88); }
+            from { opacity: 0; transform: translate(-50%,-50%) scale(0.9); }
             to   { opacity: 1; transform: translate(-50%,-50%) scale(var(--wmx,1), var(--ws,1)); }
         }
-        .widget.entering { animation: widgetIn 0.5s cubic-bezier(0.34,1.56,0.64,1) forwards; }
+        .widget.entering { animation: widgetIn 0.4s ease-out forwards; }
 
         /* ── CLOCK DIGIT FLIP ── */
         #clock { overflow: visible; white-space: nowrap; display: block; }
         #clock-widget .widget-pill { white-space: nowrap; min-width: max-content; }
-        .digit-wrap { display: inline-block; position: relative; overflow: hidden; vertical-align: top; white-space: nowrap; }
+        .digit-wrap {
+            display: inline-block; position: relative;
+            overflow: hidden;          /* needed for vertical flip clip */
+            vertical-align: top; white-space: nowrap;
+            padding: 0 0.08em;         /* breathing room so wide glyphs (7,1,f) aren't clipped */
+            margin: 0 -0.08em;         /* cancel the layout shift from padding */
+        }
         @keyframes digitOut { from { transform: translateY(0); opacity:1; } to { transform: translateY(-60%); opacity:0; } }
         @keyframes digitIn  { from { transform: translateY(60%); opacity:0; } to { transform: translateY(0); opacity:1; } }
         .digit-wrap.flip-out { animation: digitOut 0.18s ease-in  forwards; }
@@ -206,8 +211,7 @@
         /* ── NAV ── */
         #nav-trigger {
             position: absolute; bottom: 40px; right: 40px; width: 65px; height: 65px;
-            background: rgba(30,30,30,0.85); backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            background: rgba(30,30,30,0.9);
             border: 1px solid rgba(255,255,255,0.2); border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
             z-index: 1000; cursor: pointer;
@@ -215,21 +219,20 @@
             opacity: 0.6; color: #fff;
         }
         #nav-ghost-zone { position: absolute; bottom: 0; right: 0; width: 150px; height: 150px; z-index: 999; }
-        #nav-trigger:hover, #nav-trigger.active-ui { opacity: 1 !important; transform: scale(1.1) rotate(15deg); background: rgba(50,50,50,0.9); border-color: var(--accent); }
+        #nav-trigger:hover, #nav-trigger.active-ui { opacity: 1 !important; transform: scale(1.1) rotate(15deg); background: rgba(50,50,50,0.95); border-color: var(--accent); }
 
         /* ── FULLSCREEN BUTTON ── */
         #fullscreen-btn {
             position: absolute; bottom: 40px; left: 40px;
             width: 44px; height: 44px;
-            background: rgba(30,30,30,0.7); backdrop-filter: blur(8px);
-            -webkit-backdrop-filter: blur(8px);
+            background: rgba(30,30,30,0.8);
             border: 1px solid rgba(255,255,255,0.15); border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
             z-index: 1000; cursor: pointer; color: #fff;
             transition: opacity 0.8s var(--smooth-ease), transform 0.3s var(--smooth-ease), background 0.3s, border-color 0.3s;
             opacity: 0;
         }
-        #fullscreen-btn:hover { opacity: 1 !important; background: rgba(50,50,50,0.9); border-color: var(--accent); transform: scale(1.1); }
+        #fullscreen-btn:hover { opacity: 1 !important; background: rgba(50,50,50,0.95); border-color: var(--accent); transform: scale(1.1); }
 
         /* ── KEYBOARD SHORTCUT TOAST ── */
         #kb-toast {
@@ -271,10 +274,10 @@
 
         #weather-results {
             position: absolute; top: 95%; left: 18px; right: 18px;
-            background: rgba(20,20,20,0.95); backdrop-filter: blur(20px);
+            background: #1a1a1a;
             border: 1px solid rgba(255,255,255,0.1); border-radius: 15px;
             z-index: 3000; max-height: 200px; overflow-y: auto; display: none;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
         }
         .city-item { padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; font-size: 0.8rem; transition: background 0.08s ease !important; text-align: left; }
         .city-item:hover { background: var(--accent) !important; color: var(--accent-fg) !important; }
@@ -282,10 +285,10 @@
 
         #ticker-results {
             position: absolute; top: calc(100% + 4px); left: 0; right: 0;
-            background: rgba(20,20,20,0.98); backdrop-filter: blur(20px);
+            background: #1a1a1a;
             border: 1px solid rgba(255,255,255,0.1); border-radius: 15px;
             z-index: 3000; max-height: 220px; overflow-y: auto; display: none;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
         }
         .ticker-item {
             padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.05);
@@ -335,10 +338,61 @@
 
         .update-btn:hover { filter: brightness(1.2); box-shadow: 0 0 15px var(--accent); transform: translateY(-1px); }
         .reset-link { font-size: 0.65rem; color: var(--accent); cursor: pointer; text-transform: uppercase; font-weight: 900; padding: 4px 8px; background: rgba(0,0,0,0.3); border-radius: 6px; transition: all 0.2s ease; }
+
+        /* ── COLLAPSIBLE SECTIONS ── */
+        .control-group { cursor: default; }
+        .group-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; -webkit-user-select: none; }
+        .group-header label { cursor: pointer; pointer-events: none; }
+        .group-chevron { font-size: 0.6rem; opacity: 0.4; transition: transform 0.25s ease; flex-shrink: 0; margin-left: 8px; }
+        .control-group.collapsed .group-chevron { transform: rotate(-90deg); }
+        .group-body { overflow: hidden; transition: max-height 0.3s ease, opacity 0.25s ease; max-height: 2000px; opacity: 1; }
+        .control-group.collapsed .group-body { max-height: 0; opacity: 0; pointer-events: none; }
+
+        /* ── WIDGET CONTEXT MENU ── */
+        #widget-ctx-menu {
+            position: fixed; z-index: 2000;
+            background: #1c1c1e; border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 16px; overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.7);
+            opacity: 0; transform: scale(0.9); pointer-events: none;
+            transition: opacity 0.15s ease, transform 0.15s ease;
+            min-width: 160px;
+        }
+        #widget-ctx-menu.visible { opacity: 1; transform: scale(1); pointer-events: all; }
+        .ctx-item {
+            display: flex; align-items: center; gap: 12px;
+            padding: 13px 18px; font-size: 0.82rem; font-weight: 500;
+            cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.06);
+            transition: background 0.1s ease;
+        }
+        .ctx-item:last-child { border-bottom: none; }
+        .ctx-item:hover { background: rgba(255,255,255,0.08); }
+        .ctx-item.danger { color: #ff4444; }
+        .ctx-icon { font-size: 1rem; width: 20px; text-align: center; }
+
+        /* ── GRADIENT PRESETS ── */
+        .gradient-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+        .grad-swatch {
+            height: 48px; border-radius: 10px; cursor: pointer;
+            border: 2px solid transparent; transition: transform 0.15s ease, border-color 0.15s ease;
+        }
+        .grad-swatch:hover { transform: scale(1.06); }
+        .grad-swatch.active { border-color: #fff; }
+
+        /* ── POSITION LOCK ── */
+        #lock-indicator {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
+            background: rgba(255,200,0,0.15); border: 1px solid rgba(255,200,0,0.3);
+            color: rgba(255,200,0,0.8); padding: 5px 14px; border-radius: 20px;
+            font-size: 0.55rem; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
+            pointer-events: none; z-index: 1500;
+            opacity: 0; transition: opacity 0.3s ease;
+        }
+        #lock-indicator.visible { opacity: 1; }
         .reset-link:hover { box-shadow: 0 0 10px var(--accent); transform: scale(1.05); }
 
         #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; z-index: 1500; }
-        #confirm-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 3000; backdrop-filter: blur(10px); }
+        #confirm-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 3000; }
         .modal-box { background: #111; border: 1px solid rgba(255,255,255,0.1); padding: 30px; border-radius: 25px; text-align: center; max-width: 300px; }
         .modal-box h3 { margin-top: 0; color: #ff4444; }
         .modal-box p { font-size: 0.85rem; opacity: 0.7; margin-bottom: 25px; }
@@ -552,6 +606,25 @@
     </svg>
 </div>
 
+<!-- ── WIDGET CONTEXT MENU ── -->
+<div id="widget-ctx-menu">
+    <div class="ctx-item" onclick="ctxLockToggle()">
+        <span class="ctx-icon" id="ctx-lock-icon">🔒</span><span id="ctx-lock-label">Lock Positions</span>
+    </div>
+    <div class="ctx-item" onclick="ctxHide()">
+        <span class="ctx-icon">👁</span>Hide Widget
+    </div>
+    <div class="ctx-item" onclick="ctxReset()">
+        <span class="ctx-icon">↩</span>Reset Position
+    </div>
+</div>
+
+<!-- ── POSITION LOCK INDICATOR ── -->
+<div id="lock-indicator">🔒 Positions Locked</div>
+
+<!-- ── SWIPE EDGE ZONE ── -->
+<div id="swipe-edge-zone" style="position:fixed;top:0;right:0;width:22px;height:100%;z-index:900;pointer-events:all;"></div>
+
 <!-- ── SIDE PANEL ── -->
 <div id="side-panel">
     <div class="panel-content">
@@ -569,7 +642,11 @@
 
         <!-- Clock Style + Settings -->
         <div class="control-group">
-            <div class="row"><label>Clock Widget</label><span class="reset-link" onclick="resetWidget('clock')">Reset Position</span></div>
+            <div class="group-header" onclick="toggleGroup(this)">
+                <div class="row" style="flex:1;margin-bottom:0;"><label>Clock Widget</label><span class="reset-link" onclick="resetWidget('clock');event.stopPropagation()">Reset Position</span></div>
+                <span class="group-chevron">▾</span>
+            </div>
+            <div class="group-body">
             <div class="style-grid" style="margin-top:12px;">
                 <div class="style-btn active" data-style="bold"   onclick="setClockStyle('bold')">
                     <span class="s-icon">
@@ -602,12 +679,16 @@
                 <label style="font-size:0.5rem;">Visibility</label>
                 <div style="display:flex;align-items:center;"><span id="st-clock" class="status-tag">SHOWN</span><div id="sw-showClock" class="ios-switch active" onclick="toggle('showClock')"></div></div>
             </div>
+            </div><!-- /group-body clock -->
         </div>
 
         <!-- Ambient Sound -->
-        <div class="control-group">
-            <div class="row"><label>Ambient Sound</label><span id="amb-status" class="status-tag off">OFF</span></div>
-            <div class="ambient-grid">
+        <div class="control-group collapsed">
+            <div class="group-header" onclick="toggleGroup(this)">
+                <label>Ambient Sound</label><span class="group-chevron">▾</span>
+            </div>
+            <div class="group-body">
+            <div class="ambient-grid" style="margin-top:14px;">
                 <div class="ambient-btn" data-sound="white" onclick="toggleAmbient('white')"><span class="a-icon">🌫️</span>White</div>
                 <div class="ambient-btn" data-sound="pink"  onclick="toggleAmbient('pink')"> <span class="a-icon">🌸</span>Pink</div>
                 <div class="ambient-btn" data-sound="brown" onclick="toggleAmbient('brown')"><span class="a-icon">🌊</span>Brown</div>
@@ -617,14 +698,16 @@
                 <label>VOL</label>
                 <input type="range" min="0" max="1" step="0.02" value="0.3" id="amb-vol" oninput="setAmbientVolume(this.value)">
             </div>
+            </div><!-- /group-body ambient -->
         </div>
 
         <!-- Spotify + Now Playing (combined) -->
-        <div class="control-group">
-            <div class="row">
-                <label>Spotify Now Playing</label>
-                <span class="reset-link" onclick="resetWidget('nowplaying')">Reset Position</span>
+        <div class="control-group collapsed">
+            <div class="group-header" onclick="toggleGroup(this)">
+                <div class="row" style="flex:1;margin-bottom:0;"><label>Spotify Now Playing</label><span class="reset-link" onclick="resetWidget('nowplaying');event.stopPropagation()">Reset Position</span></div>
+                <span class="group-chevron">▾</span>
             </div>
+            <div class="group-body">
             <div id="spotify-status-row" style="margin-top:10px;"></div>
             <button onclick="connectSpotify()" class="update-btn" style="background:#1DB954;color:#fff;margin-top:10px;">CONNECT SPOTIFY</button>
             <button onclick="disconnectSpotify()" class="update-btn" style="background:rgba(255,255,255,0.08);color:#fff;margin-top:6px;" id="spotify-disconnect-btn">DISCONNECT</button>
@@ -641,6 +724,7 @@
                     </div>
                 </div>
             </div>
+            </div><!-- /group-body spotify -->
         </div>
 
         <!-- Weather -->
@@ -663,12 +747,18 @@
 
         <!-- Background -->
         <div class="control-group">
-            <label>Background</label>
-            <label for="bg-upload" class="file-upload-btn" style="margin-top:15px;">CHOOSE FILE</label>
-            <input type="file" id="bg-upload" style="display:none;" onchange="handleBg(this)">
-            <div class="wallpaper-grid">
-                <div id="static-bg-preview"><input type="color" id="static-bg-picker" oninput="setStatic(this.value)"></div>
-                <div id="bg-history" style="display:contents;"></div>
+            <div class="group-header" onclick="toggleGroup(this)">
+                <label>Background</label><span class="group-chevron">▾</span>
+            </div>
+            <div class="group-body">
+                <label for="bg-upload" class="file-upload-btn" style="margin-top:15px;">CHOOSE FILE</label>
+                <input type="file" id="bg-upload" style="display:none;" onchange="handleBg(this)">
+                <div class="wallpaper-grid">
+                    <div id="static-bg-preview"><input type="color" id="static-bg-picker" oninput="setStatic(this.value)"></div>
+                    <div id="bg-history" style="display:contents;"></div>
+                </div>
+                <label style="font-size:0.5rem;display:block;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);">Gradient Presets</label>
+                <div class="gradient-grid" id="gradient-grid"></div>
             </div>
         </div>
 
@@ -683,10 +773,16 @@
 
         <!-- Toggles -->
         <div class="control-group">
-            <div class="row"><label>OLED Burn Shield</label><div id="sw-burnShield" class="ios-switch" onclick="toggle('burnShield')"></div></div>
-            <div class="row" style="margin-top:10px;"><label>Flip Widgets</label><div id="sw-mirrored" class="ios-switch" onclick="toggle('mirrored')"></div></div>
-            <div class="row" style="margin-top:10px;"><label>24 Hour Time</label><div id="sw-is24h" class="ios-switch" onclick="toggle('is24h')"></div></div>
-            <div class="row" style="margin-top:10px;"><label>Widget Background Pill</label><div id="sw-showPills" class="ios-switch" onclick="toggle('showPills')"></div></div>
+            <div class="group-header" onclick="toggleGroup(this)">
+                <label>Display Options</label><span class="group-chevron">▾</span>
+            </div>
+            <div class="group-body">
+                <div class="row" style="margin-top:14px;"><label>OLED Burn Shield</label><div id="sw-burnShield" class="ios-switch" onclick="toggle('burnShield')"></div></div>
+                <div class="row" style="margin-top:10px;"><label>Flip Widgets</label><div id="sw-mirrored" class="ios-switch" onclick="toggle('mirrored')"></div></div>
+                <div class="row" style="margin-top:10px;"><label>24 Hour Time</label><div id="sw-is24h" class="ios-switch" onclick="toggle('is24h')"></div></div>
+                <div class="row" style="margin-top:10px;"><label>Widget Background Pill</label><div id="sw-showPills" class="ios-switch" onclick="toggle('showPills')"></div></div>
+                <div class="row" style="margin-top:10px;"><label>Lock Widget Positions</label><div id="sw-posLocked" class="ios-switch" onclick="toggleLock()"></div></div>
+            </div>
         </div>
 
         <!-- Date Widget -->
@@ -706,9 +802,13 @@
         </div>
 
         <!-- World Clock Widget -->
-        <div class="control-group">
-            <div class="row"><label>World Clock</label><span class="reset-link" onclick="resetWidget('worldclock')">Reset Position</span></div>
-            <div class="row" style="margin-top:10px;">
+        <div class="control-group collapsed">
+            <div class="group-header" onclick="toggleGroup(this)">
+                <div class="row" style="flex:1;margin-bottom:0;"><label>World Clock</label><span class="reset-link" onclick="resetWidget('worldclock');event.stopPropagation()">Reset Position</span></div>
+                <span class="group-chevron">▾</span>
+            </div>
+            <div class="group-body">
+            <div class="row" style="margin-top:14px;">
                 <label style="font-size:0.5rem;">Visibility</label>
                 <div style="display:flex;align-items:center;"><span id="st-worldclock" class="status-tag">HIDDEN</span><div id="sw-showWorldclock" class="ios-switch" onclick="toggle('showWorldclock')"></div></div>
             </div>
@@ -720,21 +820,31 @@
                     <button onclick="addTimezone()" class="update-btn" style="width:auto;padding:0 16px;margin-top:0;">ADD</button>
                 </div>
             </div>
+            </div>
         </div>
 
         <!-- Moon Phase Widget -->
-        <div class="control-group">
-            <div class="row"><label>Moon Phase</label><span class="reset-link" onclick="resetWidget('moon')">Reset Position</span></div>
-            <div class="row" style="margin-top:10px;">
+        <div class="control-group collapsed">
+            <div class="group-header" onclick="toggleGroup(this)">
+                <div class="row" style="flex:1;margin-bottom:0;"><label>Moon Phase</label><span class="reset-link" onclick="resetWidget('moon');event.stopPropagation()">Reset Position</span></div>
+                <span class="group-chevron">▾</span>
+            </div>
+            <div class="group-body">
+            <div class="row" style="margin-top:14px;">
                 <label style="font-size:0.5rem;">Visibility</label>
                 <div style="display:flex;align-items:center;"><span id="st-moon" class="status-tag">HIDDEN</span><div id="sw-showMoon" class="ios-switch" onclick="toggle('showMoon')"></div></div>
+            </div>
             </div>
         </div>
 
         <!-- Countdown Widget -->
-        <div class="control-group">
-            <div class="row"><label>Countdown</label><span class="reset-link" onclick="resetWidget('countdown')">Reset Position</span></div>
-            <div class="row" style="margin-top:10px;">
+        <div class="control-group collapsed">
+            <div class="group-header" onclick="toggleGroup(this)">
+                <div class="row" style="flex:1;margin-bottom:0;"><label>Countdown</label><span class="reset-link" onclick="resetWidget('countdown');event.stopPropagation()">Reset Position</span></div>
+                <span class="group-chevron">▾</span>
+            </div>
+            <div class="group-body">
+            <div class="row" style="margin-top:14px;">
                 <label style="font-size:0.5rem;">Visibility</label>
                 <div style="display:flex;align-items:center;"><span id="st-countdown" class="status-tag">HIDDEN</span><div id="sw-showCountdown" class="ios-switch" onclick="toggle('showCountdown')"></div></div>
             </div>
@@ -744,12 +854,17 @@
                 <label style="font-size:0.5rem;margin-top:10px;display:block;">Target Date</label>
                 <input type="date" id="cd-date-input" style="margin-top:6px;width:100%;background:#000;color:#fff;border:1px solid rgba(255,255,255,0.2);border-radius:12px;padding:10px;font-size:0.8rem;outline:none;" oninput="updateCountdownSettings()">
             </div>
+            </div>
         </div>
 
         <!-- Stocks Widget -->
-        <div class="control-group">
-            <div class="row"><label>Stocks Widget</label><span class="reset-link" onclick="resetWidget('stocks')">Reset Position</span></div>
-            <div class="row" style="margin-top:10px;">
+        <div class="control-group collapsed">
+            <div class="group-header" onclick="toggleGroup(this)">
+                <div class="row" style="flex:1;margin-bottom:0;"><label>Stocks</label><span class="reset-link" onclick="resetWidget('stocks');event.stopPropagation()">Reset Position</span></div>
+                <span class="group-chevron">▾</span>
+            </div>
+            <div class="group-body">
+            <div class="row" style="margin-top:14px;">
                 <label style="font-size:0.5rem;">Visibility</label>
                 <div style="display:flex;align-items:center;"><span id="st-stocks" class="status-tag">HIDDEN</span><div id="sw-showStocks" class="ios-switch" onclick="toggle('showStocks')"></div></div>
             </div>
@@ -760,6 +875,7 @@
                     <input type="text" id="ticker-input" placeholder="Search stocks, e.g. Apple..." style="margin-top:0;width:100%;" oninput="searchTickers(this.value)" onkeydown="tickerInputKey(event)" autocomplete="off">
                     <div id="ticker-results"></div>
                 </div>
+            </div>
             </div>
         </div>
 
@@ -811,7 +927,7 @@ let state = {
     scale: 1, accent: '#007AFF',
     city: 'Calgary', bg: '', history: [],
     isStatic: false, staticColor: '#000000', blur: 0, bgOpacity: 1,
-    presets: {},
+    presets: {}, posLocked: false, activeGradient: '',
     clockStyle: 'bold',
     ambientSound: null, ambientVolume: 0.3,
     spotifyClientId: ''
@@ -848,6 +964,7 @@ function load() {
     resetDimTimer();
     createSnapGhosts();
     initAllDrag();
+    renderGradients();
 
     // Stocks
     if (state.showStocks) {
@@ -2384,6 +2501,9 @@ function applyAll() {
     document.getElementById('sw-showPills').classList.toggle('active', !!state.showPills);
     document.getElementById('sw-artAsBg').classList.toggle('active', !!state.artAsBg);
     document.body.classList.toggle('show-pills', !!state.showPills);
+    const swLock = document.getElementById('sw-posLocked');
+    if (swLock) swLock.classList.toggle('active', !!state.posLocked);
+    applyLockIndicator();
 
     const unitC = document.getElementById('unit-c');
     const unitF = document.getElementById('unit-f');
@@ -2476,7 +2596,10 @@ function positionWidget(key) {
     const sx = state.mirrored ? -state.scale : state.scale;
     el.style.setProperty('--ws',  state.scale);
     el.style.setProperty('--wmx', sx);
-    el.style.transform = `translate(-50%, -50%) scale(${sx}, ${state.scale})`;
+    // Burn shield drift offset — defaults to 0 if not yet set
+    const bsx = el.style.getPropertyValue('--bsx') || '0px';
+    const bsy = el.style.getPropertyValue('--bsy') || '0px';
+    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scale(${sx}, ${state.scale})`;
 }
 
 // Ghost system is fully removed — grid is invisible
@@ -2571,6 +2694,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         if (!moved) {
             moved = true;
             el.classList.add('dragging');
+            el.style.willChange = 'transform';
             showGhosts();
         }
 
@@ -2591,6 +2715,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         document.removeEventListener('touchmove', onMove);
         document.removeEventListener('touchend',  onEnd);
         el.classList.remove('dragging');
+        el.style.removeProperty('will-change');
         hideGhosts();
         if (!moved) { el.style.transition = ''; return; }
 
@@ -2604,7 +2729,9 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         // Force reflow so the new left/top is read before we re-enable transition
         el.getBoundingClientRect();
         el.style.transition = '';
+        el.classList.add('snapping');
         positionWidget(key);
+        setTimeout(() => el.classList.remove('snapping'), 250);
         save();
     };
 
@@ -2628,8 +2755,9 @@ function startBurnShield() {
             if (!el || !state.burnShield) return;
             const dx = (Math.random() * 3 - 1.5).toFixed(1);
             const dy = (Math.random() * 3 - 1.5).toFixed(1);
-            el.style.marginLeft = dx + 'px';
-            el.style.marginTop  = dy + 'px';
+            el.style.setProperty('--bsx', dx + 'px');
+            el.style.setProperty('--bsy', dy + 'px');
+            positionWidget(key); // re-apply transform with new drift
         });
     }, 60000);
 }
@@ -2675,6 +2803,228 @@ function toggle(key) {
 function openModal()  { document.getElementById('confirm-modal').style.display = 'flex'; }
 function closeModal() { document.getElementById('confirm-modal').style.display = 'none'; }
 function performFactoryReset() { localStorage.clear(); location.reload(); }
+
+// ─────────────────────────────────────────────────
+// COLLAPSIBLE SETTINGS SECTIONS
+// ─────────────────────────────────────────────────
+function toggleGroup(header) {
+    header.closest('.control-group').classList.toggle('collapsed');
+}
+
+// ─────────────────────────────────────────────────
+// DOUBLE-TAP CLOCK TO CYCLE STYLE
+// ─────────────────────────────────────────────────
+const CLOCK_STYLES = ['bold', 'thin', 'retro', 'analog'];
+let _clockLastTap = 0;
+document.getElementById('clock-widget').addEventListener('touchend', (e) => {
+    if (e.target.closest('button')) return;
+    const now = Date.now();
+    if (now - _clockLastTap < 320) {
+        // Double tap — cycle style
+        const cur = CLOCK_STYLES.indexOf(state.clockStyle || 'bold');
+        const next = CLOCK_STYLES[(cur + 1) % CLOCK_STYLES.length];
+        setClockStyle(next);
+        showToast(`Clock: ${next.charAt(0).toUpperCase() + next.slice(1)}`);
+        e.preventDefault();
+    }
+    _clockLastTap = now;
+}, { passive: false });
+
+// ─────────────────────────────────────────────────
+// SWIPE FROM RIGHT EDGE TO OPEN SETTINGS
+// ─────────────────────────────────────────────────
+(function initSwipeEdge() {
+    let swipeStartX = null, swipeStartY = null;
+    const zone = document.getElementById('swipe-edge-zone');
+
+    zone.addEventListener('touchstart', (e) => {
+        swipeStartX = e.touches[0].clientX;
+        swipeStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    zone.addEventListener('touchend', (e) => {
+        if (swipeStartX === null) return;
+        const dx = e.changedTouches[0].clientX - swipeStartX;
+        const dy = Math.abs(e.changedTouches[0].clientY - swipeStartY);
+        // Swipe left (negative dx) more than 40px, mostly horizontal
+        if (dx < -40 && dy < 80) {
+            const panel = document.getElementById('side-panel');
+            if (!panel.classList.contains('open')) toggleNav(null);
+        }
+        swipeStartX = null;
+    }, { passive: true });
+})();
+
+// ─────────────────────────────────────────────────
+// WIDGET CONTEXT MENU
+// ─────────────────────────────────────────────────
+let _ctxKey = null;
+
+function showCtxMenu(key, x, y) {
+    _ctxKey = key;
+    const menu = document.getElementById('widget-ctx-menu');
+    const lockLabel = document.getElementById('ctx-lock-label');
+    const lockIcon  = document.getElementById('ctx-lock-icon');
+    lockLabel.textContent = state.posLocked ? 'Unlock Positions' : 'Lock Positions';
+    lockIcon.textContent  = state.posLocked ? '🔓' : '🔒';
+
+    // Position — keep within viewport
+    const mw = 170, mh = 130;
+    let left = Math.min(x, window.innerWidth  - mw - 10);
+    let top  = Math.min(y, window.innerHeight - mh - 10);
+    menu.style.left = left + 'px';
+    menu.style.top  = top  + 'px';
+    menu.classList.add('visible');
+}
+
+function hideCtxMenu() {
+    document.getElementById('widget-ctx-menu').classList.remove('visible');
+    _ctxKey = null;
+}
+
+function ctxLockToggle() {
+    hideCtxMenu();
+    toggleLock();
+}
+
+function ctxHide() {
+    if (!_ctxKey) return;
+    state['show' + _ctxKey.charAt(0).toUpperCase() + _ctxKey.slice(1)] = false;
+    applyAll(); save();
+    hideCtxMenu();
+}
+
+function ctxReset() {
+    if (!_ctxKey) return;
+    resetWidget(_ctxKey);
+    hideCtxMenu();
+}
+
+// Dismiss menu on outside tap
+document.addEventListener('pointerdown', (e) => {
+    if (!e.target.closest('#widget-ctx-menu')) hideCtxMenu();
+}, { passive: true });
+
+// ─────────────────────────────────────────────────
+// POSITION LOCK
+// ─────────────────────────────────────────────────
+function toggleLock() {
+    state.posLocked = !state.posLocked;
+    const sw = document.getElementById('sw-posLocked');
+    if (sw) sw.classList.toggle('active', state.posLocked);
+    applyLockIndicator();
+    showToast(state.posLocked ? '🔒 Positions locked' : '🔓 Positions unlocked');
+    save();
+}
+
+function applyLockIndicator() {
+    const ind = document.getElementById('lock-indicator');
+    if (ind) ind.classList.toggle('visible', !!state.posLocked);
+}
+
+// ─────────────────────────────────────────────────
+// GRADIENT PRESETS
+// ─────────────────────────────────────────────────
+const GRADIENTS = [
+    { label: 'Midnight',  css: 'linear-gradient(135deg,#0f0c29,#302b63,#24243e)' },
+    { label: 'Aurora',    css: 'linear-gradient(135deg,#000428,#004e92)' },
+    { label: 'Sunset',    css: 'linear-gradient(135deg,#0d0d0d,#7b1e1e,#c0392b)' },
+    { label: 'Forest',    css: 'linear-gradient(135deg,#0a0a0a,#134e5e,#71b280)' },
+    { label: 'Deep',      css: 'linear-gradient(135deg,#000000,#1a1a2e,#16213e)' },
+    { label: 'Ember',     css: 'linear-gradient(135deg,#0d0d0d,#4a1a00,#ff6b00)' },
+    { label: 'Ice',       css: 'linear-gradient(135deg,#0f2027,#203a43,#2c5364)' },
+    { label: 'Void',      css: 'linear-gradient(135deg,#000000,#130f40)' },
+    { label: 'Crimson',   css: 'linear-gradient(135deg,#000000,#3d0000,#6b0000)' },
+    { label: 'Holo',      css: 'linear-gradient(135deg,#0d0221,#0a1045,#190d3d,#0d1f4c)' },
+    { label: 'Toxic',     css: 'linear-gradient(135deg,#0a0a0a,#0d2b0d,#1a5c1a)' },
+    { label: 'Dusk',      css: 'linear-gradient(135deg,#2c1654,#4a0e3c,#0d0d0d)' },
+];
+
+function renderGradients() {
+    const grid = document.getElementById('gradient-grid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    GRADIENTS.forEach(g => {
+        const swatch = document.createElement('div');
+        swatch.className = 'grad-swatch';
+        if (state.activeGradient === g.label) swatch.classList.add('active');
+        swatch.style.background = g.css;
+        swatch.title = g.label;
+        swatch.onclick = () => applyGradient(g);
+        grid.appendChild(swatch);
+    });
+}
+
+function applyGradient(g) {
+    state.isStatic = false;
+    state.artAsBg  = false;
+    state.activeGradient = g.label;
+    // Paint gradient onto a canvas → data URL → use as bg image
+    const canvas = document.createElement('canvas');
+    canvas.width = 2; canvas.height = 400;
+    const ctx2 = canvas.getContext('2d');
+    // Parse gradient stops from CSS (use canvas gradient for the linear angle)
+    const stops = g.css.match(/#[0-9a-f]{3,8}/gi);
+    const gr = ctx2.createLinearGradient(0, 0, 0, 400);
+    stops.forEach((c, i) => gr.addColorStop(i / (stops.length - 1), c));
+    ctx2.fillStyle = gr;
+    ctx2.fillRect(0, 0, 2, 400);
+    state.bg = canvas.toDataURL();
+    applyAll(); save();
+    renderGradients();
+}
+
+// ─────────────────────────────────────────────────
+// OVERRIDE initWidgetDrag TO SUPPORT LOCK + CONTEXT MENU
+// ─────────────────────────────────────────────────
+function initWidgetDrag(key) {
+    const el = document.getElementById(key + '-widget');
+    if (!el) return;
+
+    // MOUSE
+    el.addEventListener('mousedown', (e) => {
+        if (e.target.closest('button, input, a')) return;
+        if (state.posLocked) return;
+        startDrag(key, el, e, false);
+    });
+
+    // TOUCH
+    let longPressTimer = null;
+    let touchCancelled = false;
+    let touchStartX = 0, touchStartY = 0;
+
+    el.addEventListener('touchstart', (e) => {
+        if (e.target.closest('button, input, a')) return;
+        touchCancelled = false;
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+
+        longPressTimer = setTimeout(() => {
+            if (touchCancelled) return;
+            if (navigator.vibrate) navigator.vibrate(30);
+            el.classList.add('long-press-ready');
+            setTimeout(() => el.classList.remove('long-press-ready'), 400);
+
+            if (state.posLocked) {
+                // Locked → show context menu only
+                showCtxMenu(key, touchStartX, touchStartY - 140);
+            } else {
+                // Unlocked → show context menu briefly, also allow drag if they move
+                showCtxMenu(key, touchStartX, touchStartY - 140);
+                el.classList.add('dragging');
+                showGhosts();
+                startDrag(key, el, e, true, true);
+            }
+        }, 400);
+    }, { passive: true });
+
+    el.addEventListener('touchend', () => { clearTimeout(longPressTimer); touchCancelled = true; });
+    el.addEventListener('touchmove', (e) => {
+        clearTimeout(longPressTimer);
+        touchCancelled = true;
+        hideCtxMenu();
+    }, { passive: true });
+}
 
 // ─────────────────────────────────────────────────
 // PREVENT PAGE SCROLL (all devices, especially iOS)
