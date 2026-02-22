@@ -82,7 +82,7 @@
             opacity: 0.95;
         }
         .widget.snapping {
-            transition: transform 0.2s ease-out, opacity 0.2s ease;
+            transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.3s ease;
         }
         @keyframes wiggle {
             0%,100% { transform: translate(-50%,-50%) rotate(0deg)    scale(var(--wmx,1), var(--ws,1)); }
@@ -151,7 +151,7 @@
         #np-next-artist { font-size: 0.6rem; opacity: 0.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         /* ── CLOCK STYLES ── */
-        #clock { line-height: 1; transition: all 0.4s ease; text-shadow: 0px 0px 20px rgba(0,0,0,0.5); }
+        #clock { line-height: 1; transition: all 0.4s ease; text-shadow: 0px 0px 20px rgba(0,0,0,0.5); touch-action: manipulation; }
         #clock.style-bold {
             font-size: clamp(5rem, 25vw, 12rem); font-weight: 900; font-style: italic;
             letter-spacing: -4px; font-family: -apple-system, system-ui, sans-serif;
@@ -204,8 +204,6 @@
         #np-info { text-align: left; overflow: hidden; flex: 1; min-width: 0; }
         #np-track { font-size: 0.9rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
         #np-artist { font-size: 0.72rem; opacity: 0.55; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 400; }
-        #np-bar { width: 100%; height: 2px; background: rgba(255,255,255,0.1); border-radius: 1px; margin-top: 8px; overflow: hidden; }
-        #np-bar-fill { height: 100%; background: var(--accent); width: 0%; transition: width 1s linear; }
         #np-label { font-size: 0.5rem; text-transform: uppercase; letter-spacing: 3px; opacity: 0.3; margin-top: 5px; font-weight: 600; }
 
         /* ── NAV ── */
@@ -343,8 +341,15 @@
         .control-group { cursor: default; }
         .group-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; user-select: none; -webkit-user-select: none; }
         .group-header label { cursor: pointer; pointer-events: none; }
-        .group-chevron { font-size: 0.6rem; opacity: 0.4; transition: transform 0.25s ease; flex-shrink: 0; margin-left: 8px; }
+        .group-chevron {
+            flex-shrink: 0; margin-left: 8px; margin-right: -8px;
+            padding: 6px 8px;
+            opacity: 0.5; transition: transform 0.25s ease, opacity 0.2s ease;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .group-chevron svg { display: block; }
         .control-group.collapsed .group-chevron { transform: rotate(-90deg); }
+        .group-header:hover .group-chevron { opacity: 0.9; }
         .group-body { overflow: hidden; transition: max-height 0.3s ease, opacity 0.25s ease; max-height: 2000px; opacity: 1; }
         .control-group.collapsed .group-body { max-height: 0; opacity: 0; pointer-events: none; }
 
@@ -363,7 +368,9 @@
             display: flex; align-items: center; gap: 12px;
             padding: 13px 18px; font-size: 0.82rem; font-weight: 500;
             cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.06);
-            transition: background 0.1s ease;
+            transition: background 0.1s ease; width: 100%; text-align: left;
+            background: none; border-radius: 0; color: #fff;
+            font-family: inherit;
         }
         .ctx-item:last-child { border-bottom: none; }
         .ctx-item:hover { background: rgba(255,255,255,0.08); }
@@ -379,13 +386,13 @@
         .grad-swatch:hover { transform: scale(1.06); }
         .grad-swatch.active { border-color: #fff; }
 
-        /* ── POSITION LOCK ── */
+        /* ── POSITION LOCK INDICATOR ── */
         #lock-indicator {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            background: rgba(255,200,0,0.15); border: 1px solid rgba(255,200,0,0.3);
-            color: rgba(255,200,0,0.8); padding: 5px 14px; border-radius: 20px;
-            font-size: 0.55rem; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
-            pointer-events: none; z-index: 1500;
+            position: fixed; bottom: 120px; left: 50%; transform: translateX(-50%);
+            background: rgba(255,200,0,0.12); border: 1px solid rgba(255,200,0,0.25);
+            color: rgba(255,200,0,0.7); padding: 6px 16px; border-radius: 20px;
+            font-size: 0.55rem; font-weight: 700; letter-spacing: 2px; text-transform: uppercase;
+            pointer-events: none; z-index: 1500; white-space: nowrap;
             opacity: 0; transition: opacity 0.3s ease;
         }
         #lock-indicator.visible { opacity: 1; }
@@ -426,8 +433,9 @@
         .spotify-note a { color: var(--accent); }
 
         /* ── PLAYBACK CONTROLS ── */
-        #np-controls { display: flex; align-items: center; gap: 14px; margin-top: 8px; }
-        #np-controls > div { flex: 1; min-width: 0; }
+        #np-controls { display: flex; align-items: center; justify-content: center; gap: 18px; margin-top: 8px; }
+        #np-bar { width: 100%; height: 2px; background: rgba(255,255,255,0.1); border-radius: 1px; margin-top: 6px; overflow: hidden; }
+        #np-bar-fill { height: 100%; background: var(--accent); width: 0%; transition: width 1s linear; }
         .np-btn {
             background: none; border: none; color: var(--accent);
             cursor: pointer; padding: 0; opacity: 0.65; line-height: 1;
@@ -523,8 +531,8 @@
                 <g id="a-ticks"></g>
                 <line id="a-hour" class="a-hour" x1="100" y1="100" x2="100" y2="45"/>
                 <line id="a-min"  class="a-min"  x1="100" y1="100" x2="100" y2="28"/>
-                <line id="a-sec"  class="a-sec"  x1="100" y1="115" x2="100" y2="20"/>
-                <circle class="a-center" cx="100" cy="100" r="4"/>
+                <line id="a-sec"  class="a-sec"  x1="100" y1="100" x2="100" y2="20"/>
+                <circle class="a-center" cx="100" cy="100" r="5"/>
             </svg>
         </div>
     </div>
@@ -558,11 +566,9 @@
                     <button class="np-btn" onclick="spotifyNext()" title="Next">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zm2-8.14 5.15 3.64L8 17.14V9.86zM16 6h2v12h-2z"/></svg>
                     </button>
-                    <div>
-                        <div id="np-bar"><div id="np-bar-fill"></div></div>
-                        <div class="np-premium-note">Requires Spotify Premium</div>
-                    </div>
                 </div>
+                <div id="np-bar"><div id="np-bar-fill"></div></div>
+                <div class="np-premium-note">Requires Spotify Premium</div>
                 <div id="np-label">SPOTIFY</div>
                 <div id="np-next-wrap">
                     <div id="np-next-label">Next Up</div>
@@ -608,15 +614,15 @@
 
 <!-- ── WIDGET CONTEXT MENU ── -->
 <div id="widget-ctx-menu">
-    <div class="ctx-item" onclick="ctxLockToggle()">
+    <button class="ctx-item" id="ctx-item-lock" onclick="ctxLockToggle()">
         <span class="ctx-icon" id="ctx-lock-icon">🔒</span><span id="ctx-lock-label">Lock Positions</span>
-    </div>
-    <div class="ctx-item" onclick="ctxHide()">
+    </button>
+    <button class="ctx-item" id="ctx-item-hide" onclick="ctxHide()">
         <span class="ctx-icon">👁</span>Hide Widget
-    </div>
-    <div class="ctx-item" onclick="ctxReset()">
+    </button>
+    <button class="ctx-item" id="ctx-item-reset" onclick="ctxReset()">
         <span class="ctx-icon">↩</span>Reset Position
-    </div>
+    </button>
 </div>
 
 <!-- ── POSITION LOCK INDICATOR ── -->
@@ -644,7 +650,7 @@
         <div class="control-group">
             <div class="group-header" onclick="toggleGroup(this)">
                 <div class="row" style="flex:1;margin-bottom:0;"><label>Clock Widget</label><span class="reset-link" onclick="resetWidget('clock');event.stopPropagation()">Reset Position</span></div>
-                <span class="group-chevron">▾</span>
+                <span class="group-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
             </div>
             <div class="group-body">
             <div class="style-grid" style="margin-top:12px;">
@@ -685,7 +691,7 @@
         <!-- Ambient Sound -->
         <div class="control-group collapsed">
             <div class="group-header" onclick="toggleGroup(this)">
-                <label>Ambient Sound</label><span class="group-chevron">▾</span>
+                <label>Ambient Sound</label><span class="group-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
             </div>
             <div class="group-body">
             <div class="ambient-grid" style="margin-top:14px;">
@@ -705,7 +711,7 @@
         <div class="control-group collapsed">
             <div class="group-header" onclick="toggleGroup(this)">
                 <div class="row" style="flex:1;margin-bottom:0;"><label>Spotify Now Playing</label><span class="reset-link" onclick="resetWidget('nowplaying');event.stopPropagation()">Reset Position</span></div>
-                <span class="group-chevron">▾</span>
+                <span class="group-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
             </div>
             <div class="group-body">
             <div id="spotify-status-row" style="margin-top:10px;"></div>
@@ -748,7 +754,7 @@
         <!-- Background -->
         <div class="control-group">
             <div class="group-header" onclick="toggleGroup(this)">
-                <label>Background</label><span class="group-chevron">▾</span>
+                <label>Background</label><span class="group-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
             </div>
             <div class="group-body">
                 <label for="bg-upload" class="file-upload-btn" style="margin-top:15px;">CHOOSE FILE</label>
@@ -774,7 +780,7 @@
         <!-- Toggles -->
         <div class="control-group">
             <div class="group-header" onclick="toggleGroup(this)">
-                <label>Display Options</label><span class="group-chevron">▾</span>
+                <label>Display Options</label><span class="group-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
             </div>
             <div class="group-body">
                 <div class="row" style="margin-top:14px;"><label>OLED Burn Shield</label><div id="sw-burnShield" class="ios-switch" onclick="toggle('burnShield')"></div></div>
@@ -805,7 +811,7 @@
         <div class="control-group collapsed">
             <div class="group-header" onclick="toggleGroup(this)">
                 <div class="row" style="flex:1;margin-bottom:0;"><label>World Clock</label><span class="reset-link" onclick="resetWidget('worldclock');event.stopPropagation()">Reset Position</span></div>
-                <span class="group-chevron">▾</span>
+                <span class="group-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
             </div>
             <div class="group-body">
             <div class="row" style="margin-top:14px;">
@@ -827,7 +833,7 @@
         <div class="control-group collapsed">
             <div class="group-header" onclick="toggleGroup(this)">
                 <div class="row" style="flex:1;margin-bottom:0;"><label>Moon Phase</label><span class="reset-link" onclick="resetWidget('moon');event.stopPropagation()">Reset Position</span></div>
-                <span class="group-chevron">▾</span>
+                <span class="group-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
             </div>
             <div class="group-body">
             <div class="row" style="margin-top:14px;">
@@ -841,7 +847,7 @@
         <div class="control-group collapsed">
             <div class="group-header" onclick="toggleGroup(this)">
                 <div class="row" style="flex:1;margin-bottom:0;"><label>Countdown</label><span class="reset-link" onclick="resetWidget('countdown');event.stopPropagation()">Reset Position</span></div>
-                <span class="group-chevron">▾</span>
+                <span class="group-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
             </div>
             <div class="group-body">
             <div class="row" style="margin-top:14px;">
@@ -861,7 +867,7 @@
         <div class="control-group collapsed">
             <div class="group-header" onclick="toggleGroup(this)">
                 <div class="row" style="flex:1;margin-bottom:0;"><label>Stocks</label><span class="reset-link" onclick="resetWidget('stocks');event.stopPropagation()">Reset Position</span></div>
-                <span class="group-chevron">▾</span>
+                <span class="group-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
             </div>
             <div class="group-body">
             <div class="row" style="margin-top:14px;">
@@ -965,6 +971,7 @@ function load() {
     createSnapGhosts();
     initAllDrag();
     renderGradients();
+    initInteractions();
 
     // Stocks
     if (state.showStocks) {
@@ -1259,6 +1266,8 @@ function updateClock() {
     updateAnalogClock(now);
 }
 setInterval(updateClock, 1000);
+// Smooth analog sweep at 50ms when analog style is active
+setInterval(() => { if (state.clockStyle === 'analog') updateAnalogClock(new Date()); }, 50);
 
 // DOM-only clock style update — safe to call from applyAll()
 function applyClockStyle(style) {
@@ -1300,17 +1309,35 @@ function drawAnalogTicks() {
 
 function updateAnalogClock(now) {
     if (state.clockStyle !== 'analog') return;
-    const s  = now.getSeconds();
-    const mn = now.getMinutes();
-    const h  = now.getHours() % 12;
+    // Use milliseconds for smooth second-hand sweep
+    const ms = now.getMilliseconds();
+    const s  = now.getSeconds() + ms / 1000;
+    const mn = now.getMinutes() + (now.getSeconds() + ms / 1000) / 60;
+    const h  = (now.getHours() % 12) + mn / 60;
+
     const setHand = (id, angle, len) => {
         const rad = (angle - 90) * Math.PI / 180;
-        document.getElementById(id).setAttribute('x2', 100 + len * Math.cos(rad));
-        document.getElementById(id).setAttribute('y2', 100 + len * Math.sin(rad));
+        const el = document.getElementById(id);
+        el.setAttribute('x1', '100');
+        el.setAttribute('y1', '100');
+        el.setAttribute('x2', (100 + len * Math.cos(rad)).toFixed(3));
+        el.setAttribute('y2', (100 + len * Math.sin(rad)).toFixed(3));
     };
-    setHand('a-hour', (h * 30) + (mn * 0.5), 55);
+    const setHandFull = (id, angle, tipLen, tailLen) => {
+        const rad     = (angle - 90) * Math.PI / 180;
+        const radTail = (angle + 90) * Math.PI / 180; // opposite = +180, but angle-90 makes it angle+90 in final
+        const el = document.getElementById(id);
+        // Tail goes in opposite direction
+        const oppRad = rad + Math.PI;
+        el.setAttribute('x1', (100 + tailLen * Math.cos(oppRad)).toFixed(3));
+        el.setAttribute('y1', (100 + tailLen * Math.sin(oppRad)).toFixed(3));
+        el.setAttribute('x2', (100 + tipLen  * Math.cos(rad)).toFixed(3));
+        el.setAttribute('y2', (100 + tipLen  * Math.sin(rad)).toFixed(3));
+    };
+
+    setHand('a-hour', h * 30, 55);
     setHand('a-min',  mn * 6, 72);
-    setHand('a-sec',  s * 6, 80);
+    setHandFull('a-sec', s * 6, 80, 15);
 }
 
 // ─────────────────────────────────────────────────
@@ -1380,11 +1407,21 @@ function setWeatherUnit(unit) {
 // BATTERY
 // ─────────────────────────────────────────────────
 const batIcons = {
-    bolt: `<path d="M12 7l-3.5 5h3l-1 5 4.5-6.5h-3l1-3.5z" fill="white" stroke="rgba(0,0,0,0.3)" stroke-width="0.3"/>`,
-    frame: `<rect x="2" y="7" width="16" height="10" rx="3" stroke="currentColor" fill="none" stroke-width="1.5" opacity="0.6"/><path d="M19 10.5c1 0 1 3 0 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>`
+    // Battery body: x=2..18 (center x=10), y=7..17 (center y=12)
+    // Terminal nub: x=19..20, y=10.5..13.5
+    frame: `<rect x="2" y="7" width="16" height="10" rx="2.5" stroke="currentColor" fill="none" stroke-width="1.5" opacity="0.6"/><path d="M19 10.5c1.2 0 1.2 3 0 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>`,
+    // Bolt centered at x=10, y=12. Points: top-tip→knee→bottom-tip, offset so visual center is at 10,12
+    bolt: `<path d="M11.5 7.5 L8 12 L10.5 12 L9.5 16.5 L13 12 L10.5 12 L11.5 7.5Z" fill="white" opacity="0.95"/>`
 };
 
 async function updateBattery() {
+    // Battery Status API is not supported on iOS — hide widget silently
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    if (isIOS || !navigator.getBattery) {
+        document.getElementById('battery-widget').style.opacity = '0';
+        document.getElementById('battery-widget').style.pointerEvents = 'none';
+        return;
+    }
     try {
         const b = await navigator.getBattery();
         const updateUI = () => {
@@ -1788,33 +1825,38 @@ function getMoonPhaseName(phase) {
 function drawMoon(phase) {
     const svg = document.getElementById('moon-svg');
     if (!svg) return;
-    const R = 22; // radius
-    const cx = 26, cy = 26;
-    // Illuminated fraction and direction
-    const illum = 0.5 * (1 - Math.cos(2 * Math.PI * phase / 29.53));
-    const isWaxing = phase < 14.765;
+    const R = 22, cx = 26, cy = 26;
+    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#fff';
 
-    // Draw full disk
-    let path = '';
-    // Left semicircle (always visible on waxing)
-    // We draw the lit side using an ellipse arc
-    const rx = Math.abs(Math.cos(Math.PI * phase / 14.765)) * R;
+    // Full/new moon edge cases
+    const norm = (phase % 29.53 + 29.53) % 29.53;
+    if (norm < 0.5 || norm > 29.0) {
+        // New moon — just dim disk
+        svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>`;
+        document.getElementById('moon-label').innerText = getMoonPhaseName(phase);
+        return;
+    }
+    if (norm > 14.2 && norm < 15.3) {
+        // Full moon
+        svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="${accent}" opacity="0.9"/>`;
+        document.getElementById('moon-label').innerText = getMoonPhaseName(phase);
+        return;
+    }
 
-    // Build crescent/gibbous shape
-    const sweep1 = isWaxing ? 1 : 0;
-    const sweep2 = isWaxing ? 0 : 1;
-
-    // Outer arc: always a semicircle
-    // Inner arc: ellipse that varies from concave to convex
-    path = [
+    const isWaxing = norm < 14.765;
+    // rx: how wide the inner ellipse is (0=full crescent, R=full)
+    const rx = Math.abs(Math.cos(Math.PI * norm / 14.765)) * R;
+    // Lit side is always the right semicircle (outer arc)
+    // Inner arc is ellipse: concave on waxing, convex on waning
+    const innerSweep = isWaxing ? 0 : 1; // 0=concave, 1=convex
+    const path = [
         `M ${cx} ${cy - R}`,
-        `A ${R} ${R} 0 0 1 ${cx} ${cy + R}`,  // right semicircle
-        `A ${rx} ${R} 0 0 ${sweep2} ${cx} ${cy - R}` // inner ellipse
+        `A ${R} ${R} 0 0 1 ${cx} ${cy + R}`,          // outer right semicircle
+        `A ${rx.toFixed(2)} ${R} 0 0 ${innerSweep} ${cx} ${cy - R}` // inner ellipse
     ].join(' ');
 
-    const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#fff';
     svg.innerHTML = `
-        <circle cx="${cx}" cy="${cy}" r="${R}" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+        <circle cx="${cx}" cy="${cy}" r="${R}" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
         <path d="${path}" fill="${accent}" opacity="0.9"/>
     `;
     document.getElementById('moon-label').innerText = getMoonPhaseName(phase);
@@ -2408,13 +2450,13 @@ function updateSpotifyUI() {
 // ─────────────────────────────────────────────────
 // BACKGROUND
 // ─────────────────────────────────────────────────
-function setStatic(val) { state.staticColor = val; state.isStatic = true; applyAll(); renderHistory(); save(); }
+function setStatic(val) { state.staticColor = val; state.isStatic = true; state.gradientCss = ''; state.activeGradient = ''; applyAll(); renderHistory(); save(); }
 
 function handleBg(input) {
     const reader = new FileReader();
     reader.onload = e => {
         const data = e.target.result;
-        state.bg = data; state.isStatic = false;
+        state.bg = data; state.isStatic = false; state.gradientCss = ''; state.activeGradient = '';
         state.history = [data, ...state.history.filter(x => x !== data)].slice(0, 3);
         applyAll(); renderHistory(); save();
     };
@@ -2481,7 +2523,10 @@ function applyAll() {
     const bgl = document.getElementById('bg-layer');
     // Only show user bg if artAsBg is off (art bg handled in extractAccentFromArt)
     if (!state.artAsBg) {
-        if (state.isStatic) {
+        if (state.gradientCss && !state.isStatic && !state.bg) {
+            document.body.style.backgroundColor = '#000';
+            bgl.style.backgroundImage = state.gradientCss;
+        } else if (state.isStatic) {
             document.body.style.backgroundColor = state.staticColor;
             document.getElementById('static-bg-preview').style.backgroundColor = state.staticColor;
             bgl.style.backgroundImage = 'none';
@@ -2625,43 +2670,6 @@ function nearestZoneIdx(pxX, pxY) {
 // ─────────────────────────────────────────────────
 // DRAG ENGINE
 // ─────────────────────────────────────────────────
-function initWidgetDrag(key) {
-    const el = document.getElementById(key + '-widget');
-    if (!el) return;
-
-    // ── MOUSE (desktop): drag immediately on mousedown ──
-    el.addEventListener('mousedown', (e) => {
-        if (e.target.closest('button, input, a')) return;
-        startDrag(key, el, e, false);
-    });
-
-    // ── TOUCH (mobile): require 300ms long-press before drag activates ──
-    let longPressTimer = null;
-    let touchCancelled = false;
-
-    el.addEventListener('touchstart', (e) => {
-        if (e.target.closest('button, input, a')) return;
-        touchCancelled = false;
-        longPressTimer = setTimeout(() => {
-            if (!touchCancelled) {
-                if (navigator.vibrate) navigator.vibrate(30);
-                el.classList.add('long-press-ready');
-                setTimeout(() => el.classList.remove('long-press-ready'), 400);
-                el.classList.add('dragging');
-                showGhosts();
-                startDrag(key, el, e, true, true);
-            }
-        }, 300);
-    }, { passive: true });
-
-    el.addEventListener('touchend',   () => { clearTimeout(longPressTimer); touchCancelled = true; });
-    el.addEventListener('touchmove',  (e) => {
-        // If moved before long-press fires, cancel it (it's a scroll, not a drag)
-        clearTimeout(longPressTimer);
-        touchCancelled = true;
-    }, { passive: true });
-}
-
 function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
     const getXY = ev => isTouch
         ? { cx: ev.touches[0].clientX, cy: ev.touches[0].clientY }
@@ -2731,7 +2739,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         el.style.transition = '';
         el.classList.add('snapping');
         positionWidget(key);
-        setTimeout(() => el.classList.remove('snapping'), 250);
+        setTimeout(() => el.classList.remove('snapping'), 450);
         save();
     };
 
@@ -2812,68 +2820,144 @@ function toggleGroup(header) {
 }
 
 // ─────────────────────────────────────────────────
-// DOUBLE-TAP CLOCK TO CYCLE STYLE
+// POST-LOAD INTERACTIONS
 // ─────────────────────────────────────────────────
-const CLOCK_STYLES = ['bold', 'thin', 'retro', 'analog'];
-let _clockLastTap = 0;
-document.getElementById('clock-widget').addEventListener('touchend', (e) => {
-    if (e.target.closest('button')) return;
-    const now = Date.now();
-    if (now - _clockLastTap < 320) {
-        // Double tap — cycle style
-        const cur = CLOCK_STYLES.indexOf(state.clockStyle || 'bold');
-        const next = CLOCK_STYLES[(cur + 1) % CLOCK_STYLES.length];
-        setClockStyle(next);
-        showToast(`Clock: ${next.charAt(0).toUpperCase() + next.slice(1)}`);
-        e.preventDefault();
-    }
-    _clockLastTap = now;
-}, { passive: false });
+function initInteractions() {
 
-// ─────────────────────────────────────────────────
-// SWIPE FROM RIGHT EDGE TO OPEN SETTINGS
-// ─────────────────────────────────────────────────
-(function initSwipeEdge() {
-    let swipeStartX = null, swipeStartY = null;
-    const zone = document.getElementById('swipe-edge-zone');
-
-    zone.addEventListener('touchstart', (e) => {
-        swipeStartX = e.touches[0].clientX;
-        swipeStartY = e.touches[0].clientY;
-    }, { passive: true });
-
-    zone.addEventListener('touchend', (e) => {
-        if (swipeStartX === null) return;
-        const dx = e.changedTouches[0].clientX - swipeStartX;
-        const dy = Math.abs(e.changedTouches[0].clientY - swipeStartY);
-        // Swipe left (negative dx) more than 40px, mostly horizontal
-        if (dx < -40 && dy < 80) {
-            const panel = document.getElementById('side-panel');
-            if (!panel.classList.contains('open')) toggleNav(null);
+    // ── DOUBLE-TAP CLOCK: use click + touch-action:manipulation ──
+    // click fires instantly on iOS when touch-action:manipulation is set (no 300ms delay)
+    const CLOCK_STYLES = ['bold', 'thin', 'retro', 'analog'];
+    let _lastTap = 0;
+    const clockEl = document.getElementById('clock-widget');
+    clockEl.style.touchAction = 'manipulation'; // disables double-tap zoom, enables fast click
+    clockEl.addEventListener('click', (e) => {
+        if (e.target.closest('button')) return;
+        const now = Date.now();
+        if (now - _lastTap < 400) {
+            _lastTap = 0;
+            const idx = CLOCK_STYLES.indexOf(state.clockStyle || 'bold');
+            const next = CLOCK_STYLES[(idx + 1) % CLOCK_STYLES.length];
+            setClockStyle(next);
+            showToast('Clock: ' + next[0].toUpperCase() + next.slice(1));
+        } else {
+            _lastTap = now;
         }
-        swipeStartX = null;
+    });
+
+    // ── SWIPE FROM RIGHT EDGE: detect on document, check start position ──
+    let _edgeX = null, _edgeY = null;
+    document.addEventListener('touchstart', (e) => {
+        const x = e.touches[0].clientX;
+        // only track if finger starts in rightmost 30px
+        _edgeX = x > window.innerWidth - 30 ? x : null;
+        _edgeY = e.touches[0].clientY;
     }, { passive: true });
-})();
+    document.addEventListener('touchend', (e) => {
+        if (_edgeX === null) return;
+        const dx = e.changedTouches[0].clientX - _edgeX;
+        const dy = Math.abs(e.changedTouches[0].clientY - _edgeY);
+        if (dx < -50 && dy < 100 && !document.getElementById('side-panel').classList.contains('open')) {
+            toggleNav(null);
+        }
+        _edgeX = null;
+    }, { passive: true });
+
+    // ── DISMISS CONTEXT MENU ON OUTSIDE CLICK ──
+    document.addEventListener('mousedown', (e) => {
+        if (e.button === 2) return; // right-click: contextmenu event handles it
+        if (!e.target.closest('#widget-ctx-menu')) setTimeout(() => hideCtxMenu(), 0);
+    });
+    document.addEventListener('touchstart', (e) => {
+        if (!e.target.closest('#widget-ctx-menu')) setTimeout(() => hideCtxMenu(), 0);
+    }, { passive: true });
+}
 
 // ─────────────────────────────────────────────────
-// WIDGET CONTEXT MENU
+// WIDGET DRAG + CONTEXT MENU + POSITION LOCK
+// ─────────────────────────────────────────────────
+function initWidgetDrag(key) {
+    const el = document.getElementById(key + '-widget');
+    if (!el) return;
+
+    let _mouseTimer = null;
+    let _mouseMoved = false;
+    let _mouseHeld = false;
+
+    el.addEventListener('mousedown', (e) => {
+        if (e.target.closest('button, input, a')) return;
+        if (e.button !== 0) return; // left click only
+
+        _mouseMoved = false;
+        _mouseHeld = false;
+
+        // Long-press: hold 500ms without moving = context menu
+        _mouseTimer = setTimeout(() => {
+            if (_mouseMoved) return;
+            _mouseHeld = true;
+            if (navigator.vibrate) navigator.vibrate(35);
+            showCtxMenu(key, e.clientX, e.clientY);
+        }, 500);
+
+        // Also start tracking for drag (startDrag handles its own threshold)
+        if (!state.posLocked) {
+            startDrag(key, el, e, false);
+        }
+    });
+
+    el.addEventListener('mousemove', () => { _mouseMoved = true; clearTimeout(_mouseTimer); });
+    el.addEventListener('mouseup', () => { clearTimeout(_mouseTimer); });
+
+    // Right-click also shows context menu
+    el.addEventListener('contextmenu', (e) => {
+        e.preventDefault();
+        showCtxMenu(key, e.clientX, e.clientY);
+    });
+
+    // ── TOUCH: long-press 500ms → context menu, move → drag ──
+    let _touchTimer = null;
+    let _sx = 0, _sy = 0;
+
+    el.addEventListener('touchstart', (e) => {
+        if (document.getElementById('widget-ctx-menu').classList.contains('visible')) return;
+        if (e.target.closest('button, input, a')) return;
+        _sx = e.touches[0].clientX;
+        _sy = e.touches[0].clientY;
+
+        _touchTimer = setTimeout(() => {
+            if (navigator.vibrate) navigator.vibrate(35);
+            el.classList.add('long-press-ready');
+            setTimeout(() => el.classList.remove('long-press-ready'), 350);
+            showCtxMenu(key, _sx, Math.max(_sy - 170, 60));
+        }, 500);
+    }, { passive: true });
+
+    el.addEventListener('touchmove', (e) => {
+        if (document.getElementById('widget-ctx-menu').classList.contains('visible')) {
+            hideCtxMenu(); clearTimeout(_touchTimer); return;
+        }
+        const dx = Math.abs(e.touches[0].clientX - _sx);
+        const dy = Math.abs(e.touches[0].clientY - _sy);
+        if ((dx > 10 || dy > 10) && !state.posLocked) {
+            clearTimeout(_touchTimer);
+            startDrag(key, el, e, true, true);
+        }
+    }, { passive: true });
+
+    el.addEventListener('touchend', () => clearTimeout(_touchTimer), { passive: true });
+}
+// ─────────────────────────────────────────────────
+// CONTEXT MENU HELPERS
 // ─────────────────────────────────────────────────
 let _ctxKey = null;
 
 function showCtxMenu(key, x, y) {
     _ctxKey = key;
     const menu = document.getElementById('widget-ctx-menu');
-    const lockLabel = document.getElementById('ctx-lock-label');
-    const lockIcon  = document.getElementById('ctx-lock-icon');
-    lockLabel.textContent = state.posLocked ? 'Unlock Positions' : 'Lock Positions';
-    lockIcon.textContent  = state.posLocked ? '🔓' : '🔒';
-
-    // Position — keep within viewport
-    const mw = 170, mh = 130;
-    let left = Math.min(x, window.innerWidth  - mw - 10);
-    let top  = Math.min(y, window.innerHeight - mh - 10);
-    menu.style.left = left + 'px';
-    menu.style.top  = top  + 'px';
+    document.getElementById('ctx-lock-label').textContent = state.posLocked ? 'Unlock Positions' : 'Lock Positions';
+    document.getElementById('ctx-lock-icon').textContent  = state.posLocked ? '🔓' : '🔒';
+    const mw = 175;
+    menu.style.left = Math.min(x - mw / 2, window.innerWidth - mw - 10) + 'px';
+    menu.style.top  = Math.max(y, 10) + 'px';
     menu.classList.add('visible');
 }
 
@@ -2882,28 +2966,18 @@ function hideCtxMenu() {
     _ctxKey = null;
 }
 
-function ctxLockToggle() {
-    hideCtxMenu();
-    toggleLock();
-}
+function ctxLockToggle() { hideCtxMenu(); toggleLock(); }
 
 function ctxHide() {
     if (!_ctxKey) return;
-    state['show' + _ctxKey.charAt(0).toUpperCase() + _ctxKey.slice(1)] = false;
-    applyAll(); save();
-    hideCtxMenu();
+    state['show' + _ctxKey[0].toUpperCase() + _ctxKey.slice(1)] = false;
+    applyAll(); save(); hideCtxMenu();
 }
 
 function ctxReset() {
     if (!_ctxKey) return;
-    resetWidget(_ctxKey);
-    hideCtxMenu();
+    resetWidget(_ctxKey); hideCtxMenu();
 }
-
-// Dismiss menu on outside tap
-document.addEventListener('pointerdown', (e) => {
-    if (!e.target.closest('#widget-ctx-menu')) hideCtxMenu();
-}, { passive: true });
 
 // ─────────────────────────────────────────────────
 // POSITION LOCK
@@ -2922,9 +2996,6 @@ function applyLockIndicator() {
     if (ind) ind.classList.toggle('visible', !!state.posLocked);
 }
 
-// ─────────────────────────────────────────────────
-// GRADIENT PRESETS
-// ─────────────────────────────────────────────────
 const GRADIENTS = [
     { label: 'Midnight',  css: 'linear-gradient(135deg,#0f0c29,#302b63,#24243e)' },
     { label: 'Aurora',    css: 'linear-gradient(135deg,#000428,#004e92)' },
@@ -2956,74 +3027,18 @@ function renderGradients() {
 }
 
 function applyGradient(g) {
-    state.isStatic = false;
-    state.artAsBg  = false;
+    state.isStatic    = false;
+    state.artAsBg     = false;
     state.activeGradient = g.label;
-    // Paint gradient onto a canvas → data URL → use as bg image
-    const canvas = document.createElement('canvas');
-    canvas.width = 2; canvas.height = 400;
-    const ctx2 = canvas.getContext('2d');
-    // Parse gradient stops from CSS (use canvas gradient for the linear angle)
-    const stops = g.css.match(/#[0-9a-f]{3,8}/gi);
-    const gr = ctx2.createLinearGradient(0, 0, 0, 400);
-    stops.forEach((c, i) => gr.addColorStop(i / (stops.length - 1), c));
-    ctx2.fillStyle = gr;
-    ctx2.fillRect(0, 0, 2, 400);
-    state.bg = canvas.toDataURL();
-    applyAll(); save();
+    state.gradientCss = g.css;  // store raw CSS
+    state.bg = '';              // clear any photo bg
+    const bgl = document.getElementById('bg-layer');
+    bgl.style.backgroundImage = g.css;
+    document.body.style.backgroundColor = '#000';
+    bgl.style.filter  = `blur(${state.blur}px)`;
+    bgl.style.opacity = state.bgOpacity;
+    save();
     renderGradients();
-}
-
-// ─────────────────────────────────────────────────
-// OVERRIDE initWidgetDrag TO SUPPORT LOCK + CONTEXT MENU
-// ─────────────────────────────────────────────────
-function initWidgetDrag(key) {
-    const el = document.getElementById(key + '-widget');
-    if (!el) return;
-
-    // MOUSE
-    el.addEventListener('mousedown', (e) => {
-        if (e.target.closest('button, input, a')) return;
-        if (state.posLocked) return;
-        startDrag(key, el, e, false);
-    });
-
-    // TOUCH
-    let longPressTimer = null;
-    let touchCancelled = false;
-    let touchStartX = 0, touchStartY = 0;
-
-    el.addEventListener('touchstart', (e) => {
-        if (e.target.closest('button, input, a')) return;
-        touchCancelled = false;
-        touchStartX = e.touches[0].clientX;
-        touchStartY = e.touches[0].clientY;
-
-        longPressTimer = setTimeout(() => {
-            if (touchCancelled) return;
-            if (navigator.vibrate) navigator.vibrate(30);
-            el.classList.add('long-press-ready');
-            setTimeout(() => el.classList.remove('long-press-ready'), 400);
-
-            if (state.posLocked) {
-                // Locked → show context menu only
-                showCtxMenu(key, touchStartX, touchStartY - 140);
-            } else {
-                // Unlocked → show context menu briefly, also allow drag if they move
-                showCtxMenu(key, touchStartX, touchStartY - 140);
-                el.classList.add('dragging');
-                showGhosts();
-                startDrag(key, el, e, true, true);
-            }
-        }, 400);
-    }, { passive: true });
-
-    el.addEventListener('touchend', () => { clearTimeout(longPressTimer); touchCancelled = true; });
-    el.addEventListener('touchmove', (e) => {
-        clearTimeout(longPressTimer);
-        touchCancelled = true;
-        hideCtxMenu();
-    }, { passive: true });
 }
 
 // ─────────────────────────────────────────────────
