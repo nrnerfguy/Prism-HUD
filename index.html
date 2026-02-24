@@ -51,7 +51,10 @@
             display: flex; justify-content: center; align-items: center;
             font-family: -apple-system, system-ui, sans-serif;
             overflow: hidden;
-            position: fixed; /* locks iOS rubber-band scroll */
+            position: fixed;
+            /* iPhone safe area — covers home bar at bottom */
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-top: env(safe-area-inset-top);
         }
 
         body { animation: pageEntrance 1.5s var(--slow-ease) forwards; opacity: 0; }
@@ -116,15 +119,14 @@
         #clock-widget .widget-pill { white-space: nowrap; min-width: max-content; }
         .digit-wrap {
             display: inline-block; position: relative;
-            overflow: hidden;          /* needed for vertical flip clip */
             vertical-align: top; white-space: nowrap;
-            padding: 0 0.08em;         /* breathing room so wide glyphs (7,1,f) aren't clipped */
-            margin: 0 -0.08em;         /* cancel the layout shift from padding */
+            padding: 0 0.08em;
+            margin: 0 -0.08em;
         }
-        @keyframes digitOut { from { transform: translateY(0); opacity:1; } to { transform: translateY(-60%); opacity:0; } }
-        @keyframes digitIn  { from { transform: translateY(60%); opacity:0; } to { transform: translateY(0); opacity:1; } }
-        .digit-wrap.flip-out { animation: digitOut 0.18s ease-in  forwards; }
-        .digit-wrap.flip-in  { animation: digitIn  0.18s ease-out forwards; }
+        @keyframes digitOut { from { opacity:1; transform: translateY(0) scale(1); } to { opacity:0; transform: translateY(-30%) scale(0.85); } }
+        @keyframes digitIn  { from { opacity:0; transform: translateY(30%)  scale(0.85); } to { opacity:1; transform: translateY(0) scale(1); } }
+        .digit-wrap.flip-out { animation: digitOut 0.15s ease-in  forwards; }
+        .digit-wrap.flip-in  { animation: digitIn  0.15s ease-out forwards; }
 
         /* ── WORLD CLOCK WIDGET ── */
         #worldclock-widget { flex-direction: column !important; gap: 5px; align-items: stretch; }
@@ -423,7 +425,23 @@
         #lock-indicator.visible { opacity: 1; }
         .reset-link:hover { box-shadow: 0 0 10px var(--accent); transform: scale(1.05); }
 
-        /* ── VIGNETTE ── */
+        /* ── WEATHER TINT ── */
+        #weather-tint {
+            position: fixed; inset: 0; z-index: 5; pointer-events: none;
+            opacity: 0; transition: background 8s ease, opacity 4s ease;
+        }
+
+        /* ── PARALLAX ── */
+        #bg-layer, #vignette {
+            will-change: transform;
+            transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s, filter 0.3s;
+        }
+        #hud-master {
+            will-change: transform;
+            transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+
+
         #vignette {
             position: fixed; inset: 0; z-index: 6; pointer-events: none;
             background: radial-gradient(ellipse at 50% 45%, transparent 30%, rgba(0,0,0,0.65) 100%);
@@ -539,6 +557,7 @@
 <body>
 
 <div id="bg-layer"></div>
+<div id="weather-tint"></div>
 <div id="vignette"></div>
 <div id="overlay" onclick="toggleNav()"></div>
 <div id="dim-overlay"></div>
@@ -840,6 +859,8 @@
                 <div class="row" style="margin-top:10px;"><label>24 Hour Time</label><div id="sw-is24h" class="ios-switch" onclick="toggle('is24h')"></div></div>
                 <div class="row" style="margin-top:10px;"><label>Widget Background Pill</label><div id="sw-showPills" class="ios-switch" onclick="toggle('showPills')"></div></div>
                 <div class="row" style="margin-top:10px;"><label>Lock Widget Positions</label><div id="sw-posLocked" class="ios-switch" onclick="toggleLock()"></div></div>
+                <div class="row" style="margin-top:10px;"><label>Gyroscope Parallax</label><div id="sw-parallax" class="ios-switch" onclick="toggle('parallax')"></div></div>
+                <div class="row" style="margin-top:10px;"><label>Weather Tint</label><div id="sw-weatherTint" class="ios-switch" onclick="toggle('weatherTint')"></div></div>
             </div>
         </div>
 
@@ -988,7 +1009,8 @@ let state = {
     presets: {}, posLocked: false, activeGradient: '',
     clockStyle: 'bold',
     ambientSound: null, ambientVolume: 0.3,
-    spotifyClientId: ''
+    spotifyClientId: '',
+    parallax: true, weatherTint: true
 };
 
 // ─────────────────────────────────────────────────
@@ -1445,6 +1467,7 @@ async function fetchWeather() {
         else if (code >= 71 && code <= 86) icon = icons.snow;
         else if (code >= 95)           icon = icons.storm;
         document.getElementById('icon-container').innerHTML = icon;
+        applyWeatherTint(code);
     } catch (e) {}
 }
 
@@ -2649,6 +2672,16 @@ function applyAll() {
     }
 
     document.getElementById('color-accent').value = state.accent;
+
+    // Parallax + weather tint toggles
+    const swPar = document.getElementById('sw-parallax');
+    if (swPar) swPar.classList.toggle('active', !!state.parallax);
+    const swTint = document.getElementById('sw-weatherTint');
+    if (swTint) swTint.classList.toggle('active', !!state.weatherTint);
+    // Re-apply tint visibility immediately
+    const tintEl = document.getElementById('weather-tint');
+    if (tintEl && !state.weatherTint) tintEl.style.opacity = '0';
+
     updateGhostSize();
 }
 
@@ -2850,6 +2883,12 @@ function resetWidget(key) {
 function toggle(key) {
     state[key] = !state[key];
     applyAll();
+    if (key === 'weatherTint') {
+        // Re-apply or clear the tint immediately
+        const tintEl = document.getElementById('weather-tint');
+        if (tintEl && !state.weatherTint) tintEl.style.opacity = '0';
+        else fetchWeather(); // re-fetch to trigger applyWeatherTint with current code
+    }
     if (key === 'showStocks') {
         const el = document.getElementById('stocks-widget');
         if (state.showStocks) { el.style.display = 'flex'; startStocksPolling(); }
@@ -2942,76 +2981,72 @@ function initInteractions() {
 
 // ─────────────────────────────────────────────────
 // WIDGET DRAG + CONTEXT MENU + POSITION LOCK
+// Touch: drag starts IMMEDIATELY on touchstart.
+// Context menu only shows if finger never moved AND 500ms passes.
 // ─────────────────────────────────────────────────
 function initWidgetDrag(key) {
     const el = document.getElementById(key + '-widget');
     if (!el) return;
 
-    let _mouseTimer = null;
-    let _mouseMoved = false;
-    let _mouseHeld = false;
-
+    // ── MOUSE: instant drag, hold 500ms still = context menu, right-click = context menu ──
+    let _mouseTimer = null, _mouseMoved = false;
     el.addEventListener('mousedown', (e) => {
         if (e.target.closest('button, input, a')) return;
-        if (e.button !== 0) return; // left click only
-
+        if (e.button !== 0) return;
         _mouseMoved = false;
-        _mouseHeld = false;
-
-        // Long-press: hold 500ms without moving = context menu
         _mouseTimer = setTimeout(() => {
-            if (_mouseMoved) return;
-            _mouseHeld = true;
-            if (navigator.vibrate) navigator.vibrate(35);
-            showCtxMenu(key, e.clientX, e.clientY);
+            if (!_mouseMoved) showCtxMenu(key, e.clientX, e.clientY);
         }, 500);
-
-        // Also start tracking for drag (startDrag handles its own threshold)
-        if (!state.posLocked) {
-            startDrag(key, el, e, false);
-        }
+        if (!state.posLocked) startDrag(key, el, e, false);
     });
-
     el.addEventListener('mousemove', () => { _mouseMoved = true; clearTimeout(_mouseTimer); });
-    el.addEventListener('mouseup', () => { clearTimeout(_mouseTimer); });
+    el.addEventListener('mouseup',   () => clearTimeout(_mouseTimer));
+    el.addEventListener('contextmenu', (e) => { e.preventDefault(); showCtxMenu(key, e.clientX, e.clientY); });
 
-    // Right-click also shows context menu
-    el.addEventListener('contextmenu', (e) => {
-        e.preventDefault();
-        showCtxMenu(key, e.clientX, e.clientY);
-    });
-
-    // ── TOUCH: long-press 500ms → context menu, move → drag ──
-    let _touchTimer = null;
+    // ── TOUCH: drag starts immediately, context menu if held still 500ms ──
+    let _ctxTimer = null, _hasMoved = false, _dragStarted = false;
     let _sx = 0, _sy = 0;
 
     el.addEventListener('touchstart', (e) => {
-        if (document.getElementById('widget-ctx-menu').classList.contains('visible')) return;
         if (e.target.closest('button, input, a')) return;
+        if (document.getElementById('widget-ctx-menu').classList.contains('visible')) return;
+
+        _hasMoved   = false;
+        _dragStarted = false;
         _sx = e.touches[0].clientX;
         _sy = e.touches[0].clientY;
 
-        _touchTimer = setTimeout(() => {
-            if (navigator.vibrate) navigator.vibrate(35);
-            el.classList.add('long-press-ready');
-            setTimeout(() => el.classList.remove('long-press-ready'), 350);
-            showCtxMenu(key, _sx, Math.max(_sy - 170, 60));
+        // Start drag immediately (no threshold, no delay)
+        if (!state.posLocked) {
+            _dragStarted = true;
+            startDrag(key, el, e, true, false);
+        }
+
+        // Context menu fires only if finger never moved for 500ms
+        _ctxTimer = setTimeout(() => {
+            if (!_hasMoved) {
+                if (navigator.vibrate) navigator.vibrate(35);
+                el.classList.add('long-press-ready');
+                setTimeout(() => el.classList.remove('long-press-ready'), 350);
+                showCtxMenu(key, _sx, Math.max(_sy - 170, 60));
+            }
         }, 500);
     }, { passive: true });
 
     el.addEventListener('touchmove', (e) => {
-        if (document.getElementById('widget-ctx-menu').classList.contains('visible')) {
-            hideCtxMenu(); clearTimeout(_touchTimer); return;
-        }
         const dx = Math.abs(e.touches[0].clientX - _sx);
         const dy = Math.abs(e.touches[0].clientY - _sy);
-        if ((dx > 10 || dy > 10) && !state.posLocked) {
-            clearTimeout(_touchTimer);
-            startDrag(key, el, e, true, true);
+        if (dx > 4 || dy > 4) {
+            _hasMoved = true;
+            clearTimeout(_ctxTimer);
+            // Hide menu if it snuck in
+            if (document.getElementById('widget-ctx-menu').classList.contains('visible')) {
+                hideCtxMenu();
+            }
         }
     }, { passive: true });
 
-    el.addEventListener('touchend', () => clearTimeout(_touchTimer), { passive: true });
+    el.addEventListener('touchend', () => clearTimeout(_ctxTimer), { passive: true });
 }
 // ─────────────────────────────────────────────────
 // CONTEXT MENU HELPERS
@@ -3121,6 +3156,94 @@ document.addEventListener('touchmove', e => {
 document.addEventListener('wheel', e => {
     if (!e.target.closest('#side-panel')) e.preventDefault();
 }, { passive: false });
+
+// ─────────────────────────────────────────────────
+// WEATHER TINT
+// Maps weather codes to atmospheric color overlays
+// ─────────────────────────────────────────────────
+function applyWeatherTint(code) {
+    const tint = document.getElementById('weather-tint');
+    if (!tint) return;
+    if (!state.weatherTint) { tint.style.opacity = '0'; return; }
+
+    let color;
+    if (code === 0) {
+        color = 'radial-gradient(ellipse at 50% 100%, rgba(255,160,40,0.18) 0%, rgba(255,100,20,0.08) 50%, transparent 80%)';
+    } else if (code <= 3) {
+        color = 'linear-gradient(180deg, rgba(80,110,160,0.12) 0%, transparent 70%)';
+    } else if (code <= 48) {
+        color = 'radial-gradient(ellipse at 50% 50%, rgba(200,210,230,0.15) 0%, transparent 70%)';
+    } else if (code <= 67) {
+        color = 'linear-gradient(180deg, rgba(20,40,90,0.35) 0%, rgba(10,20,60,0.2) 60%, transparent 100%)';
+    } else if (code <= 86) {
+        color = 'radial-gradient(ellipse at 50% 0%, rgba(180,210,255,0.2) 0%, rgba(150,190,255,0.1) 50%, transparent 80%)';
+    } else {
+        color = 'linear-gradient(180deg, rgba(30,10,60,0.45) 0%, rgba(15,5,35,0.3) 50%, transparent 100%)';
+    }
+    tint.style.background = color;
+    tint.style.opacity = '1';
+}
+
+// ─────────────────────────────────────────────────
+// GYROSCOPE PARALLAX
+// Background moves at 1x, vignette at 0.6x, widgets at 0.25x
+// Creates a layered depth illusion
+// ─────────────────────────────────────────────────
+(function initParallax() {
+    if (!window.DeviceOrientationEvent) return;
+
+    let baseGamma = null, baseBeta = null;
+    let curX = 0, curY = 0;
+    let targetX = 0, targetY = 0;
+
+    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
+        const req = () => {
+            DeviceOrientationEvent.requestPermission().then(s => {
+                if (s === 'granted') attachGyro();
+            }).catch(() => {});
+            document.removeEventListener('touchstart', req);
+        };
+        document.addEventListener('touchstart', req, { once: true });
+    } else {
+        attachGyro();
+    }
+
+    function attachGyro() {
+        window.addEventListener('deviceorientation', (e) => {
+            if (e.gamma === null || !state.parallax) return;
+            if (baseGamma === null) { baseGamma = e.gamma; baseBeta = e.beta; }
+            const dx = Math.max(-20, Math.min(20, e.gamma - baseGamma));
+            const dy = Math.max(-20, Math.min(20, (e.beta - baseBeta) * 0.6));
+            targetX = (dx / 20) * 18;
+            targetY = (dy / 20) * 18;
+        });
+
+        function tick() {
+            if (!state.parallax) {
+                // Smoothly reset to center when disabled
+                curX += (0 - curX) * 0.07;
+                curY += (0 - curY) * 0.07;
+            } else {
+                curX += (targetX - curX) * 0.07;
+                curY += (targetY - curY) * 0.07;
+            }
+
+            const bgX  = curX.toFixed(2), bgY  = curY.toFixed(2);
+            const vigX = (curX * 0.55).toFixed(2), vigY = (curY * 0.55).toFixed(2);
+            const hudX = (curX * 0.2).toFixed(2),  hudY = (curY * 0.2).toFixed(2);
+
+            const bgl = document.getElementById('bg-layer');
+            const vig = document.getElementById('vignette');
+            const hud = document.getElementById('hud-master');
+            if (bgl) bgl.style.transform = `translate(${bgX}px, ${bgY}px)`;
+            if (vig) vig.style.transform  = `translate(${vigX}px, ${vigY}px)`;
+            if (hud) hud.style.transform  = `translate(${hudX}px, ${hudY}px)`;
+
+            requestAnimationFrame(tick);
+        }
+        requestAnimationFrame(tick);
+    }
+})();
 
 // ─────────────────────────────────────────────────
 // BOOT
