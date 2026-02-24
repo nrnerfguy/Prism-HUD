@@ -278,11 +278,13 @@
 
         /* ── SIDE PANEL ── */
         #side-panel {
-            position: fixed; right: -380px; top: 0; bottom: 0; width: 360px;
+            position: fixed; right: -380px; top: 0; width: 360px;
+            height: 100dvh; /* dvh includes iOS safe areas unlike bottom:0 */
             background: rgba(8,8,10,0.82);
             backdrop-filter: blur(40px) saturate(160%);
             -webkit-backdrop-filter: blur(40px) saturate(160%);
             padding: 40px 25px;
+            padding-bottom: max(40px, env(safe-area-inset-bottom));
             transition: right 0.4s var(--smooth-ease);
             z-index: 2000; overflow-y: auto;
             touch-action: pan-y;
