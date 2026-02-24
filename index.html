@@ -23,12 +23,15 @@
         /* ── WIDGET PILL ── */
         .widget-pill {
             background: rgba(0,0,0,0); border-radius: 20px;
-            padding: 0; transition: background 0.4s ease, padding 0.4s ease;
+            padding: 0; transition: background 0.4s ease, padding 0.4s ease, backdrop-filter 0.4s ease;
         }
         body.show-pills .widget-pill {
-            background: rgba(0,0,0,0.55);
+            background: rgba(0,0,0,0.35);
+            backdrop-filter: blur(24px) saturate(180%);
+            -webkit-backdrop-filter: blur(24px) saturate(180%);
             padding: 10px 20px;
-            border: 1px solid rgba(255,255,255,0.08);
+            border: 1px solid rgba(255,255,255,0.09);
+            box-shadow: 0 4px 24px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.06);
         }
 
         /* ── WHITE ACCENT FIXES ── */
@@ -82,7 +85,7 @@
             opacity: 0.95;
         }
         .widget.snapping {
-            transition: transform 0.35s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.3s ease;
+            transition: transform 0.7s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.3s ease;
         }
         @keyframes wiggle {
             0%,100% { transform: translate(-50%,-50%) rotate(0deg)    scale(var(--wmx,1), var(--ws,1)); }
@@ -151,39 +154,43 @@
         #np-next-artist { font-size: 0.6rem; opacity: 0.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         /* ── CLOCK STYLES ── */
-        #clock { line-height: 1; transition: all 0.4s ease; text-shadow: 0px 0px 20px rgba(0,0,0,0.5); touch-action: manipulation; }
+        #clock { line-height: 1; transition: all 0.4s ease; touch-action: manipulation; }
         #clock.style-bold {
             font-size: clamp(5rem, 25vw, 12rem); font-weight: 900; font-style: italic;
             letter-spacing: -4px; font-family: -apple-system, system-ui, sans-serif;
             margin-right: -4px;
+            text-shadow: 0 2px 0 rgba(0,0,0,0.4), 0 0 60px rgba(0,0,0,0.9), 0 0 120px rgba(0,0,0,0.6);
         }
         #clock.style-thin {
             font-size: clamp(4rem, 22vw, 11rem); font-weight: 100; font-style: normal;
             font-family: 'Outfit', sans-serif; letter-spacing: 20px;
             margin-right: -20px;
+            text-shadow: 0 0 40px rgba(0,0,0,0.95), 0 0 100px rgba(0,0,0,0.7);
         }
         #clock.style-retro {
             font-size: clamp(3.5rem, 18vw, 9rem); font-family: 'Share Tech Mono', monospace;
             font-weight: normal; font-style: normal; letter-spacing: 10px;
-            text-shadow: 0 0 8px currentColor, 0 0 25px currentColor, 0 0 60px currentColor;
+            text-shadow: 0 0 8px currentColor, 0 0 25px currentColor, 0 0 80px currentColor, 0 0 120px currentColor;
             margin-right: -10px;
         }
 
         /* Analog clock */
         #analog-clock {
             display: none; width: clamp(180px, 40vw, 320px); height: clamp(180px, 40vw, 320px);
+            filter: drop-shadow(0 0 12px rgba(0,0,0,0.8));
         }
-        .a-face { fill: none; stroke: var(--accent); stroke-width: 1.5; opacity: 0.2; }
-        .a-tick { stroke: var(--accent); stroke-width: 1.5; opacity: 0.4; }
-        .a-tick-major { stroke: var(--accent); stroke-width: 3; opacity: 0.7; }
-        .a-hour { stroke: var(--accent); stroke-width: 5; stroke-linecap: round; }
-        .a-min  { stroke: var(--accent); stroke-width: 3; stroke-linecap: round; }
-        .a-sec  { stroke: #fff; stroke-width: 1.5; stroke-linecap: round; }
+        .a-face { fill: none; stroke: var(--accent); stroke-width: 1; opacity: 0.15; }
+        .a-tick { stroke: var(--accent); stroke-width: 1.5; opacity: 0.35; }
+        .a-tick-major { stroke: var(--accent); stroke-width: 2.5; opacity: 0.65; }
+        .a-hour { stroke: var(--accent); stroke-width: 5; stroke-linecap: round; filter: drop-shadow(0 0 4px var(--accent)); }
+        .a-min  { stroke: var(--accent); stroke-width: 3; stroke-linecap: round; filter: drop-shadow(0 0 3px var(--accent)); }
+        .a-sec  { stroke: #fff; stroke-width: 1.5; stroke-linecap: round; filter: drop-shadow(0 0 3px rgba(255,255,255,0.8)); }
         .a-center { fill: var(--accent); }
+        .a-center-hi { fill: rgba(255,255,255,0.7); }
 
-        #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.8; font-weight: 300; text-shadow: 0px 0px 20px rgba(0,0,0,0.7); margin-right: -8px; }
-        #weather-widget { gap: 20px; opacity: 0.8; font-size: 2.4rem; font-weight: 200; text-shadow: 0px 0px 20px rgba(0,0,0,0.7); }
-        #battery-widget { font-size: 1.2rem; font-weight: 600; opacity: 0.8; letter-spacing: 4px; display: flex; align-items: center; gap: 12px; text-shadow: 0px 0px 20px rgba(0,0,0,0.7); }
+        #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.85; font-weight: 300; text-shadow: 0 1px 0 rgba(0,0,0,0.5), 0 0 30px rgba(0,0,0,0.9); margin-right: -8px; }
+        #weather-widget { gap: 20px; opacity: 0.85; font-size: 2.4rem; font-weight: 200; text-shadow: 0 1px 0 rgba(0,0,0,0.4), 0 0 30px rgba(0,0,0,0.9); }
+        #battery-widget { font-size: 1.2rem; font-weight: 600; opacity: 0.85; letter-spacing: 4px; display: flex; align-items: center; gap: 12px; text-shadow: 0 0 20px rgba(0,0,0,0.9); }
         .charging-pulse { animation: batteryPulse 2s infinite ease-in-out; }
         @keyframes batteryPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
@@ -209,28 +216,40 @@
         /* ── NAV ── */
         #nav-trigger {
             position: absolute; bottom: 40px; right: 40px; width: 65px; height: 65px;
-            background: rgba(30,30,30,0.9);
-            border: 1px solid rgba(255,255,255,0.2); border-radius: 50%;
+            background: rgba(20,20,22,0.75);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.15); border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
             z-index: 1000; cursor: pointer;
-            transition: opacity 0.8s var(--smooth-ease), transform 0.3s var(--smooth-ease), background 0.3s, border-color 0.3s;
-            opacity: 0.6; color: #fff;
+            transition: opacity 0.8s var(--smooth-ease), transform 0.3s var(--smooth-ease), box-shadow 0.3s ease, border-color 0.3s;
+            opacity: 0.55; color: #fff;
         }
         #nav-ghost-zone { position: absolute; bottom: 0; right: 0; width: 150px; height: 150px; z-index: 999; }
-        #nav-trigger:hover, #nav-trigger.active-ui { opacity: 1 !important; transform: scale(1.1) rotate(15deg); background: rgba(50,50,50,0.95); border-color: var(--accent); }
+        #nav-trigger:hover, #nav-trigger.active-ui {
+            opacity: 1 !important; transform: scale(1.08) rotate(15deg);
+            background: rgba(30,30,35,0.9);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px var(--accent), 0 0 24px rgba(0,0,0,0.5);
+        }
 
         /* ── FULLSCREEN BUTTON ── */
         #fullscreen-btn {
             position: absolute; bottom: 40px; left: 40px;
             width: 44px; height: 44px;
-            background: rgba(30,30,30,0.8);
-            border: 1px solid rgba(255,255,255,0.15); border-radius: 50%;
+            background: rgba(20,20,22,0.6);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.1); border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
-            z-index: 1000; cursor: pointer; color: #fff;
-            transition: opacity 0.8s var(--smooth-ease), transform 0.3s var(--smooth-ease), background 0.3s, border-color 0.3s;
+            z-index: 1000; cursor: pointer; color: rgba(255,255,255,0.7);
+            transition: opacity 0.8s var(--smooth-ease), transform 0.3s var(--smooth-ease), box-shadow 0.3s ease, border-color 0.3s;
             opacity: 0;
         }
-        #fullscreen-btn:hover { opacity: 1 !important; background: rgba(50,50,50,0.95); border-color: var(--accent); transform: scale(1.1); }
+        #fullscreen-btn:hover {
+            opacity: 1 !important; background: rgba(30,30,35,0.9);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px var(--accent), 0 0 20px rgba(0,0,0,0.5);
+            transform: scale(1.08);
+        }
 
         /* ── KEYBOARD SHORTCUT TOAST ── */
         #kb-toast {
@@ -255,12 +274,14 @@
         /* ── SIDE PANEL ── */
         #side-panel {
             position: fixed; right: -380px; top: 0; bottom: 0; width: 360px;
-            background: rgba(12,12,12,0.99);
+            background: rgba(8,8,10,0.82);
+            backdrop-filter: blur(40px) saturate(160%);
+            -webkit-backdrop-filter: blur(40px) saturate(160%);
             padding: 40px 25px;
             transition: right 0.4s var(--smooth-ease);
             z-index: 2000; overflow-y: auto;
-            touch-action: pan-y; /* re-enable vertical scroll inside panel */
-            border-left: 1px solid rgba(255,255,255,0.1); color: #fff; scrollbar-width: none;
+            touch-action: pan-y;
+            border-left: 1px solid rgba(255,255,255,0.08); color: #fff; scrollbar-width: none;
         }
         #side-panel.open { right: 0 !important; }
         #side-panel::-webkit-scrollbar { display: none; }
@@ -355,15 +376,18 @@
 
         /* ── WIDGET CONTEXT MENU ── */
         #widget-ctx-menu {
-            position: fixed; z-index: 2000;
-            background: #1c1c1e; border: 1px solid rgba(255,255,255,0.12);
+            position: fixed; z-index: 5000;
+            background: rgba(22,22,26,0.85);
+            backdrop-filter: blur(28px) saturate(180%);
+            -webkit-backdrop-filter: blur(28px) saturate(180%);
+            border: 1px solid rgba(255,255,255,0.12);
             border-radius: 16px; overflow: hidden;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.7);
-            opacity: 0; transform: scale(0.9); pointer-events: none;
-            transition: opacity 0.15s ease, transform 0.15s ease;
-            min-width: 160px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.07);
+            opacity: 0; transform: scale(0.92) translateY(4px); pointer-events: none;
+            transition: opacity 0.18s ease, transform 0.18s ease;
+            min-width: 175px;
         }
-        #widget-ctx-menu.visible { opacity: 1; transform: scale(1); pointer-events: all; }
+        #widget-ctx-menu.visible { opacity: 1; transform: scale(1) translateY(0); pointer-events: all; }
         .ctx-item {
             display: flex; align-items: center; gap: 12px;
             padding: 13px 18px; font-size: 0.82rem; font-weight: 500;
@@ -382,6 +406,7 @@
         .grad-swatch {
             height: 48px; border-radius: 10px; cursor: pointer;
             border: 2px solid transparent; transition: transform 0.15s ease, border-color 0.15s ease;
+            background-origin: border-box; background-clip: border-box;
         }
         .grad-swatch:hover { transform: scale(1.06); }
         .grad-swatch.active { border-color: #fff; }
@@ -397,6 +422,25 @@
         }
         #lock-indicator.visible { opacity: 1; }
         .reset-link:hover { box-shadow: 0 0 10px var(--accent); transform: scale(1.05); }
+
+        /* ── VIGNETTE ── */
+        #vignette {
+            position: fixed; inset: 0; z-index: 6; pointer-events: none;
+            background: radial-gradient(ellipse at 50% 45%, transparent 30%, rgba(0,0,0,0.65) 100%);
+        }
+
+        /* ── FILM GRAIN ── */
+        body::after {
+            content: ''; position: fixed; inset: 0; z-index: 9998; pointer-events: none;
+            background-image: var(--noise-url, none); background-repeat: repeat;
+            opacity: 0.038; mix-blend-mode: overlay;
+            animation: grainShift 0.18s steps(1) infinite;
+        }
+        @keyframes grainShift {
+            0%  { background-position: 0 0; }
+            33% { background-position: -37px 23px; }
+            66% { background-position: 29px -41px; }
+        }
 
         #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; z-index: 1500; }
         #confirm-modal { position: fixed; inset: 0; background: rgba(0,0,0,0.85); display: none; justify-content: center; align-items: center; z-index: 3000; }
@@ -495,6 +539,7 @@
 <body>
 
 <div id="bg-layer"></div>
+<div id="vignette"></div>
 <div id="overlay" onclick="toggleNav()"></div>
 <div id="dim-overlay"></div>
 <canvas id="art-canvas" style="display:none;" width="1" height="1"></canvas>
@@ -533,6 +578,7 @@
                 <line id="a-min"  class="a-min"  x1="100" y1="100" x2="100" y2="28"/>
                 <line id="a-sec"  class="a-sec"  x1="100" y1="100" x2="100" y2="20"/>
                 <circle class="a-center" cx="100" cy="100" r="5"/>
+                <circle class="a-center-hi" cx="100" cy="100" r="2.2"/>
             </svg>
         </div>
     </div>
@@ -634,7 +680,13 @@
 <!-- ── SIDE PANEL ── -->
 <div id="side-panel">
     <div class="panel-content">
-        <h2 style="margin:0;font-size:1.5rem;font-weight:900;">Settings</h2>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+            <img src="logo.png" alt="Prism" width="38" height="38" style="border-radius:10px;flex-shrink:0;">
+            <div>
+                <div style="font-size:1.3rem;font-weight:900;letter-spacing:-0.5px;line-height:1;">Prism OS</div>
+                <div style="font-size:0.55rem;opacity:0.35;letter-spacing:3px;text-transform:uppercase;margin-top:2px;">Settings</div>
+            </div>
+        </div>
 
         <!-- Theme Manager -->
         <div class="control-group">
@@ -2727,19 +2779,35 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         hideGhosts();
         if (!moved) { el.style.transition = ''; return; }
 
-        // Snap: commit snapped position to left/top, reset transform
+        // Find snap target in px
         const zone = ZONES[nearestZoneIdx(curPxX, curPxY)];
         state.widgetPos[key] = { x: zone.x, y: zone.y };
-        // Apply snap position instantly to left/top, then let transform spring back
+
+        const snapPxX = zone.x / 100 * window.innerWidth;
+        const snapPxY = zone.y / 100 * window.innerHeight;
+
+        // Step 1: move left/top to snap position instantly, but compensate
+        // with a transform offset so the widget stays at its current visual position.
         el.style.transition = 'none';
         el.style.left = zone.x + '%';
         el.style.top  = zone.y + '%';
-        // Force reflow so the new left/top is read before we re-enable transition
+        const compensateX = curPxX - snapPxX;
+        const compensateY = curPxY - snapPxY;
+        el.style.transform = `translate(calc(-50% + ${compensateX}px), calc(-50% + ${compensateY}px)) scale(${sx}, ${state.scale})`;
+
+        // Step 2: force reflow so browser registers the new left/top + compensated transform
         el.getBoundingClientRect();
+
+        // Step 3: clear the inline 'none' so the class transition takes over, then animate
         el.style.transition = '';
         el.classList.add('snapping');
-        positionWidget(key);
-        setTimeout(() => el.classList.remove('snapping'), 450);
+        el.style.transform = `translate(-50%, -50%) scale(${sx}, ${state.scale})`;
+
+        setTimeout(() => {
+            el.classList.remove('snapping');
+            el.style.transition = '';
+            positionWidget(key); // re-apply burn shield offsets if any
+        }, 750);
         save();
     };
 
@@ -3019,7 +3087,7 @@ function renderGradients() {
         const swatch = document.createElement('div');
         swatch.className = 'grad-swatch';
         if (state.activeGradient === g.label) swatch.classList.add('active');
-        swatch.style.background = g.css;
+        swatch.style.backgroundImage = g.css;
         swatch.title = g.label;
         swatch.onclick = () => applyGradient(g);
         grid.appendChild(swatch);
@@ -3057,6 +3125,22 @@ document.addEventListener('wheel', e => {
 // ─────────────────────────────────────────────────
 // BOOT
 // ─────────────────────────────────────────────────
+
+// Generate 128×128 film grain noise tile and inject as CSS variable
+(function() {
+    const c = document.createElement('canvas');
+    c.width = c.height = 128;
+    const ctx = c.getContext('2d');
+    const id = ctx.createImageData(128, 128);
+    for (let i = 0; i < id.data.length; i += 4) {
+        const v = Math.floor(Math.random() * 255);
+        id.data[i] = id.data[i+1] = id.data[i+2] = v;
+        id.data[i+3] = 255;
+    }
+    ctx.putImageData(id, 0, 0);
+    document.documentElement.style.setProperty('--noise-url', `url(${c.toDataURL()})`);
+})();
+
 load();
 </script>
 </body>
