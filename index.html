@@ -763,6 +763,10 @@
                 <div id="sw-showSeconds" class="ios-switch" onclick="toggle('showSeconds')"></div>
             </div>
             <div class="row" style="margin-top:10px;">
+                <label style="font-size:0.5rem;">24 Hour Time</label>
+                <div id="sw-is24h" class="ios-switch" onclick="toggle('is24h')"></div>
+            </div>
+            <div class="row" style="margin-top:10px;">
                 <label style="font-size:0.5rem;">Visibility</label>
                 <div style="display:flex;align-items:center;"><span id="st-clock" class="status-tag">SHOWN</span><div id="sw-showClock" class="ios-switch active" onclick="toggle('showClock')"></div></div>
             </div>
@@ -866,7 +870,6 @@
             <div class="group-body">
                 <div class="row" style="margin-top:14px;"><label>OLED Burn Shield</label><div id="sw-burnShield" class="ios-switch" onclick="toggle('burnShield')"></div></div>
                 <div class="row" style="margin-top:10px;"><label>Flip Widgets</label><div id="sw-mirrored" class="ios-switch" onclick="toggle('mirrored')"></div></div>
-                <div class="row" style="margin-top:10px;"><label>24 Hour Time</label><div id="sw-is24h" class="ios-switch" onclick="toggle('is24h')"></div></div>
                 <div class="row" style="margin-top:10px;"><label>Widget Background Pill</label><div id="sw-showPills" class="ios-switch" onclick="toggle('showPills')"></div></div>
                 <div class="row" style="margin-top:10px;"><label>Lock Widget Positions</label><div id="sw-posLocked" class="ios-switch" onclick="toggleLock()"></div></div>
                 <div class="row" style="margin-top:10px;"><label>Weather Tint</label><div id="sw-weatherTint" class="ios-switch" onclick="toggle('weatherTint')"></div></div>
@@ -886,6 +889,9 @@
             <div class="row"><label>Battery Widget</label><span class="reset-link" onclick="resetWidget('battery')">Reset Position</span></div>
             <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Visibility</label>
                 <div style="display:flex;align-items:center;"><span id="st-battery" class="status-tag">SHOWN</span><div id="sw-showBattery" class="ios-switch active" onclick="toggle('showBattery')"></div></div>
+            </div>
+            <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Dynamic Colours</label>
+                <div id="sw-batteryDynamic" class="ios-switch active" onclick="toggle('batteryDynamic')"></div>
             </div>
         </div>
 
@@ -960,7 +966,7 @@
                 <label style="font-size:0.5rem;">Tickers</label>
                 <div id="ticker-tags" class="ticker-tags"></div>
                 <div style="position:relative;margin-top:10px;">
-                    <input type="text" id="ticker-input" placeholder="Search stocks, e.g. Apple..." style="margin-top:0;width:100%;" oninput="searchTickers(this.value)" onkeydown="tickerInputKey(event)" autocomplete="off">
+                    <input type="text" id="ticker-input" placeholder="Search by name or symbol..." style="margin-top:0;width:100%;" oninput="searchTickers(this.value)" onkeydown="tickerInputKey(event)" autocomplete="off">
                     <div id="ticker-results"></div>
                 </div>
             </div>
@@ -1019,7 +1025,7 @@ let state = {
     clockStyle: 'bold',
     ambientSound: null, ambientVolume: 0.3,
     spotifyClientId: '',
-    weatherTint: true
+    weatherTint: true, batteryDynamic: true
 };
 
 // ─────────────────────────────────────────────────
@@ -1513,8 +1519,11 @@ async function updateBattery() {
             const isCharging = b.charging;
             const fillWidth = (level / 100) * 13;
             let fillColor = state.accent;
-            if (level <= 20) fillColor = '#ff4444';
-            if (level === 100) fillColor = '#34C759';
+            if (state.batteryDynamic) {
+                if (level <= 20) fillColor = '#ff4444';
+                else if (level === 100) fillColor = '#34C759';
+                else fillColor = state.accent;
+            }
             let svg = `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" style="filter:drop-shadow(0 0 2px rgba(0,0,0,0.5))">`;
             svg += batIcons.frame;
             svg += `<rect x="3.5" y="8.5" width="${fillWidth}" height="7" rx="1.5" fill="${fillColor}"/>`;
@@ -2685,6 +2694,9 @@ function applyAll() {
     // Weather tint toggle
     const swTint = document.getElementById('sw-weatherTint');
     if (swTint) swTint.classList.toggle('active', !!state.weatherTint);
+    // Battery dynamic colour toggle
+    const swBatDyn = document.getElementById('sw-batteryDynamic');
+    if (swBatDyn) swBatDyn.classList.toggle('active', !!state.batteryDynamic);
     // Re-apply tint visibility immediately
     const tintEl = document.getElementById('weather-tint');
     if (tintEl && !state.weatherTint) tintEl.style.opacity = '0';
@@ -2890,6 +2902,7 @@ function resetWidget(key) {
 function toggle(key) {
     state[key] = !state[key];
     applyAll();
+    if (key === 'batteryDynamic') updateBattery();
     if (key === 'weatherTint') {
         // Re-apply or clear the tint immediately
         const tintEl = document.getElementById('weather-tint');
@@ -2958,7 +2971,24 @@ function initInteractions() {
         }
     });
 
-    // ── SWIPE FROM RIGHT EDGE: detect on document, check start position ──
+    // ── DOUBLE-TAP WEATHER: toggle °C / °F ──
+    let _lastWeatherTap = 0;
+    const weatherEl = document.getElementById('weather-widget');
+    weatherEl.style.touchAction = 'manipulation';
+    weatherEl.addEventListener('click', (e) => {
+        if (e.target.closest('button')) return;
+        const now = Date.now();
+        if (now - _lastWeatherTap < 400) {
+            _lastWeatherTap = 0;
+            const newUnit = state.weatherUnit === 'C' ? 'F' : 'C';
+            setWeatherUnit(newUnit);
+            showToast('Weather: °' + newUnit);
+        } else {
+            _lastWeatherTap = now;
+        }
+    });
+
+    // ── SWIPE FROM RIGHT EDGE ──
     let _edgeX = null, _edgeY = null;
     document.addEventListener('touchstart', (e) => {
         const x = e.touches[0].clientX;
