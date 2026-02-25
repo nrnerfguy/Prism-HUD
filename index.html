@@ -321,12 +321,22 @@
         .city-item span { opacity: 0.6; font-size: 0.7rem; display: block; transition: none !important; }
 
         #ticker-results {
-            position: absolute; top: calc(100% + 4px); left: 0; right: 0;
-            background: #1a1a1a;
-            border: 1px solid rgba(255,255,255,0.1); border-radius: 15px;
-            z-index: 3000; max-height: 220px; overflow-y: auto; display: none;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            position: fixed;
+            background: rgba(18,18,20,0.98);
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.12); border-radius: 15px;
+            z-index: 9000; max-height: 260px; overflow-y: auto; display: none;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.8);
+            min-width: 280px;
         }
+
+
+
+
+
+
+
+
         .ticker-item {
             padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.05);
             cursor: pointer; font-size: 0.8rem; text-align: left;
@@ -1644,135 +1654,79 @@ function renderTickerTags() {
 // ─────────────────────────────────────────────────
 // TICKER AUTOCOMPLETE — instant local database, zero latency
 // ─────────────────────────────────────────────────
-const TICKER_DB = [
-    ['AAPL','Apple'],['MSFT','Microsoft'],['NVDA','NVIDIA'],['GOOGL','Alphabet'],['GOOG','Alphabet C'],
-    ['AMZN','Amazon'],['META','Meta'],['TSLA','Tesla'],['AVGO','Broadcom'],['ORCL','Oracle'],
-    ['AMD','AMD'],['INTC','Intel'],['QCOM','Qualcomm'],['TXN','Texas Instruments'],['MU','Micron'],
-    ['AMAT','Applied Materials'],['MRVL','Marvell'],['ARM','Arm Holdings'],['PLTR','Palantir'],
-    ['SNOW','Snowflake'],['CRM','Salesforce'],['ADBE','Adobe'],['NOW','ServiceNow'],['INTU','Intuit'],
-    ['PANW','Palo Alto Networks'],['CRWD','CrowdStrike'],['ZS','Zscaler'],['NET','Cloudflare'],
-    ['DDOG','Datadog'],['MDB','MongoDB'],['NFLX','Netflix'],['SPOT','Spotify'],['RBLX','Roblox'],
-    ['UBER','Uber'],['LYFT','Lyft'],['ABNB','Airbnb'],['DASH','DoorDash'],['COIN','Coinbase'],
-    ['DIS','Disney'],['CMCSA','Comcast'],['T','AT&T'],['VZ','Verizon'],['TMUS','T-Mobile'],
-    ['V','Visa'],['MA','Mastercard'],['PYPL','PayPal'],['SQ','Block'],['AFRM','Affirm'],
-    ['JPM','JPMorgan'],['BAC','Bank of America'],['WFC','Wells Fargo'],['GS','Goldman Sachs'],
-    ['MS','Morgan Stanley'],['C','Citigroup'],['AXP','American Express'],['BLK','BlackRock'],
-    ['BRK.B','Berkshire Hathaway B'],['BRK.A','Berkshire Hathaway A'],['SCHW','Charles Schwab'],
-    ['LLY','Eli Lilly'],['UNH','UnitedHealth'],['JNJ','Johnson & Johnson'],['PFE','Pfizer'],
-    ['ABBV','AbbVie'],['MRK','Merck'],['TMO','Thermo Fisher'],['ABT','Abbott'],['BMY','Bristol-Myers'],
-    ['AMGN','Amgen'],['GILD','Gilead'],['REGN','Regeneron'],['VRTX','Vertex Pharma'],['ISRG','Intuitive Surgical'],
-    ['XOM','Exxon Mobil'],['CVX','Chevron'],['COP','ConocoPhillips'],['SLB','SLB'],['EOG','EOG Resources'],
-    ['NEE','NextEra Energy'],['DUK','Duke Energy'],['SO','Southern Company'],['AEP','AEP'],['D','Dominion'],
-    ['CAT','Caterpillar'],['DE','John Deere'],['GE','GE'],['HON','Honeywell'],['MMM','3M'],['BA','Boeing'],
-    ['LMT','Lockheed Martin'],['RTX','RTX'],['NOC','Northrop Grumman'],['GD','General Dynamics'],
-    ['AMZN','Amazon'],['WMT','Walmart'],['COST','Costco'],['TGT','Target'],['HD','Home Depot'],
-    ['LOW','Lowe\'s'],['SBUX','Starbucks'],['MCD','McDonald\'s'],['YUM','Yum! Brands'],['CMG','Chipotle'],
-    ['NKE','Nike'],['LULU','Lululemon'],['TJX','TJX Companies'],['ROST','Ross Stores'],['GPS','Gap'],
-    ['PG','Procter & Gamble'],['KO','Coca-Cola'],['PEP','PepsiCo'],['MDLZ','Mondelez'],['GIS','General Mills'],
-    ['PM','Philip Morris'],['MO','Altria'],['CL','Colgate'],['CHD','Church & Dwight'],
-    ['UPS','UPS'],['FDX','FedEx'],['ODFL','Old Dominion Freight'],['XPO','XPO'],
-    ['AMT','American Tower'],['PLD','Prologis'],['CCI','Crown Castle'],['EQIX','Equinix'],['SPG','Simon Property'],
-    ['GLD','SPDR Gold'],['SLV','iShares Silver'],['USO','US Oil Fund'],
-    ['SPY','S&P 500 ETF'],['QQQ','Nasdaq 100 ETF'],['IWM','Russell 2000 ETF'],['DIA','Dow Jones ETF'],
-    ['VTI','Vanguard Total Market'],['VEA','Vanguard Intl'],['VWO','Vanguard Emerging Markets'],
-    ['AGG','Bond ETF'],['TLT','20yr Treasury ETF'],['HYG','High Yield Bond ETF'],
-    ['XLK','Tech Sector ETF'],['XLF','Finance Sector ETF'],['XLE','Energy Sector ETF'],
-    ['XLV','Health Sector ETF'],['XLI','Industrial Sector ETF'],['ARKK','ARK Innovation ETF'],
-    ['BTC-USD','Bitcoin'],['ETH-USD','Ethereum'],['BNB-USD','BNB'],['SOL-USD','Solana'],
-    ['XRP-USD','XRP'],['ADA-USD','Cardano'],['DOGE-USD','Dogecoin'],['AVAX-USD','Avalanche'],
-    ['TSMC','TSMC (Taiwan Semi)'],['NVO','Novo Nordisk'],['ASML','ASML'],['SAP','SAP'],
-    ['TM','Toyota'],['SONY','Sony'],['HMC','Honda'],['NIO','NIO'],['RIVN','Rivian'],['LCID','Lucid'],
-    ['GME','GameStop'],['AMC','AMC Entertainment'],['BB','BlackBerry'],['BBBY','Bed Bath & Beyond'],
-    ['F','Ford'],['GM','General Motors'],['STLA','Stellantis'],
-    ['SHOP','Shopify'],['SQ','Block'],['TWLO','Twilio'],['ZM','Zoom'],['OKTA','Okta'],
-    ['DOCU','DocuSign'],['BILL','Bill.com'],['HUBS','HubSpot'],['WDAY','Workday'],['VEEV','Veeva'],
-    ['ROP','Roper Technologies'],['ANSS','Ansys'],['CDNS','Cadence'],['SNPS','Synopsys'],
-    ['MSCI','MSCI'],['SPGI','S&P Global'],['MCO','Moody\'s'],['ICE','Intercontinental Exchange'],
-    ['CME','CME Group'],['NDAQ','Nasdaq'],['CBOE','Cboe Global Markets'],
-];
+// ── LIVE TICKER SEARCH via Yahoo Finance ──
+let _tickerSearchTimer = null;
+
+function positionTickerDropdown() {
+    const input = document.getElementById('ticker-input');
+    const box   = document.getElementById('ticker-results');
+    if (!input || !box) return;
+    const rect = input.getBoundingClientRect();
+    box.style.top   = (rect.bottom + 6) + 'px';
+    box.style.left  = rect.left + 'px';
+    box.style.width = rect.width + 'px';
+}
 
 function searchTickers(query) {
     const box = document.getElementById('ticker-results');
     query = query.trim();
     if (query.length < 1) { box.style.display = 'none'; return; }
+    clearTimeout(_tickerSearchTimer);
+    _tickerSearchTimer = setTimeout(() => fetchTickerSearch(query), 220);
+}
 
-    const q = query.toUpperCase();
-    const ql = query.toLowerCase();
+async function fetchTickerSearch(query) {
+    const box = document.getElementById('ticker-results');
+    positionTickerDropdown();
+    box.innerHTML = '<div style="padding:10px 15px;font-size:0.75rem;opacity:0.4;">Searching…</div>';
+    box.style.display = 'block';
 
-    const scored = TICKER_DB
-        .filter(([sym, name]) => sym.includes(q) || name.toLowerCase().includes(ql))
-        .map(([sym, name]) => {
-            let score = sym === q ? 100 : sym.startsWith(q) ? 80 : sym.includes(q) ? 60 : name.toLowerCase().startsWith(ql) ? 40 : 20;
-            return { sym, name, score };
-        })
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 7);
+    const PROXIES = [
+        u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+        u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+    ];
+    const target = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&lang=en-US&region=US&quotesCount=10&newsCount=0&enableFuzzyQuery=true`;
 
-    if (scored.length === 0) { box.style.display = 'none'; return; }
+    let results = [];
+    for (const makeUrl of PROXIES) {
+        try {
+            const res = await fetch(makeUrl(target), { signal: AbortSignal.timeout(5000) });
+            if (!res.ok) continue;
+            const json = await res.json();
+            results = (json.quotes || []).filter(q => q.symbol && q.quoteType !== 'OPTION');
+            break;
+        } catch (_) { continue; }
+    }
+
+    if (results.length === 0) {
+        box.innerHTML = '<div style="padding:10px 15px;font-size:0.75rem;opacity:0.4;">No results found</div>';
+        return;
+    }
 
     box.innerHTML = '';
-    scored.forEach(({ sym, name }, i) => {
-        const div = document.createElement('div');
+    results.slice(0, 10).forEach(q => {
+        const sym  = q.symbol;
+        const name = q.shortname || q.longname || sym;
+        const type = q.quoteType || '';
+        const div  = document.createElement('div');
         div.className = 'ticker-item';
         div.dataset.sym = sym;
         div.innerHTML = `<span class="ticker-item-symbol">${sym}</span><span class="ticker-item-sub">${name}</span>`;
-        // pointerdown fires before blur, works on touch and mouse
         div.addEventListener('pointerdown', (e) => { e.preventDefault(); selectTicker(sym); });
         box.appendChild(div);
     });
-    box.style.display = 'block';
-}
-
-let _tickerHighlight = -1;
-
-function tickerInputKey(e) {
-    const box = document.getElementById('ticker-results');
-    const items = box.querySelectorAll('.ticker-item');
-
-    if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        _tickerHighlight = Math.min(_tickerHighlight + 1, items.length - 1);
-        items.forEach((el, i) => el.classList.toggle('active', i === _tickerHighlight));
-    } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        _tickerHighlight = Math.max(_tickerHighlight - 1, 0);
-        items.forEach((el, i) => el.classList.toggle('active', i === _tickerHighlight));
-    } else if (e.key === 'Enter') {
-        e.preventDefault();
-        const active = box.querySelector('.ticker-item.active') || items[0];
-        if (active) {
-            selectTicker(active.dataset.sym);
-        } else {
-            const val = document.getElementById('ticker-input').value.trim().toUpperCase();
-            if (val) selectTicker(val);
-        }
-    } else if (e.key === 'Escape') {
-        box.style.display = 'none';
-        _tickerHighlight = -1;
-    } else {
-        _tickerHighlight = -1; // reset highlight on new character
-    }
-}
-
-function selectTicker(symbol) {
-    symbol = symbol.toUpperCase();
-    if (!state.tickers) state.tickers = [];
-    if (!state.tickers.includes(symbol)) {
-        state.tickers.push(symbol);
-        renderTickerTags();
-        save();
-        if (state.showStocks) fetchStocks();
-    }
-    document.getElementById('ticker-input').value = '';
-    document.getElementById('ticker-results').style.display = 'none';
-    _tickerHighlight = -1;
-    document.getElementById('ticker-input').focus();
 }
 
 function addTicker() {
     const val = document.getElementById('ticker-input').value.trim().toUpperCase();
     if (val) selectTicker(val);
 }
+
+// Reposition fixed ticker dropdown on panel scroll
+document.getElementById('side-panel').addEventListener('scroll', () => {
+    const box = document.getElementById('ticker-results');
+    if (box && box.style.display !== 'none') positionTickerDropdown();
+}, { passive: true });
 
 document.addEventListener('pointerdown', e => {
     if (!e.target.closest('#ticker-input') && !e.target.closest('#ticker-results')) {
