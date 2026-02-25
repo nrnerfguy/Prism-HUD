@@ -8,7 +8,7 @@
     <meta name="theme-color" content="#000000">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Outfit:wght@100;900&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Outfit:wght@100;300;400;900&display=block" rel="stylesheet">
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="apple-touch-icon" href="logo.png">
     <title>Prism OS</title>
@@ -44,7 +44,12 @@
         /* reset-link hover uses accent-fg for text */
         .reset-link:hover { background: var(--accent); color: var(--accent-fg); }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        * {
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
 
         html {
             background-color: #000; /* fills iOS safe areas including home bar */
@@ -58,6 +63,8 @@
             font-family: -apple-system, system-ui, sans-serif;
             overflow: hidden;
             position: fixed;
+            font-feature-settings: "kern" 1, "liga" 1;
+            text-rendering: optimizeLegibility;
         }
 
         body { animation: pageEntrance 1.5s var(--slow-ease) forwards; opacity: 0; }
@@ -71,6 +78,7 @@
             position: fixed; inset: -50px; z-index: -1;
             background-size: cover; background-position: center; background-repeat: no-repeat;
             transition: opacity 0.3s, filter 0.3s; pointer-events: none;
+            image-rendering: high-quality;
         }
 
         /* #hud-master is now a transparent passthrough — widgets position themselves */
@@ -159,7 +167,10 @@
         #np-next-artist { font-size: 0.6rem; opacity: 0.35; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
         /* ── CLOCK STYLES ── */
-        #clock { line-height: 1; transition: all 0.4s ease; touch-action: manipulation; }
+        #clock {
+            line-height: 1; transition: all 0.4s ease; touch-action: manipulation;
+            text-rendering: geometricPrecision;
+        }
         #clock.style-bold {
             font-size: clamp(5rem, 25vw, 12rem); font-weight: 900; font-style: italic;
             letter-spacing: -4px; font-family: -apple-system, system-ui, sans-serif;
@@ -185,13 +196,13 @@
             filter: drop-shadow(0 0 12px rgba(0,0,0,0.8));
         }
         .a-face { fill: none; stroke: var(--accent); stroke-width: 1; opacity: 0.15; }
-        .a-tick { stroke: var(--accent); stroke-width: 1.5; opacity: 0.35; }
-        .a-tick-major { stroke: var(--accent); stroke-width: 2.5; opacity: 0.65; }
+        .a-tick { stroke: var(--accent); stroke-width: 1.5; opacity: 0.35; stroke-linecap: round; }
+        .a-tick-major { stroke: var(--accent); stroke-width: 2.5; opacity: 0.65; stroke-linecap: round; }
         .a-hour { stroke: var(--accent); stroke-width: 5; stroke-linecap: round; filter: drop-shadow(0 0 4px var(--accent)); }
         .a-min  { stroke: var(--accent); stroke-width: 3; stroke-linecap: round; filter: drop-shadow(0 0 3px var(--accent)); }
         .a-sec  { stroke: #fff; stroke-width: 1.5; stroke-linecap: round; filter: drop-shadow(0 0 3px rgba(255,255,255,0.8)); }
         .a-center { fill: var(--accent); }
-        .a-center-hi { fill: rgba(255,255,255,0.7); }
+        .a-center-hi { fill: rgba(255,255,255,0.75); }
 
         #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.85; font-weight: 300; text-shadow: 0 1px 0 rgba(0,0,0,0.5), 0 0 30px rgba(0,0,0,0.9); margin-right: -8px; }
         #weather-widget { gap: 20px; opacity: 0.85; font-size: 2.4rem; font-weight: 200; text-shadow: 0 1px 0 rgba(0,0,0,0.4), 0 0 30px rgba(0,0,0,0.9); }
@@ -206,13 +217,13 @@
             filter: var(--widget-shadow) drop-shadow(0px 0px 20px rgba(0,0,0,0.7));
         }
         #np-art {
-            width: 56px; height: 56px; border-radius: 10px;
+            width: 64px; height: 64px; border-radius: 11px;
             background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
-            overflow: hidden; flex-shrink: 0; transition: border-color 0.3s;
+            overflow: hidden; flex-shrink: 0; transition: border-color 0.3s, box-shadow 0.3s;
             display: flex; align-items: center; justify-content: center; font-size: 1.6rem; opacity: 0.3;
         }
-        #np-art.has-art { border-color: var(--accent); box-shadow: 0 0 20px rgba(0,0,0,0.6); opacity: 1; }
-        #np-art img { width: 100%; height: 100%; object-fit: cover; }
+        #np-art.has-art { border-color: var(--accent); box-shadow: 0 0 24px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05); opacity: 1; }
+        #np-art img { width: 100%; height: 100%; object-fit: cover; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges; }
         #np-info { text-align: left; overflow: hidden; flex: 1; min-width: 0; }
         #np-track { font-size: 0.9rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
         #np-artist { font-size: 0.72rem; opacity: 0.55; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 400; }
@@ -359,8 +370,26 @@
 
         input[type="text"] { width: 100%; background: #000; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 12px; border-radius: 12px; margin-top: 10px; outline: none; transition: 0.3s; }
         input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(0,122,255,0.2); }
-        input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); margin-top: 10px; border-radius: 2px; }
-        input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; height: 20px; width: 20px; background: #fff; border-radius: 50%; cursor: pointer; }
+        input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); margin-top: 10px; border-radius: 2px; vertical-align: middle; }
+        input[type="range"]::-webkit-slider-container { display: flex; align-items: center; }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none; height: 22px; width: 22px;
+            background: #fff; border-radius: 50%; cursor: pointer;
+            margin-top: -9px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.1);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            box-shadow: 0 3px 12px rgba(0,0,0,0.6), 0 0 0 3px rgba(255,255,255,0.15);
+        }
+        input[type="range"]::-webkit-slider-thumb:active {
+            transform: scale(1.05);
+            box-shadow: 0 1px 6px rgba(0,0,0,0.4), 0 0 0 4px var(--accent);
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            height: 4px; border-radius: 2px; background: rgba(255,255,255,0.1);
+        }
 
         .update-btn:hover { filter: brightness(1.2); box-shadow: 0 0 15px var(--accent); transform: translateY(-1px); }
         .reset-link { font-size: 0.65rem; color: var(--accent); cursor: pointer; text-transform: uppercase; font-weight: 900; padding: 4px 8px; background: rgba(0,0,0,0.3); border-radius: 6px; transition: all 0.2s ease; }
@@ -436,20 +465,9 @@
             opacity: 0; transition: background 8s ease, opacity 4s ease;
         }
 
-        /* ── PARALLAX ── */
-        #bg-layer, #vignette {
-            will-change: transform;
-            transition: transform 0.15s cubic-bezier(0.25, 0.46, 0.45, 0.94), opacity 0.3s, filter 0.3s;
-        }
-        #hud-master {
-            will-change: transform;
-            transition: transform 0.1s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-
-
         #vignette {
             position: fixed; inset: 0; z-index: 6; pointer-events: none;
-            background: radial-gradient(ellipse at 50% 45%, transparent 30%, rgba(0,0,0,0.65) 100%);
+            background: radial-gradient(ellipse at 50% 45%, transparent 25%, rgba(0,0,0,0.45) 65%, rgba(0,0,0,0.75) 100%);
         }
 
         #overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: none; z-index: 1500; }
@@ -851,7 +869,6 @@
                 <div class="row" style="margin-top:10px;"><label>24 Hour Time</label><div id="sw-is24h" class="ios-switch" onclick="toggle('is24h')"></div></div>
                 <div class="row" style="margin-top:10px;"><label>Widget Background Pill</label><div id="sw-showPills" class="ios-switch" onclick="toggle('showPills')"></div></div>
                 <div class="row" style="margin-top:10px;"><label>Lock Widget Positions</label><div id="sw-posLocked" class="ios-switch" onclick="toggleLock()"></div></div>
-                <div class="row" style="margin-top:10px;"><label>Gyroscope Parallax</label><div id="sw-parallax" class="ios-switch" onclick="toggle('parallax')"></div></div>
                 <div class="row" style="margin-top:10px;"><label>Weather Tint</label><div id="sw-weatherTint" class="ios-switch" onclick="toggle('weatherTint')"></div></div>
             </div>
         </div>
@@ -1002,7 +1019,7 @@ let state = {
     clockStyle: 'bold',
     ambientSound: null, ambientVolume: 0.3,
     spotifyClientId: '',
-    parallax: true, weatherTint: true
+    weatherTint: true
 };
 
 // ─────────────────────────────────────────────────
@@ -1410,11 +1427,11 @@ function updateAnalogClock(now) {
 // WEATHER
 // ─────────────────────────────────────────────────
 const icons = {
-    sun: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path></svg>`,
-    cloud: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path></svg>`,
-    rain: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M16 13v8M8 13v8M12 15v8M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"></path></svg>`,
-    snow: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25M8 16h.01M8 20h.01M12 18h.01M12 22h.01M16 16h.01M16 20h.01"></path></svg>`,
-    storm: `<svg width="40" height="40" stroke="currentColor" fill="none" viewBox="0 0 24 24"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9M13 11l-4 6h6l-4 6"></path></svg>`
+    sun:   `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`,
+    cloud: `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>`,
+    rain:  `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="16" y1="13" x2="16" y2="21"/><line x1="8" y1="13" x2="8" y2="21"/><line x1="12" y1="15" x2="12" y2="23"/><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/></svg>`,
+    snow:  `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/><line x1="8" y1="16" x2="8.01" y2="16"/><line x1="8" y1="20" x2="8.01" y2="20"/><line x1="12" y1="18" x2="12.01" y2="18"/><line x1="12" y1="22" x2="12.01" y2="22"/><line x1="16" y1="16" x2="16.01" y2="16"/><line x1="16" y1="20" x2="16.01" y2="20"/></svg>`,
+    storm: `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9"/><polyline points="13 11 9 17 15 17 11 23"/></svg>`
 };
 
 async function searchCities(query) {
@@ -2665,9 +2682,7 @@ function applyAll() {
 
     document.getElementById('color-accent').value = state.accent;
 
-    // Parallax + weather tint toggles
-    const swPar = document.getElementById('sw-parallax');
-    if (swPar) swPar.classList.toggle('active', !!state.parallax);
+    // Weather tint toggle
     const swTint = document.getElementById('sw-weatherTint');
     if (swTint) swTint.classList.toggle('active', !!state.weatherTint);
     // Re-apply tint visibility immediately
@@ -3175,67 +3190,6 @@ function applyWeatherTint(code) {
     tint.style.background = color;
     tint.style.opacity = '1';
 }
-
-// ─────────────────────────────────────────────────
-// GYROSCOPE PARALLAX
-// Background moves at 1x, vignette at 0.6x, widgets at 0.25x
-// Creates a layered depth illusion
-// ─────────────────────────────────────────────────
-(function initParallax() {
-    if (!window.DeviceOrientationEvent) return;
-
-    let baseGamma = null, baseBeta = null;
-    let curX = 0, curY = 0;
-    let targetX = 0, targetY = 0;
-
-    if (typeof DeviceOrientationEvent.requestPermission === 'function') {
-        const req = () => {
-            DeviceOrientationEvent.requestPermission().then(s => {
-                if (s === 'granted') attachGyro();
-            }).catch(() => {});
-            document.removeEventListener('touchstart', req);
-        };
-        document.addEventListener('touchstart', req, { once: true });
-    } else {
-        attachGyro();
-    }
-
-    function attachGyro() {
-        window.addEventListener('deviceorientation', (e) => {
-            if (e.gamma === null || !state.parallax) return;
-            if (baseGamma === null) { baseGamma = e.gamma; baseBeta = e.beta; }
-            const dx = Math.max(-20, Math.min(20, e.gamma - baseGamma));
-            const dy = Math.max(-20, Math.min(20, (e.beta - baseBeta) * 0.6));
-            targetX = (dx / 20) * 18;
-            targetY = (dy / 20) * 18;
-        });
-
-        function tick() {
-            if (!state.parallax) {
-                // Smoothly reset to center when disabled
-                curX += (0 - curX) * 0.07;
-                curY += (0 - curY) * 0.07;
-            } else {
-                curX += (targetX - curX) * 0.07;
-                curY += (targetY - curY) * 0.07;
-            }
-
-            const bgX  = curX.toFixed(2), bgY  = curY.toFixed(2);
-            const vigX = (curX * 0.55).toFixed(2), vigY = (curY * 0.55).toFixed(2);
-            const hudX = (curX * 0.2).toFixed(2),  hudY = (curY * 0.2).toFixed(2);
-
-            const bgl = document.getElementById('bg-layer');
-            const vig = document.getElementById('vignette');
-            const hud = document.getElementById('hud-master');
-            if (bgl) bgl.style.transform = `translate(${bgX}px, ${bgY}px)`;
-            if (vig) vig.style.transform  = `translate(${vigX}px, ${vigY}px)`;
-            if (hud) hud.style.transform  = `translate(${hudX}px, ${hudY}px)`;
-
-            requestAnimationFrame(tick);
-        }
-        requestAnimationFrame(tick);
-    }
-})();
 
 // ─────────────────────────────────────────────────
 // BOOT
