@@ -194,6 +194,7 @@
         #analog-clock {
             display: none; width: clamp(180px, 40vw, 320px); height: clamp(180px, 40vw, 320px);
             filter: drop-shadow(0 0 12px rgba(0,0,0,0.8));
+            overflow: visible;
         }
         .a-face { fill: none; stroke: var(--accent); stroke-width: 1; opacity: 0.15; }
         .a-tick { stroke: var(--accent); stroke-width: 1.5; opacity: 0.35; stroke-linecap: round; }
@@ -493,17 +494,17 @@
         .style-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
         .style-btn { padding: 12px 4px; background: rgba(255,255,255,0.05); border: 1px solid transparent; border-radius: 12px; color: #fff; font-size: 0.52rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; text-align: center; transition: 0.2s; }
         .style-btn:hover { background: rgba(255,255,255,0.1); }
-        .style-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,122,255,0.1); }
+        .style-btn.active { border-color: rgba(255,255,255,0.6); color: #fff; background: rgba(255,255,255,0.12); }
         .style-btn .s-icon { font-size: 1.3rem; display: block; margin-bottom: 5px; }
 
         /* ── AMBIENT SOUND ── */
         .ambient-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 12px; }
         .ambient-btn { padding: 14px 8px; background: rgba(255,255,255,0.05); border: 1px solid transparent; border-radius: 12px; color: #fff; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; text-align: center; transition: 0.2s; }
         .ambient-btn:hover { background: rgba(255,255,255,0.1); }
-        .ambient-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0,122,255,0.1); box-shadow: 0 0 14px rgba(0,122,255,0.15); }
+        .ambient-btn.active { border-color: rgba(255,255,255,0.6); color: #fff; background: rgba(255,255,255,0.12); box-shadow: 0 0 14px rgba(255,255,255,0.1); }
         .ambient-btn .a-icon { font-size: 1.6rem; display: block; margin-bottom: 5px; }
 
-        .vol-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; }
+        .vol-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; padding-bottom: 6px; }
         .vol-row label { white-space: nowrap; opacity: 0.4; font-size: 0.55rem; }
         .vol-row input { flex: 1; margin-top: 0; }
 
@@ -579,6 +580,9 @@
 <div id="bg-layer"></div>
 <div id="weather-tint"></div>
 <div id="vignette"></div>
+<div id="ticker-results"></div>
+<div id="center-h" style="display:none;position:fixed;left:0;right:0;top:50%;height:1px;background:rgba(255,255,255,0.25);z-index:800;pointer-events:none;box-shadow:0 0 6px rgba(255,255,255,0.15);transform:translateY(-0.5px);"></div>
+<div id="center-v" style="display:none;position:fixed;top:0;bottom:0;left:50%;width:1px;background:rgba(255,255,255,0.25);z-index:800;pointer-events:none;box-shadow:0 0 6px rgba(255,255,255,0.15);transform:translateX(-0.5px);"></div>
 <div id="overlay" onclick="toggleNav()"></div>
 <div id="dim-overlay"></div>
 <canvas id="art-canvas" style="display:none;" width="1" height="1"></canvas>
@@ -610,7 +614,7 @@
     <div id="clock-widget" class="widget">
         <div class="widget-pill" style="display:flex;flex-direction:column;align-items:center;">
             <div id="clock" class="style-bold">0:00</div>
-            <svg id="analog-clock" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+            <svg id="analog-clock" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" overflow="visible">
                 <circle class="a-face" cx="100" cy="100" r="96"/>
                 <g id="a-ticks"></g>
                 <line id="a-hour" class="a-hour" x1="100" y1="100" x2="100" y2="45"/>
@@ -737,52 +741,6 @@
             <div id="theme-list" style="margin-top:15px;"></div>
         </div>
 
-        <!-- Clock Style + Settings -->
-        <div class="control-group">
-            <div class="group-header" onclick="toggleGroup(this)">
-                <div class="row" style="flex:1;margin-bottom:0;"><label>Clock Widget</label><span class="reset-link" onclick="resetWidget('clock');event.stopPropagation()">Reset Position</span></div>
-                <span class="group-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
-            </div>
-            <div class="group-body">
-            <div class="style-grid" style="margin-top:12px;">
-                <div class="style-btn active" data-style="bold"   onclick="setClockStyle('bold')">
-                    <span class="s-icon">
-                        <svg width="28" height="20" viewBox="0 0 28 20" fill="currentColor">
-                            <text x="2" y="17" font-size="18" font-weight="900" font-family="-apple-system,sans-serif" letter-spacing="-1">12</text>
-                        </svg>
-                    </span>Bold
-                </div>
-                <div class="style-btn"        data-style="thin"   onclick="setClockStyle('thin')">
-                    <span class="s-icon">
-                        <svg width="28" height="20" viewBox="0 0 28 20" fill="currentColor">
-                            <text x="1" y="17" font-size="18" font-weight="100" font-family="'Outfit',sans-serif" letter-spacing="1">12</text>
-                        </svg>
-                    </span>Thin
-                </div>
-                <div class="style-btn"        data-style="retro"  onclick="setClockStyle('retro')">
-                    <span class="s-icon">
-                        <svg width="28" height="20" viewBox="0 0 28 20" fill="currentColor">
-                            <text x="1" y="17" font-size="15" font-family="'Share Tech Mono',monospace" letter-spacing="2">12</text>
-                        </svg>
-                    </span>Retro
-                </div>
-                <div class="style-btn"        data-style="analog" onclick="setClockStyle('analog')"><span class="s-icon">◷</span>Analog</div>
-            </div>
-            <div class="row" style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.06);">
-                <label style="font-size:0.5rem;">Show Seconds</label>
-                <div id="sw-showSeconds" class="ios-switch" onclick="toggle('showSeconds')"></div>
-            </div>
-            <div class="row" style="margin-top:10px;">
-                <label style="font-size:0.5rem;">24 Hour Time</label>
-                <div id="sw-is24h" class="ios-switch" onclick="toggle('is24h')"></div>
-            </div>
-            <div class="row" style="margin-top:10px;">
-                <label style="font-size:0.5rem;">Visibility</label>
-                <div style="display:flex;align-items:center;"><span id="st-clock" class="status-tag">SHOWN</span><div id="sw-showClock" class="ios-switch active" onclick="toggle('showClock')"></div></div>
-            </div>
-            </div><!-- /group-body clock -->
-        </div>
-
         <!-- Ambient Sound -->
         <div class="control-group collapsed">
             <div class="group-header" onclick="toggleGroup(this)">
@@ -796,7 +754,7 @@
                 <div class="ambient-btn" data-sound="rain"  onclick="toggleAmbient('rain')"> <span class="a-icon">🌧️</span>Rain</div>
             </div>
             <div class="vol-row">
-                <label>Volume</label>
+                <label>VOL</label>
                 <input type="range" min="0" max="1" step="0.02" value="0.3" id="amb-vol" oninput="setAmbientVolume(this.value)">
             </div>
             </div><!-- /group-body ambient -->
@@ -882,7 +840,6 @@
                 <div class="row" style="margin-top:10px;"><label>Flip Widgets</label><div id="sw-mirrored" class="ios-switch" onclick="toggle('mirrored')"></div></div>
                 <div class="row" style="margin-top:10px;"><label>Widget Background Pill</label><div id="sw-showPills" class="ios-switch" onclick="toggle('showPills')"></div></div>
                 <div class="row" style="margin-top:10px;"><label>Lock Widget Positions</label><div id="sw-posLocked" class="ios-switch" onclick="toggleLock()"></div></div>
-                <div class="row" style="margin-top:10px;"><label>Weather Tint</label><div id="sw-weatherTint" class="ios-switch" onclick="toggle('weatherTint')"></div></div>
             </div>
         </div>
 
@@ -892,6 +849,52 @@
             <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Visibility</label>
                 <div style="display:flex;align-items:center;"><span id="st-date" class="status-tag">SHOWN</span><div id="sw-showDate" class="ios-switch active" onclick="toggle('showDate')"></div></div>
             </div>
+        </div>
+
+        <!-- Clock Style + Settings -->
+        <div class="control-group">
+            <div class="group-header" onclick="toggleGroup(this)">
+                <div class="row" style="flex:1;margin-bottom:0;"><label>Clock Widget</label><span class="reset-link" onclick="resetWidget('clock');event.stopPropagation()">Reset Position</span></div>
+                <span class="group-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+            </div>
+            <div class="group-body">
+            <div class="style-grid" style="margin-top:12px;">
+                <div class="style-btn active" data-style="bold"   onclick="setClockStyle('bold')">
+                    <span class="s-icon">
+                        <svg width="28" height="20" viewBox="0 0 28 20" fill="currentColor">
+                            <text x="2" y="17" font-size="18" font-weight="900" font-family="-apple-system,sans-serif" letter-spacing="-1">12</text>
+                        </svg>
+                    </span>Bold
+                </div>
+                <div class="style-btn"        data-style="thin"   onclick="setClockStyle('thin')">
+                    <span class="s-icon">
+                        <svg width="28" height="20" viewBox="0 0 28 20" fill="currentColor">
+                            <text x="1" y="17" font-size="18" font-weight="100" font-family="'Outfit',sans-serif" letter-spacing="1">12</text>
+                        </svg>
+                    </span>Thin
+                </div>
+                <div class="style-btn"        data-style="retro"  onclick="setClockStyle('retro')">
+                    <span class="s-icon">
+                        <svg width="28" height="20" viewBox="0 0 28 20" fill="currentColor">
+                            <text x="1" y="17" font-size="15" font-family="'Share Tech Mono',monospace" letter-spacing="2">12</text>
+                        </svg>
+                    </span>Retro
+                </div>
+                <div class="style-btn"        data-style="analog" onclick="setClockStyle('analog')"><span class="s-icon">◷</span>Analog</div>
+            </div>
+            <div class="row" style="margin-top:14px; padding-top:12px; border-top:1px solid rgba(255,255,255,0.06);">
+                <label style="font-size:0.5rem;">Show Seconds</label>
+                <div id="sw-showSeconds" class="ios-switch" onclick="toggle('showSeconds')"></div>
+            </div>
+            <div class="row" style="margin-top:10px;">
+                <label style="font-size:0.5rem;">24 Hour Time</label>
+                <div id="sw-is24h" class="ios-switch" onclick="toggle('is24h')"></div>
+            </div>
+            <div class="row" style="margin-top:10px;">
+                <label style="font-size:0.5rem;">Visibility</label>
+                <div style="display:flex;align-items:center;"><span id="st-clock" class="status-tag">SHOWN</span><div id="sw-showClock" class="ios-switch active" onclick="toggle('showClock')"></div></div>
+            </div>
+            </div><!-- /group-body clock -->
         </div>
 
         <!-- Battery Widget -->
@@ -977,7 +980,6 @@
                 <div id="ticker-tags" class="ticker-tags"></div>
                 <div style="position:relative;margin-top:10px;">
                     <input type="text" id="ticker-input" placeholder="Search by name or symbol..." style="margin-top:0;width:100%;" oninput="searchTickers(this.value)" onkeydown="tickerInputKey(event)" autocomplete="off">
-                    <div id="ticker-results"></div>
                 </div>
             </div>
             </div>
@@ -1001,6 +1003,7 @@
             <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importSettings(this)">
         </div>
 
+        <button onclick="toggleNav()" style="width:100%;margin-bottom:8px;padding:13px;background:#fff;color:#000;border:none;border-radius:12px;font-size:0.75rem;font-weight:900;letter-spacing:1px;cursor:pointer;transition:all 0.2s ease;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='#fff'">✓ SAVE &amp; CLOSE</button>
         <button onclick="openModal()" class="factory-reset-btn">FACTORY RESET</button>
     </div>
 </div>
@@ -1285,9 +1288,9 @@ function extractAccentFromArt(imgUrl) {
                 bgl.style.backgroundImage = `url(${imgUrl})`;
                 document.body.style.backgroundColor = '#000';
             }
-        } catch (err) { restoreUserAccent(); }
+        } catch (err) { if (!state.artAsBg) { /* CORS block — leave accent as-is */ } else { restoreUserAccent(); } }
     };
-    img.onerror = () => restoreUserAccent();
+    img.onerror = () => { if (!state.artAsBg) { /* silent fail */ } else { restoreUserAccent(); } };
     img.src = imgUrl;
 }
 
@@ -1534,7 +1537,7 @@ async function updateBattery() {
                 else if (level === 100) fillColor = '#34C759';
                 else fillColor = state.accent;
             }
-            let svg = `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" style="filter:drop-shadow(0 0 2px rgba(0,0,0,0.5))">`;
+            let svg = `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" style="filter:drop-shadow(0 0 2px rgba(0,0,0,0.5))" color="${fillColor}">`;
             svg += batIcons.frame;
             svg += `<rect x="3.5" y="8.5" width="${fillWidth}" height="7" rx="1.5" fill="${fillColor}"/>`;
             if (isCharging) svg += batIcons.bolt;
@@ -1572,7 +1575,8 @@ async function fetchStocks() {
         const target = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`;
         for (const makeUrl of PROXIES) {
             try {
-                const res = await fetch(makeUrl(target), { signal: AbortSignal.timeout(6000) });
+                const ctrl2 = new AbortController(); setTimeout(() => ctrl2.abort(), 6000);
+                const res = await fetch(makeUrl(target), { signal: ctrl2.signal });
                 if (!res.ok) continue;
                 const json = await res.json();
                 const meta = json?.chart?.result?.[0]?.meta;
@@ -1652,18 +1656,119 @@ function renderTickerTags() {
 }
 
 // ─────────────────────────────────────────────────
-// TICKER AUTOCOMPLETE — instant local database, zero latency
 // ─────────────────────────────────────────────────
-// ── LIVE TICKER SEARCH via Yahoo Finance ──
+// ─────────────────────────────────────────────────
+// ─────────────────────────────────────────────────
+// ─────────────────────────────────────────────────
+// TICKER AUTOCOMPLETE
+// SEC EDGAR (~10k US) loaded on first use + cached.
+// 1500 international tickers bundled as fallback.
+// ─────────────────────────────────────────────────
+
+// ── INTERNATIONAL DATABASE (1500 tickers) ──
+const INTL_DB = [
+// UK / LSE
+['HSBA.L','HSBC Holdings'],['BP.L','BP'],['SHEL.L','Shell'],['AZN.L','AstraZeneca'],['ULVR.L','Unilever'],['GSK.L','GSK'],['RIO.L','Rio Tinto'],['BHP.L','BHP Group'],['AAL.L','Anglo American'],['GLEN.L','Glencore'],['VOD.L','Vodafone'],['BT-A.L','BT Group'],['BARC.L','Barclays'],['LLOY.L','Lloyds Banking Group'],['NWG.L','NatWest Group'],['STAN.L','Standard Chartered'],['LGEN.L','Legal & General'],['AV.L','Aviva'],['PRU.L','Prudential'],['ADM.L','Admiral Group'],['BATS.L','British American Tobacco'],['IMB.L','Imperial Brands'],['DGE.L','Diageo'],['RKT.L','Reckitt Benckiser'],['TSCO.L','Tesco'],['SBRY.L','Sainsbury'],['MKS.L','Marks & Spencer'],['NEXT.L','Next'],['JD.L','JD Sports Fashion'],['IHG.L','InterContinental Hotels'],['CPG.L','Compass Group'],['SSE.L','SSE'],['NG.L','National Grid'],['CNA.L','Centrica'],['UU.L','United Utilities'],['SVT.L','Severn Trent'],['EXPN.L','Experian'],['RELX.L','RELX'],['WPP.L','WPP'],['BA.L','BAE Systems'],['RR.L','Rolls-Royce'],['MNDI.L','Mondi'],['CRDA.L','Croda International'],['ABF.L','Associated British Foods'],['BDEV.L','Barratt Developments'],['PSN.L','Persimmon'],['TW.L','Taylor Wimpey'],['RMV.L','Rightmove'],['OCDO.L','Ocado Group'],['SPX.L','Spirax-Sarco Engineering'],['IMI.L','IMI'],['SMDS.L','Smith DS'],['SKG.L','Smurfit Kappa'],['LMI.L','Lonmin'],['FRES.L','Fresnillo'],['HEI.L','Heidelberg Materials'],['AUTO.L','Auto Trader Group'],['RTO.L','Rentokil Initial'],['MEG.L','Meggitt'],['QQ.L','QinetiQ'],['WEIR.L','Weir Group'],['JMAT.L','Johnson Matthey'],['EZJ.L','easyJet'],['IAG.L','International Airlines Group'],['WIZZ.L','Wizz Air Holdings'],['TUI.L','TUI AG'],['TALKT.L','TalkTalk'],['DCC.L','DCC'],['HLMA.L','Halma'],['SGRO.L','Segro'],['LAND.L','Land Securities'],['BLND.L','British Land'],['DPLM.L','Diploma'],['FCIT.L','F&C Investment Trust'],['BNZL.L','Bunzl'],['WTB.L','Whitbread'],['PNN.L','Pennon Group'],['ITRK.L','Intertek Group'],
+// CANADA / TSX
+['RY.TO','Royal Bank of Canada'],['TD.TO','Toronto-Dominion Bank'],['BNS.TO','Bank of Nova Scotia'],['BMO.TO','Bank of Montreal'],['CM.TO','CIBC'],['MFC.TO','Manulife Financial'],['SLF.TO','Sun Life Financial'],['GWO.TO','Great-West Lifeco'],['FFH.TO','Fairfax Financial Holdings'],['POW.TO','Power Corporation of Canada'],['ENB.TO','Enbridge'],['TRP.TO','TC Energy'],['CNQ.TO','Canadian Natural Resources'],['SU.TO','Suncor Energy'],['CVE.TO','Cenovus Energy'],['IMO.TO','Imperial Oil'],['MEG.TO','MEG Energy'],['TOU.TO','Tourmaline Oil'],['ARX.TO','ARC Resources'],['WCP.TO','Whitecap Resources'],['BTE.TO','Baytex Energy'],['CPG.TO','Crescent Point Energy'],['ERF.TO','Enerplus'],['PEY.TO','Peyto Exploration'],['CNR.TO','Canadian National Railway'],['CP.TO','Canadian Pacific Kansas City'],['WSP.TO','WSP Global'],['STN.TO','Stantec'],['CAE.TO','CAE'],['MDA.TO','MDA Space'],['SJ.TO','Stella-Jones'],['WFG.TO','West Fraser Timber'],['ABX.TO','Barrick Gold'],['AEM.TO','Agnico Eagle'],['K.TO','Kinross Gold'],['OR.TO','Osisko Gold Royalties'],['FNV.TO','Franco-Nevada'],['WPM.TO','Wheaton Precious Metals'],['SSL.TO','Sandstorm Gold'],['MAG.TO','MAG Silver'],['AG.TO','First Majestic Silver'],['PAAS.TO','Pan American Silver'],['CS.TO','Capstone Copper'],['HBM.TO','Hudbay Minerals'],['FM.TO','First Quantum Minerals'],['LUN.TO','Lundin Mining'],['IVN.TO','Ivanhoe Mines'],['ATD.TO','Alimentation Couche-Tard'],['DOL.TO','Dollarama'],['MRU.TO','Metro'],['L.TO','Loblaw Companies'],['SAP.TO','Saputo'],['MG.TO','Magna International'],['SHOP.TO','Shopify'],['BB.TO','BlackBerry'],['OTEX.TO','OpenText'],['CSU.TO','Constellation Software'],['KXS.TO','Kinaxis'],['LSPD.TO','Lightspeed Commerce'],['BCE.TO','BCE'],['T.TO','Telus'],['RCI-B.TO','Rogers Communications'],['BAM.TO','Brookfield Asset Management'],['BN.TO','Brookfield Corporation'],['BIP-UN.TO','Brookfield Infrastructure Partners'],['BEP-UN.TO','Brookfield Renewable Partners'],['H.TO','Hydro One'],['ACO-X.TO','ATCO'],['TIH.TO','Toromont Industries'],['DSG.TO','Descartes Systems'],['CGO.TO','Cogeco'],['QBR-B.TO','Quebecor'],['AIF.TO','Altus Group'],['NTR.TO','Nutrien'],['AGT.TO','AGT Food and Ingredients'],['GFL.TO','GFL Environmental'],['WM.TO','Waste Connections'],
+// AUSTRALIA / ASX
+['CBA.AX','Commonwealth Bank of Australia'],['NAB.AX','National Australia Bank'],['WBC.AX','Westpac Banking'],['ANZ.AX','ANZ Group Holdings'],['MQG.AX','Macquarie Group'],['SUN.AX','Suncorp Group'],['QBE.AX','QBE Insurance'],['IAG.AX','Insurance Australia Group'],['BHP.AX','BHP Group'],['RIO.AX','Rio Tinto'],['FMG.AX','Fortescue Metals Group'],['NCM.AX','Newcrest Mining'],['NST.AX','Northern Star Resources'],['EVN.AX','Evolution Mining'],['WOW.AX','Woolworths Group'],['COL.AX','Coles Group'],['WES.AX','Wesfarmers'],['JBH.AX','JB Hi-Fi'],['HVN.AX','Harvey Norman'],['DMP.AX','Dominos Pizza Enterprises'],['RMD.AX','ResMed'],['CSL.AX','CSL'],['COH.AX','Cochlear'],['SHL.AX','Sonic Healthcare'],['RHC.AX','Ramsay Health Care'],['AGL.AX','AGL Energy'],['ORG.AX','Origin Energy'],['WDS.AX','Woodside Energy'],['STO.AX','Santos'],['BPT.AX','Beach Energy'],['AWC.AX','Alumina'],['IGO.AX','IGO'],['LYC.AX','Lynas Rare Earths'],['MIN.AX','Mineral Resources'],['PLS.AX','Pilbara Minerals'],['TCL.AX','Transurban Group'],['QAN.AX','Qantas Airways'],['AMC.AX','Amcor'],['ORI.AX','Orica'],['DXS.AX','Dexus'],['GMG.AX','Goodman Group'],['SCG.AX','Scentre Group'],['GPT.AX','GPT Group'],['MGR.AX','Mirvac Group'],['XRO.AX','Xero'],['WTC.AX','WiseTech Global'],['SEK.AX','Seek'],['REA.AX','REA Group'],['CAR.AX','CAR Group'],['NXT.AX','NextDC'],['ALU.AX','Altium'],['TNE.AX','TechnologyOne'],['MP1.AX','Megaport'],['CRN.AX','Coronado Global Resources'],['WHC.AX','Whitehaven Coal'],['ALX.AX','Atlas Arteria'],['AKE.AX','Allkem'],['LTR.AX','Liontown Resources'],['REH.AX','Reece'],['SKI.AX','Spark Infrastructure'],['ASX.AX','ASX'],['MTS.AX','Metcash'],['SUL.AX','Super Retail Group'],['TWE.AX','Treasury Wine Estates'],['CCL.AX','Coca-Cola Europacific Partners'],['HLS.AX','Healius'],['APT.AX','Afterpay'],['Z1P.AX','Zip Co'],
+// GERMANY / XETRA
+['SAP.DE','SAP'],['SIE.DE','Siemens'],['DTE.DE','Deutsche Telekom'],['BAYN.DE','Bayer'],['BASF.DE','BASF'],['BMW.DE','BMW'],['MBG.DE','Mercedes-Benz Group'],['VOW3.DE','Volkswagen'],['P911.DE','Porsche AG'],['CON.DE','Continental'],['ADS.DE','Adidas'],['ALV.DE','Allianz'],['MUV2.DE','Munich Re'],['HNR1.DE','Hannover Re'],['DBK.DE','Deutsche Bank'],['CBK.DE','Commerzbank'],['DPW.DE','Deutsche Post'],['FRE.DE','Fresenius'],['FME.DE','Fresenius Medical Care'],['BEI.DE','Beiersdorf'],['HEN3.DE','Henkel'],['ENR.DE','Siemens Energy'],['EOAN.DE','E.ON'],['RWE.DE','RWE'],['IFX.DE','Infineon Technologies'],['AIXA.DE','Aixtron'],['SDF.DE','K+S'],['SY1.DE','Symrise'],['LHA.DE','Lufthansa'],['MTX.DE','MTU Aero Engines'],['BOSS.DE','Hugo Boss'],['PUM.DE','Puma'],['ZAL.DE','Zalando'],['DHER.DE','Delivery Hero'],['AFX.DE','Carl Zeiss Meditec'],['EVT.DE','Evotec'],['MRK.DE','Merck KGaA'],['1COV.DE','Covestro'],['TKA.DE','ThyssenKrupp'],['KION.DE','KION Group'],['VNA.DE','Vonovia'],['LEG.DE','LEG Immobilien'],['HOT.DE','Hochtief'],['PAH3.DE','Porsche Automobil Holding'],
+// FRANCE / EURONEXT
+['MC.PA','LVMH'],['TTE.PA','TotalEnergies'],['SAN.PA','Sanofi'],['OR.PA','LOreal'],['AIR.PA','Airbus'],['BNP.PA','BNP Paribas'],['ACA.PA','Credit Agricole'],['GLE.PA','Societe Generale'],['SGO.PA','Saint-Gobain'],['SU.PA','Schneider Electric'],['RMS.PA','Hermes International'],['KER.PA','Kering'],['RNO.PA','Renault'],['STLA.PA','Stellantis'],['VIV.PA','Vivendi'],['EN.PA','Bouygues'],['DSY.PA','Dassault Systemes'],['CAP.PA','Capgemini'],['ATO.PA','Atos'],['LR.PA','Legrand'],['PUB.PA','Publicis Groupe'],['AI.PA','Air Liquide'],['VIE.PA','Veolia Environnement'],['DG.PA','Vinci'],['URW.PA','Unibail-Rodamco-Westfield'],['ERF.PA','Eurofins Scientific'],['EL.PA','EssilorLuxottica'],['AF.PA','Air France-KLM'],['RI.PA','Pernod Ricard'],['BN.PA','Danone'],['ML.PA','Michelin'],['ENGI.PA','Engie'],['SEB.PA','SEB'],['RCO.PA','Remy Cointreau'],['TCFP.PA','Total Capital'],['SW.PA','Sodexo'],['OVH.PA','OVHcloud'],['WLN.PA','Worldline'],['FP.PA','TotalEnergies ADR'],
+// NETHERLANDS
+['ASML.AS','ASML Holding'],['HEIA.AS','Heineken'],['PHIA.AS','Philips'],['NN.AS','NN Group'],['RAND.AS','Randstad'],['WKL.AS','Wolters Kluwer'],['UNA.AS','Unilever NV'],['AD.AS','Ahold Delhaize'],['IMCD.AS','IMCD'],['BESI.AS','BE Semiconductor Industries'],['ASM.AS','ASM International'],['AGN.AS','Aegon'],['MT.AS','ArcelorMittal'],['TKWY.AS','Just Eat Takeaway'],['AMG.AS','AMG Advanced Metallurgy'],['AKZA.AS','Akzo Nobel'],['DSM.AS','DSM-Firmenich'],['ABN.AS','ABN AMRO Bank'],['ING.AS','ING Groep'],['BFIT.AS','Basic-Fit'],['VPK.AS','Koninklijke Vopak'],['SBM.AS','SBM Offshore'],
+// SWITZERLAND
+['NESN.SW','Nestle'],['NOVN.SW','Novartis'],['ROG.SW','Roche Holding'],['ABBN.SW','ABB'],['ZURN.SW','Zurich Insurance Group'],['UBSG.SW','UBS Group'],['SCMN.SW','Swisscom'],['SREN.SW','Swiss Re'],['LONN.SW','Lonza Group'],['GIVN.SW','Givaudan'],['SIKA.SW','Sika'],['HOLN.SW','Holcim'],['GEBN.SW','Geberit'],['CFR.SW','Richemont'],['BALN.SW','Baloise Holding'],['PGHN.SW','Partners Group Holding'],['SOON.SW','Sonova Holding'],['STMN.SW','Straumann Holding'],['TEMN.SW','Temenos'],['VAT.SW','VAT Group'],['EO.SW','EMS-Chemie Holding'],['DKSH.SW','DKSH Holding'],['LNN.SW','Landis+Gyr Group'],['LISN.SW','Lindt & Spruengli'],['OC.SW','OC Oerlikon'],['SQN.SW','Swissquote'],
+// SPAIN
+['ITX.MC','Inditex'],['SAN.MC','Banco Santander'],['BBVA.MC','BBVA'],['TEF.MC','Telefonica'],['IBE.MC','Iberdrola'],['REP.MC','Repsol'],['ACS.MC','ACS Group'],['FER.MC','Ferrovial'],['ANA.MC','Acciona'],['AENA.MC','Aena'],['AMS.MC','Amadeus IT Group'],['MAP.MC','Mapfre'],['GRF.MC','Grifols'],['ENG.MC','Enagas'],['REE.MC','Red Electrica'],['CIE.MC','CIE Automotive'],['VIS.MC','Viscofan'],
+// ITALY
+['ENI.MI','Eni'],['ENEL.MI','Enel'],['UCG.MI','UniCredit'],['ISP.MI','Intesa Sanpaolo'],['G.MI','Generali'],['MB.MI','Mediobanca'],['TRN.MI','Terna'],['RACE.MI','Ferrari'],['STM.MI','STMicroelectronics'],['TEN.MI','Tenaris'],['LDO.MI','Leonardo'],['NEXI.MI','Nexi'],['MONC.MI','Moncler'],['PIRC.MI','Pirelli'],['REC.MI','Recordati'],['AMP.MI','Amplifon'],['BAMI.MI','Banco BPM'],['ATL.MI','Atlantia'],['A2A.MI','A2A'],['TOD.MI','TODS'],['CNHI.MI','CNH Industrial'],['SRG.MI','Snam'],
+// JAPAN
+['7203.T','Toyota Motor'],['6758.T','Sony Group'],['9984.T','SoftBank Group'],['6861.T','Keyence'],['8306.T','Mitsubishi UFJ Financial'],['7974.T','Nintendo'],['4519.T','Chugai Pharmaceutical'],['6098.T','Recruit Holdings'],['9432.T','NTT'],['9433.T','KDDI'],['9434.T','SoftBank Corp'],['8316.T','Sumitomo Mitsui Financial'],['8411.T','Mizuho Financial'],['6501.T','Hitachi'],['6902.T','Denso'],['7267.T','Honda Motor'],['7201.T','Nissan Motor'],['7269.T','Suzuki Motor'],['7270.T','Subaru'],['6594.T','Nidec'],['6954.T','Fanuc'],['6367.T','Daikin Industries'],['6301.T','Komatsu'],['5108.T','Bridgestone'],['5401.T','Nippon Steel'],['6752.T','Panasonic'],['6702.T','Fujitsu'],['6703.T','NEC'],['4543.T','Terumo'],['4502.T','Takeda Pharmaceutical'],['4568.T','Daiichi Sankyo'],['4503.T','Astellas Pharma'],['4507.T','Shionogi'],['8001.T','Itochu'],['8031.T','Mitsui & Co'],['8053.T','Sumitomo'],['8058.T','Mitsubishi'],['9022.T','Central Japan Railway'],['9020.T','East Japan Railway'],['9101.T','Nippon Yusen'],['9104.T','Mitsui OSK Lines'],['3382.T','Seven & I Holdings'],['2914.T','Japan Tobacco'],['4452.T','Kao'],['4901.T','Fujifilm Holdings'],['4063.T','Shin-Etsu Chemical'],['3407.T','Asahi Kasei'],['4188.T','Mitsubishi Chemical'],['4183.T','Mitsui Chemicals'],['8801.T','Mitsui Fudosan'],['8802.T','Mitsubishi Estate'],['4755.T','Rakuten Group'],['3659.T','Nexon'],['9766.T','Konami Holdings'],['9613.T','NTT Data'],['4307.T','Nomura Research Institute'],['6645.T','Omron'],['7751.T','Canon'],['7741.T','Hoya'],['6971.T','Kyocera'],['6503.T','Mitsubishi Electric'],['5802.T','Sumitomo Electric Industries'],['4661.T','Oriental Land'],['9602.T','Toho'],['8035.T','Tokyo Electron'],['6857.T','Advantest'],['4543.T','Terumo'],['7733.T','Olympus'],['2802.T','Ajinomoto'],['2503.T','Kirin Holdings'],['2502.T','Asahi Group Holdings'],['2587.T','Suntory Beverage & Food'],['3086.T','J.Front Retailing'],['9983.T','Fast Retailing'],['8267.T','Aeon'],
+// HONG KONG
+['0700.HK','Tencent Holdings'],['9988.HK','Alibaba Group'],['0005.HK','HSBC Holdings HK'],['1299.HK','AIA Group'],['0941.HK','China Mobile'],['2318.HK','Ping An Insurance'],['0939.HK','China Construction Bank'],['1398.HK','ICBC'],['0388.HK','Hong Kong Exchanges'],['0016.HK','Sun Hung Kai Properties'],['0002.HK','CLP Holdings'],['0003.HK','Hong Kong and China Gas'],['0012.HK','Henderson Land Development'],['0017.HK','New World Development'],['0175.HK','Geely Automobile'],['0386.HK','China Petroleum & Chemical'],['0669.HK','Techtronic Industries'],['0762.HK','China Unicom'],['0823.HK','Link REIT'],['0857.HK','PetroChina'],['0883.HK','CNOOC'],['0960.HK','Longfor Group'],['1038.HK','CK Infrastructure Holdings'],['1088.HK','China Shenhua Energy'],['1109.HK','China Resources Land'],['1113.HK','CK Asset Holdings'],['1177.HK','Sino Biopharmaceutical'],['1193.HK','China Resources Gas'],['1211.HK','BYD Company'],['1288.HK','Agricultural Bank of China'],['1810.HK','Xiaomi Corporation'],['2007.HK','Country Garden Holdings'],['2020.HK','ANTA Sports Products'],['2269.HK','Wuxi Biologics'],['2313.HK','Shenzhou International Group'],['2331.HK','Li Ning'],['2382.HK','Sunny Optical Technology'],['2388.HK','BOC Hong Kong'],['3690.HK','Meituan'],['3968.HK','China Merchants Bank'],['6618.HK','JD Health International'],['6862.HK','Haidilao International'],['9618.HK','JD.com HK'],['9626.HK','Bilibili HK'],['9888.HK','Baidu HK'],['9961.HK','Trip.com Group HK'],['9999.HK','NetEase HK'],['9868.HK','Xpeng HK'],['1876.HK','Budweiser APAC'],['6690.HK','Haier Smart Home HK'],
+// INDIA / NSE
+['RELIANCE.NS','Reliance Industries'],['TCS.NS','Tata Consultancy Services'],['HDFCBANK.NS','HDFC Bank'],['INFOSYS.NS','Infosys'],['ICICIBANK.NS','ICICI Bank'],['HINDUNILVR.NS','Hindustan Unilever'],['ITC.NS','ITC'],['SBIN.NS','State Bank of India'],['BHARTIARTL.NS','Bharti Airtel'],['KOTAKBANK.NS','Kotak Mahindra Bank'],['HCLTECH.NS','HCL Technologies'],['LT.NS','Larsen & Toubro'],['AXISBANK.NS','Axis Bank'],['ASIANPAINT.NS','Asian Paints'],['WIPRO.NS','Wipro'],['MARUTI.NS','Maruti Suzuki India'],['ULTRACEMCO.NS','UltraTech Cement'],['BAJFINANCE.NS','Bajaj Finance'],['BAJAJFINSV.NS','Bajaj Finserv'],['NESTLEIND.NS','Nestle India'],['TECHM.NS','Tech Mahindra'],['TITAN.NS','Titan Company'],['SUNPHARMA.NS','Sun Pharmaceutical'],['DIVISLAB.NS','Divis Laboratories'],['CIPLA.NS','Cipla'],['DRREDDY.NS','Dr Reddys Laboratories'],['ADANIPORTS.NS','Adani Ports & SEZ'],['ADANIENT.NS','Adani Enterprises'],['ADANIGREEN.NS','Adani Green Energy'],['POWERGRID.NS','Power Grid Corporation'],['NTPC.NS','NTPC'],['ONGC.NS','Oil & Natural Gas Corporation'],['COALINDIA.NS','Coal India'],['JSWSTEEL.NS','JSW Steel'],['TATASTEEL.NS','Tata Steel'],['HINDALCO.NS','Hindalco Industries'],['VEDL.NS','Vedanta'],['GRASIM.NS','Grasim Industries'],['SHREECEM.NS','Shree Cement'],['AMBUJACEM.NS','Ambuja Cements'],['INDUSINDBK.NS','IndusInd Bank'],['BANDHANBNK.NS','Bandhan Bank'],['FEDERALBNK.NS','Federal Bank'],['NAUKRI.NS','Info Edge India'],['ZOMATO.NS','Zomato'],['PAYTM.NS','Paytm'],['DMART.NS','Avenue Supermarts'],['TATACONSUM.NS','Tata Consumer Products'],['BRITANNIA.NS','Britannia Industries'],['DABUR.NS','Dabur India'],['MARICO.NS','Marico'],['COLPAL.NS','Colgate-Palmolive India'],['PIDILITIND.NS','Pidilite Industries'],['HAVELLS.NS','Havells India'],['VOLTAS.NS','Voltas'],['BHARATFORG.NS','Bharat Forge'],['TATAPOWER.NS','Tata Power'],['TATAMOTORS.NS','Tata Motors'],['HEROMOTOCO.NS','Hero MotoCorp'],['BAJAJ-AUTO.NS','Bajaj Auto'],['EICHERMOT.NS','Eicher Motors'],['TVSMOTORS.NS','TVS Motor Company'],['APOLLOHOSP.NS','Apollo Hospitals Enterprise'],['MPHASIS.NS','Mphasis'],['LTTS.NS','L&T Technology Services'],['COFORGE.NS','Coforge'],['PERSISTENT.NS','Persistent Systems'],['IRCTC.NS','Indian Railway Catering'],['INDIGO.NS','InterGlobe Aviation'],
+// SOUTH KOREA
+['005930.KS','Samsung Electronics'],['000660.KS','SK Hynix'],['207940.KS','Samsung Biologics'],['005380.KS','Hyundai Motor'],['000270.KS','Kia'],['051910.KS','LG Chem'],['068270.KS','Celltrion'],['035420.KS','NAVER'],['035720.KS','Kakao'],['012330.KS','Hyundai Mobis'],['036570.KS','NCsoft'],['259960.KS','Krafton'],['352820.KS','HYBE'],['096770.KS','SK Innovation'],['017670.KS','SK Telecom'],['030200.KS','KT Corp'],['015760.KS','Korea Electric Power'],['055550.KS','Shinhan Financial Group'],['105560.KS','KB Financial Group'],['086790.KS','Hana Financial Group'],['316140.KS','Woori Financial Group'],['006400.KS','Samsung SDI'],['005490.KS','POSCO Holdings'],['047050.KS','Posco International'],['010130.KS','Korea Zinc'],['003490.KS','Korean Air Lines'],['020560.KS','Asiana Airlines'],['009540.KS','HD Korea Shipbuilding'],['010140.KS','Samsung Heavy Industries'],['032640.KS','LG Uplus'],['066570.KS','LG Electronics'],['003550.KS','LG Corp'],['034730.KS','SK Corp'],['028260.KS','Samsung C&T'],['041510.KS','SM Entertainment'],['035900.KS','JYP Entertainment'],['122870.KS','YG Entertainment'],
+// TAIWAN
+['2330.TW','Taiwan Semiconductor Manufacturing'],['2317.TW','Hon Hai Precision Foxconn'],['2454.TW','MediaTek'],['2308.TW','Delta Electronics'],['2303.TW','United Microelectronics'],['2382.TW','Quanta Computer'],['3711.TW','ASE Technology Holding'],['2357.TW','Asustek Computer'],['2353.TW','Acer'],['2881.TW','Fubon Financial Holding'],['2882.TW','Cathay Financial Holding'],['2886.TW','Mega Financial Holding'],['2891.TW','CTBC Financial Holding'],['1301.TW','Formosa Plastics'],['1303.TW','Nan Ya Plastics'],['2002.TW','China Steel'],['1101.TW','Taiwan Cement'],['2912.TW','President Chain Store'],['6505.TW','Formosa Petrochemical'],['3045.TW','Taiwan Mobile'],['2412.TW','Chunghwa Telecom'],['3008.TW','LARGAN Precision'],['2379.TW','Realtek Semiconductor'],['3034.TW','Novatek Microelectronics'],['2395.TW','Advantech'],['2376.TW','Gigabyte Technology'],['2377.TW','Micro-Star International'],['6669.TW','Wiwynn'],['2474.TW','Catcher Technology'],['4904.TW','Far EasTone Telecommunications'],
+// BRAZIL
+['PETR4.SA','Petrobras PN'],['PETR3.SA','Petrobras ON'],['VALE3.SA','Vale'],['ITUB4.SA','Itau Unibanco'],['BBDC4.SA','Bradesco PN'],['BBAS3.SA','Banco do Brasil'],['ABEV3.SA','Ambev'],['WEGE3.SA','WEG'],['RENT3.SA','Localiza'],['LREN3.SA','Lojas Renner'],['MGLU3.SA','Magazine Luiza'],['PRIO3.SA','PetroRio'],['CSAN3.SA','Cosan'],['JBSS3.SA','JBS'],['MRFG3.SA','Marfrig'],['BRFS3.SA','BRF'],['EMBR3.SA','Embraer'],['CIEL3.SA','Cielo'],['RAIL3.SA','Rumo'],['CCRO3.SA','CCR'],['TIMS3.SA','TIM'],['VIVT3.SA','Telefonica Brasil'],['CMIG4.SA','Cemig PN'],['ELET3.SA','Eletrobras ON'],['CPFE3.SA','CPFL Energia'],['EGIE3.SA','Engie Brasil'],['EQTL3.SA','Equatorial Energia'],['SBSP3.SA','Sabesp'],['SANB11.SA','Santander Brasil'],['RADL3.SA','Raia Drogasil'],['TOTS3.SA','Totvs'],['CASH3.SA','Meliuz'],['LWSA3.SA','Locaweb'],['IFCM3.SA','Infracommerce'],['MELI34.SA','MercadoLibre BDR'],
+// CHINA ADRs / US-listed Chinese stocks
+['BABA','Alibaba'],['JD','JD.com'],['PDD','Pinduoduo Temu'],['BIDU','Baidu'],['NIO','NIO'],['XPEV','XPeng'],['LI','Li Auto'],['NTES','NetEase'],['TCOM','Trip.com'],['VIPS','Vipshop Holdings'],['BZUN','Baozun'],['TME','Tencent Music'],['HUYA','Huya'],['IQ','iQIYI'],['YY','JOYY'],['TAL','TAL Education'],['EDU','New Oriental Education'],['RLX','RLX Technology'],['TIGR','UP Fintech'],['FUTU','Futu Holdings'],['LKNCY','Luckin Coffee'],['BZ','Kanzhun'],['LAIX','LAIX'],['DOYU','DouYu International'],['GDS','GDS Holdings'],['VNET','VNET Group'],['CAN','Canaan'],['CIFS','China Industrial Waste Management'],
+// OTHER INTERNATIONAL ADRs / US-listed
+['UL','Unilever ADR'],['BP','BP ADR'],['SHEL','Shell ADR'],['GSK','GSK ADR'],['AZN','AstraZeneca ADR'],['NVO','Novo Nordisk ADR'],['ASML','ASML ADR'],['TSM','TSMC ADR'],['SAP','SAP ADR'],['TM','Toyota ADR'],['HMC','Honda ADR'],['SONY','Sony ADR'],['NSANY','Nissan ADR'],['RACE','Ferrari ADR'],['VALE','Vale ADR'],['PBR','Petrobras ADR'],['ITUB','Itau Unibanco ADR'],['BBD','Bradesco ADR'],['INFY','Infosys ADR'],['WIT','Wipro ADR'],['HDB','HDFC Bank ADR'],['IBN','ICICI Bank ADR'],['MELI','MercadoLibre'],['NU','Nu Holdings'],['GLOB','Globant'],['DESP','Despegar.com'],['ARCO','Arcos Dorados Holdings'],['BAP','Credicorp'],['IFS','Intercorp Financial Services'],['TGLS','Tecnoglass'],['EC','Ecopetrol'],['CIB','Bancolombia'],['RIO','Rio Tinto ADR'],['BHP','BHP Group ADR'],['UBS','UBS Group ADR'],['CS','Credit Suisse ADR'],['DB','Deutsche Bank ADR'],['ING','ING Groep ADR'],['SAN','Banco Santander ADR'],['BBVA','BBVA ADR'],['TEF','Telefonica ADR'],['ENI','Eni ADR'],['E','Eni ADR'],['ENEL','Enel ADR'],['SID','Companhia Siderurgica Nacional'],['GGB','Gerdau ADR'],['SUZ','Suzano ADR'],['TIMB','TIM Brasil ADR'],['ERJ','Embraer ADR'],['RYAAY','Ryanair ADR'],['AFLT','Aeroflot'],['AKRB','Akbank'],['EREGL','Eregli Demir ve Celik'],['SISE','Sisecam'],['TCELL','Turkcell ADR'],['TKC','Turkcell ADR'],['IGSB','IGS Group'],['WF','Woori Financial ADR'],['KB','KB Financial ADR'],['SHG','Shinhan Financial ADR'],['PKX','POSCO Holdings ADR'],['KEP','Korea Electric Power ADR'],['SKM','SK Telecom ADR'],['KT','KT Corp ADR'],
+// SCANDANAVIA
+['ERIC-B.ST','Ericsson'],['VOLV-B.ST','Volvo'],['ATCO-A.ST','Atlas Copco A'],['ATCO-B.ST','Atlas Copco B'],['SBB-B.ST','Samhallsbyggnadsbolaget'],['SAND.ST','Sandvik'],['SEB-A.ST','SEB Bank A'],['SHB-A.ST','Svenska Handelsbanken A'],['SWED-A.ST','Swedbank A'],['INVE-B.ST','Investor AB B'],['ALFA.ST','Alfa Laval'],['ALIV-SDB.ST','Autoliv'],['ASSA-B.ST','Assa Abloy B'],['BOL.ST','Boliden'],['EVO.ST','Evolution Gaming'],['ESSITY-B.ST','Essity B'],['HM-B.ST','H&M B'],['HEXA-B.ST','Hexagon B'],['NIBE-B.ST','NIBE Industrier B'],['SECU-B.ST','Securitas B'],['SKF-B.ST','SKF B'],['SSAB-A.ST','SSAB A'],['TEL2-B.ST','Tele2 B'],['TELIA.ST','Telia Company'],['TREL-B.ST','Trelleborg B'],['NDA-SE.ST','Nordea Bank'],['DNORD.CO','DFDS'],['MAERSK-B.CO','AP Moller Maersk B'],['NOVO-B.CO','Novo Nordisk B'],['ORSTED.CO','Orsted'],['PNDORA.CO','Pandora'],['RBREW.CO','Royal Unibrew'],['TRYG.CO','Tryg'],['VWS.CO','Vestas Wind Systems'],['CARL-B.CO','Carlsberg B'],['DSV.CO','DSV'],['GN.CO','GN Store Nord'],['COLO-B.CO','Coloplast B'],['CHR.CO','Chr. Hansen Holding'],['DEMANT.CO','Demant'],['EQNR.OL','Equinor'],['DNB.OL','DNB Bank'],['TEL.OL','Telenor'],['MOWI.OL','Mowi'],['YAR.OL','Yara International'],['ORK.OL','Orkla'],['STB.OL','Storebrand'],['SALMF','SalMar'],['SAMPO.HE','Sampo'],['NESTE.HE','Neste'],['FORTUM.HE','Fortum'],['NOKIA.HE','Nokia'],['WRT1V.HE','Wartsila'],['STERV.HE','Stora Enso R'],['UPM.HE','UPM-Kymmene'],
+// OTHER EUROPE
+['NOVOB.CO','Novo Nordisk'],['CRH.L','CRH'],['SHIRE.L','Shire'],['STAN.L','Standard Chartered'],['SGRO.L','Segro'],['AHT.L','Ashtead Group'],['RTO.L','Rentokil Initial'],['SBRY.L','Sainsbury'],['KGF.L','Kingfisher'],['WPPDF','WPP'],['LSEG.L','London Stock Exchange Group'],['III.L','3i Group'],['ABDN.L','abrdn'],['SLA.L','Standard Life Aberdeen'],['CLLN.L','Carillion'],['GVC.L','Entain'],['EMG.L','Man Group'],['JUP.L','Jupiter Fund Management'],['SDR.L','Schroders'],['HSX.L','Hiscox'],['BVIC.L','Britvic'],['CCH.L','Coca-Cola HBC'],['NXT.L','Next'],['BKG.L','Berkeley Group'],['MCB.L','McBride'],['SN.L','Smith & Nephew'],['HLMA.L','Halma'],['DPLM.L','Diploma'],['EXPN.L','Experian'],['SMIN.L','Smiths Group'],['VSVS.L','Vesuvius'],['FLOW.L','Flow Traders'],['UCB.BR','UCB'],['ABI.BR','Anheuser-Busch InBev'],['COLR.BR','Colruyt'],['ACKB.BR','Ackermans & van Haaren'],['ARGX.BR','argenx'],['DEME.BR','DEME Group'],['GBLB.BR','Groupe Bruxelles Lambert'],['KBC.BR','KBC Group'],['SOF.BR','Sofina'],['WDP.BR','Warehouses De Pauw'],['CRH.IR','CRH Ireland'],['AIB.IR','AIB Group'],['BIRG.IR','Bank of Ireland'],['RYA.IR','Ryanair'],['C5G.IR','Cairn Homes'],['SGRE.MC','Siemens Gamesa'],['REE.MC','Red Electrica'],['EDP.LS','EDP Energias de Portugal'],['GALP.LS','Galp Energia'],['BCP.LS','Millennium BCP'],['JMT.LS','Jeronimo Martins'],['CTT.LS','CTT Correios de Portugal'],['MSFT.MX','Microsoft Mexico'],['PKN.WA','PKN Orlen'],['PZU.WA','PZU Group'],['KGH.WA','KGHM Polska Miedz'],['PEO.WA','Bank Pekao'],['DNP.WA','Dino Polska'],['LPP.WA','LPP'],['CDR.WA','CD Projekt'],['ALE.WA','Allegro.eu'],['ERSTE.VI','Erste Group Bank'],['OMV.VI','OMV'],['VOE.VI','Voestalpine'],['AMS.VI','AMS-Osram'],['TKA.VI','Telekom Austria'],
+// MIDDLE EAST & AFRICA
+['TADAWUL.SR','Saudi Aramco'],['2222.SR','Saudi Aramco'],['1180.SR','Al Rajhi Bank'],['1010.SR','Riyad Bank'],['1050.SR','Saudi British Bank'],['1140.SR','Al-Rajhi Bank'],['ALDAR.AH','Aldar Properties'],['FAB.AH','First Abu Dhabi Bank'],['EMAAR.AH','Emaar Properties'],['DIB.AH','Dubai Islamic Bank'],['ENBD.AH','Emirates NBD'],['DFM.AH','Dubai Financial Market'],['ADSMI.AH','Abu Dhabi Islamic Bank'],['ADX.AH','Abu Dhabi Exchange'],['ADIB.AH','Abu Dhabi Islamic Bank'],['QNBK.QA','Qatar National Bank'],['QIBK.QA','Qatar Islamic Bank'],['CBQK.QA','Commercial Bank Qatar'],['MARK.QA','Masraf Al Rayan'],['ORDS.QA','Ooredoo'],['IQCD.QA','Industries Qatar'],['STCFB','Saudi Telecom Company'],['SABIC.SR','SABIC'],['SABB.SR','Saudi British Bank'],['AHLI.SR','Ahli United Bank'],['RJHI.SR','Al Rajhi Banking'],['BSFR.SR','Banque Saudi Fransi'],['TAWUNIYA.SR','Tawuniya Insurance'],['BIL.SR','Batic Investments'],['MRSOOL.SR','Mrsool'],['NMC.L','NMC Health'],['EZZ.CA','Ezz Steel'],['COMI.CA','Commercial International Bank'],['EAST.CA','Eastern Company'],['SWDY.CA','El Sewedy Electric'],['HRHO.CA','Heliopolis Housing'],['EKHO.CA','Egyptian Kuwaiti Holding'],['ORWE.CA','Oriental Weavers Carpet'],['MNHD.CA','Madinet Nasr Housing'],['PHDC.CA','Palm Hills Developments'],['MNHD.CA','Madinet Nasr Housing'],['MTN.JO','MTN Group'],['SBK.JO','Standard Bank Group'],['FSR.JO','FirstRand'],['NPN.JO','Naspers'],['PRX.JO','Prosus'],['SOL.JO','Sasol'],['AGL.JO','Anglo American Platinum'],['AMS.JO','Anglo American Platinum'],['IMP.JO','Impala Platinum'],['SHP.JO','Shoprite Holdings'],['WHL.JO','Woolworths Holdings'],['CPI.JO','Capitec Bank Holdings'],['REM.JO','Remgro'],['MNP.JO','Mondi'],['CFR.JO','Compagnie Financiere Richemont'],['BTI.JO','British American Tobacco'],['VOD.JO','Vodacom Group'],['TBS.JO','Tiger Brands'],['AVI.JO','AVI'],['SPP.JO','Spar Group'],['PIK.JO','Pick n Pay Stores'],
+// SINGAPORE / SE ASIA
+['D05.SI','DBS Group Holdings'],['O39.SI','OCBC Bank'],['U11.SI','United Overseas Bank'],['Z74.SI','Singapore Telecommunications'],['C6L.SI','Singapore Airlines'],['BN4.SI','Keppel Corporation'],['S63.SI','ST Engineering'],['Y92.SI','Thai Beverage'],['U96.SI','Sembcorp Industries'],['A17U.SI','Ascendas REIT'],['C38U.SI','CapitaLand Integrated Commercial Trust'],['N2IU.SI','Mapletree Industrial Trust'],['ME8U.SI','Mapletree Logistics Trust'],['GRAB','Grab Holdings'],['SE','Sea Limited'],['MPACT.SI','Mapletree Pan Asia Commercial Trust'],['C07.SI','Jardine Cycle & Carriage'],['H78.SI','Hongkong Land Holdings'],['J36.SI','Jardine Matheson Holdings'],['FLXS','Flex'],['DKSH.SW','DKSH'],['PTT.BK','PTT'],['ADVANC.BK','Advanced Info Service'],['CPALL.BK','CP All'],['AOT.BK','Airports of Thailand'],['SCC.BK','Siam Cement Group'],['KBANK.BK','Kasikorn Bank'],['BBL.BK','Bangkok Bank'],['SCB.BK','Siam Commercial Bank'],['TOP.BK','Thai Oil'],['IRPC.BK','IRPC'],['GULF.BK','Gulf Energy Development'],['BGRIM.BK','B.Grimm Power'],['VGI.BK','VGI'],['CPWPF.BK','CP All'],['BH.BK','Bumrungrad Hospital'],['CENTEL.BK','Central Plaza Hotel'],['HANA.BK','Hana Microelectronics'],['DELTA.BK','Delta Electronics Thailand'],['BDMS.BK','Bangkok Dusit Medical Services'],['BLAMZ.BK','Bumrungrad Land'],['AMATA.BK','Amata Corporation'],['IVL.BK','Indorama Ventures'],['TU.BK','Thai Union Group'],['CPF.BK','Charoen Pokphand Foods'],
+// LATIN AMERICA (non-Brazil)
+['AMXL.MX','America Movil'],['FEMSAUBD.MX','Fomento Economico Mexicano'],['WALMEX.MX','Walmart de Mexico'],['GFNORTEO.MX','Grupo Financiero Banorte'],['GAPB.MX','Grupo Aeroportuario del Pacifico B'],['ASURB.MX','Grupo Aeroportuario del Sureste B'],['OMAB.MX','Grupo Aeroportuario del Centro Norte B'],['AC.MX','Arca Continental'],['GRUMAB.MX','Gruma B'],['BIMBOA.MX','Grupo Bimbo A'],['ALFAA.MX','Alfa A'],['CEMEXCPO.MX','Cemex CPO'],['GMEXICOB.MX','Grupo Mexico B'],['TLEVISACPO.MX','Grupo Televisa CPO'],['GCARSOA1.MX','Grupo Carso A1'],['KIMBERA.MX','Kimberly-Clark de Mexico A'],['PINFRA.MX','Promotora y Operadora de Infraestructura'],['BOLSAA.MX','Bolsa Mexicana de Valores A'],['ICAMKS.MX','ICA'],['LABB.MX','Genomma Lab Internacional B'],['KOFL.MX','Coca-Cola FEMSA'],['SORIANAB.MX','Organizacion Soriana B'],['LIVEPOLC-1.MX','El Puerto de Liverpool C1'],['SITESB-1.MX','SBA Communications'],['MEGACPO.MX','Megacable Holdings CPO'],['AXTELCPO.MX','Axtel CPO'],['LACOMER.MX','La Comer'],['CHDRAUIB.MX','Grupo Chedraui B'],['BACHOCOB.MX','Industrias Bachoco B'],
+];
+
+// ── US DATABASE (bundled fallback ~1200 tickers) ──
+const US_DB = [
+// S&P 500 CORE
+['AAPL','Apple'],['MSFT','Microsoft'],['NVDA','NVIDIA'],['AMZN','Amazon'],['GOOGL','Alphabet Class A'],['GOOG','Alphabet Class C'],['META','Meta Platforms'],['TSLA','Tesla'],['AVGO','Broadcom'],['BRK-B','Berkshire Hathaway B'],['BRK-A','Berkshire Hathaway A'],['LLY','Eli Lilly'],['JPM','JPMorgan Chase'],['V','Visa'],['UNH','UnitedHealth Group'],['XOM','ExxonMobil'],['MA','Mastercard'],['JNJ','Johnson & Johnson'],['PG','Procter & Gamble'],['HD','Home Depot'],['COST','Costco'],['MRK','Merck'],['ABBV','AbbVie'],['CVX','Chevron'],['KO','Coca-Cola'],['BAC','Bank of America'],['PEP','PepsiCo'],['NFLX','Netflix'],['TMO','Thermo Fisher Scientific'],['WMT','Walmart'],['CRM','Salesforce'],['ORCL','Oracle'],['ACN','Accenture'],['CSCO','Cisco'],['MCD','McDonalds'],['ABT','Abbott Laboratories'],['PM','Philip Morris'],['DHR','Danaher'],['GE','GE Aerospace'],['IBM','IBM'],['TXN','Texas Instruments'],['QCOM','Qualcomm'],['INTU','Intuit'],['NOW','ServiceNow'],['NEE','NextEra Energy'],['RTX','Raytheon Technologies'],['ISRG','Intuitive Surgical'],['SPGI','S&P Global'],['UNP','Union Pacific'],['CAT','Caterpillar'],['GS','Goldman Sachs'],['AMGN','Amgen'],['HON','Honeywell'],['LOW','Lowes'],['BA','Boeing'],['T','AT&T'],['AXP','American Express'],['BKNG','Booking Holdings'],['SBUX','Starbucks'],['DE','Deere & Company'],['ELV','Elevance Health'],['GILD','Gilead Sciences'],['MDT','Medtronic'],['ADI','Analog Devices'],['TJX','TJX Companies'],['AMAT','Applied Materials'],['VRTX','Vertex Pharmaceuticals'],['LMT','Lockheed Martin'],['SYK','Stryker'],['CB','Chubb'],['MU','Micron Technology'],['REGN','Regeneron Pharmaceuticals'],['ETN','Eaton'],['CI','Cigna'],['BLK','BlackRock'],['PANW','Palo Alto Networks'],['LRCX','Lam Research'],['ZTS','Zoetis'],['CME','CME Group'],['EOG','EOG Resources'],['KLAC','KLA Corporation'],['PH','Parker Hannifin'],['DUK','Duke Energy'],['AON','Aon'],['ICE','Intercontinental Exchange'],['SO','Southern Company'],['HCA','HCA Healthcare'],['WM','Waste Management'],['USB','U.S. Bancorp'],['GD','General Dynamics'],['NOC','Northrop Grumman'],['EMR','Emerson Electric'],['MSI','Motorola Solutions'],['CL','Colgate-Palmolive'],['COF','Capital One'],['MCK','McKesson'],['BMY','Bristol-Myers Squibb'],['SNPS','Synopsys'],['CDNS','Cadence Design Systems'],['APH','Amphenol'],['EW','Edwards Lifesciences'],['TDG','TransDigm Group'],['PNC','PNC Financial'],['CEG','Constellation Energy'],['MPC','Marathon Petroleum'],['PSX','Phillips 66'],['VLO','Valero Energy'],['CTAS','Cintas'],['NSC','Norfolk Southern'],['TEL','TE Connectivity'],['SPG','Simon Property Group'],['FDX','FedEx'],['ROP','Roper Technologies'],['AFL','Aflac'],['TFC','Truist Financial'],['NUE','Nucor'],['CARR','Carrier Global'],['OKE','ONEOK'],['AIG','AIG'],['FCX','Freeport-McMoRan'],['PAYX','Paychex'],['HLT','Hilton Worldwide'],['KMB','Kimberly-Clark'],['OTIS','Otis Worldwide'],['AME','AMETEK'],['SRE','Sempra Energy'],['PSA','Public Storage'],['STZ','Constellation Brands'],['A','Agilent Technologies'],['DXCM','Dexcom'],['WMB','Williams Companies'],['EXC','Exelon'],['IDXX','IDEXX Laboratories'],['ALL','Allstate'],['FAST','Fastenal'],['IR','Ingersoll Rand'],['GPC','Genuine Parts'],['KMI','Kinder Morgan'],['VRSK','Verisk Analytics'],['PCG','PG&E'],['DLR','Digital Realty'],['YUM','Yum! Brands'],['PRU','Prudential Financial'],['DD','DuPont'],['CTSH','Cognizant'],['PWR','Quanta Services'],['VICI','VICI Properties'],['IT','Gartner'],['HAL','Halliburton'],['SLB','SLB'],['BIIB','Biogen'],['ON','ON Semiconductor'],['HPQ','HP Inc'],['WEC','WEC Energy Group'],['ROK','Rockwell Automation'],['MTD','Mettler-Toledo'],['FICO','Fair Isaac'],['TROW','T. Rowe Price'],['IQV','IQVIA Holdings'],['PPG','PPG Industries'],['XYL','Xylem'],['EIX','Edison International'],['RMD','ResMed'],['AVB','AvalonBay Communities'],['O','Realty Income'],['AMP','Ameriprise Financial'],['GLW','Corning'],['EFX','Equifax'],['LH','Labcorp'],['FTV','Fortive'],['DOV','Dover'],['MTB','M&T Bank'],['HES','Hess'],['ODFL','Old Dominion Freight'],['AMT','American Tower'],['EQIX','Equinix'],['DVN','Devon Energy'],['FANG','Diamondback Energy'],['NDAQ','Nasdaq'],['CBOE','Cboe Global Markets'],
+// TECH
+['AMD','Advanced Micro Devices'],['INTC','Intel'],['ADBE','Adobe'],['CRWD','CrowdStrike'],['DDOG','Datadog'],['SNOW','Snowflake'],['MDB','MongoDB'],['ZS','Zscaler'],['NET','Cloudflare'],['OKTA','Okta'],['TWLO','Twilio'],['HUBS','HubSpot'],['TEAM','Atlassian'],['ZM','Zoom'],['DOCU','DocuSign'],['BILL','Bill.com'],['WDAY','Workday'],['VEEV','Veeva Systems'],['HPE','Hewlett Packard Enterprise'],['DELL','Dell Technologies'],['STX','Seagate Technology'],['WDC','Western Digital'],['NTAP','NetApp'],['PSTG','Pure Storage'],['FTNT','Fortinet'],['AKAM','Akamai'],['JNPR','Juniper Networks'],['ANSS','Ansys'],['PTC','PTC'],['SSNC','SS&C Technologies'],['MANH','Manhattan Associates'],['CSGP','CoStar Group'],['SAIC','SAIC'],['LDOS','Leidos'],['BAH','Booz Allen Hamilton'],['APP','Applovin'],['RBLX','Roblox'],['TTWO','Take-Two Interactive'],['EA','Electronic Arts'],['MTCH','Match Group'],['ZG','Zillow Group'],['LYFT','Lyft'],['UBER','Uber'],['DASH','DoorDash'],['PTON','Peloton'],['ZI','ZoomInfo'],['GTLB','GitLab'],['PLTR','Palantir'],['PATH','UiPath'],['AI','C3.ai'],['BBAI','BigBear.ai'],['SOUN','SoundHound AI'],['SMCI','Super Micro Computer'],['ARM','Arm Holdings'],['SHOP','Shopify'],['SQ','Block'],['PYPL','PayPal'],['AFRM','Affirm'],['SOFI','SoFi Technologies'],['UPST','Upstart'],['HOOD','Robinhood'],['COIN','Coinbase'],['MSTR','MicroStrategy'],['RIOT','Riot Platforms'],['MARA','Marathon Digital Holdings'],['CLSK','CleanSpark'],['HUT','Hut 8 Mining'],['CORZ','Core Scientific'],
+// SEMICONDUCTORS
+['MRVL','Marvell Technology'],['SWKS','Skyworks Solutions'],['QRVO','Qorvo'],['TER','Teradyne'],['ENTG','Entegris'],['MPWR','Monolithic Power Systems'],['CRUS','Cirrus Logic'],['MTSI','MACOM Technology'],['ALGM','Allegro MicroSystems'],['WOLF','Wolfspeed'],['GFS','GlobalFoundries'],['TSM','TSMC ADR'],['ASML','ASML ADR'],
+// HEALTHCARE & BIOTECH
+['PFE','Pfizer'],['MRNA','Moderna'],['BNTX','BioNTech'],['AZN','AstraZeneca ADR'],['NVO','Novo Nordisk ADR'],['CVS','CVS Health'],['HUM','Humana'],['CNC','Centene'],['ALNY','Alnylam Pharmaceuticals'],['RARE','Ultragenyx Pharmaceutical'],['SRPT','Sarepta Therapeutics'],['BMRN','BioMarin Pharmaceutical'],['INCY','Incyte'],['EXEL','Exelixis'],['HALO','Halozyme Therapeutics'],['IONS','Ionis Pharmaceuticals'],['ACAD','Acadia Pharmaceuticals'],['NVAX','Novavax'],['CRSP','CRISPR Therapeutics'],['BEAM','Beam Therapeutics'],['NTLA','Intellia Therapeutics'],['BLUE','bluebird bio'],['BSX','Boston Scientific'],['HOLX','Hologic'],['PODD','Insulet'],['ALGN','Align Technology'],['ZBRA','Zebra Technologies'],['BDX','Becton Dickinson'],['ZBH','Zimmer Biomet'],['INSP','Inspire Medical Systems'],['SWAV','Shockwave Medical'],['IRTC','iRhythm Technologies'],['NVCR','NovaCure'],['RGEN','Repligen'],['MASI','Masimo'],['HSIC','Henry Schein'],['XRAY','Dentsply Sirona'],
+// FINANCIALS
+['MS','Morgan Stanley'],['WFC','Wells Fargo'],['C','Citigroup'],['SCHW','Charles Schwab'],['BK','Bank of New York Mellon'],['STT','State Street'],['NTRS','Northern Trust'],['DFS','Discover Financial'],['SYF','Synchrony Financial'],['BX','Blackstone'],['KKR','KKR'],['APO','Apollo Global Management'],['CG','Carlyle Group'],['ARES','Ares Management'],['OWL','Blue Owl Capital'],['TPG','TPG'],['MET','MetLife'],['PRU','Prudential Financial'],['LNC','Lincoln National'],
+// CONSUMER
+['EBAY','eBay'],['ETSY','Etsy'],['W','Wayfair'],['CHWY','Chewy'],['CVNA','Carvana'],['CMG','Chipotle'],['DPZ','Dominos Pizza'],['WING','Wingstop'],['TXRH','Texas Roadhouse'],['NKE','Nike'],['LULU','Lululemon'],['ROST','Ross Stores'],['BURL','Burlington Stores'],['ANF','Abercrombie & Fitch'],['AEO','American Eagle Outfitters'],['URBN','Urban Outfitters'],['BBWI','Bath & Body Works'],['ULTA','Ulta Beauty'],['DRI','Darden Restaurants'],['TGT','Target'],['DLTR','Dollar Tree'],['DG','Dollar General'],['FIVE','Five Below'],['BBY','Best Buy'],['GME','GameStop'],['AMC','AMC Entertainment'],
+// ENERGY
+['COP','ConocoPhillips'],['OXY','Occidental Petroleum'],['MRO','Marathon Oil'],['APA','APA Corporation'],['BKR','Baker Hughes'],['ET','Energy Transfer'],['EPD','Enterprise Products Partners'],['LNG','Cheniere Energy'],['EQT','EQT'],['RRC','Range Resources'],['AR','Antero Resources'],['SWN','Southwestern Energy'],['BE','Bloom Energy'],['PLUG','Plug Power'],['ENPH','Enphase Energy'],['SEDG','SolarEdge Technologies'],['FSLR','First Solar'],['RUN','Sunrun'],['ARRY','Array Technologies'],
+// INDUSTRIALS & MATERIALS
+['MMM','3M'],['UPS','UPS'],['CSX','CSX'],['NSC','Norfolk Southern'],['LIN','Linde'],['APD','Air Products & Chemicals'],['SHW','Sherwin-Williams'],['ECL','Ecolab'],['DOW','Dow'],['LYB','LyondellBasell Industries'],['NEM','Newmont'],['GOLD','Barrick Gold ADR'],['FCX','Freeport-McMoRan'],['MLM','Martin Marietta Materials'],['VMC','Vulcan Materials'],['NUE','Nucor'],['STLD','Steel Dynamics'],['AA','Alcoa'],['ALB','Albemarle'],['MOS','Mosaic'],['CF','CF Industries'],['URI','United Rentals'],
+// COMMUNICATION & MEDIA
+['DIS','Walt Disney'],['CMCSA','Comcast'],['VZ','Verizon'],['TMUS','T-Mobile'],['CHTR','Charter Communications'],['WBD','Warner Bros Discovery'],['PARA','Paramount Global'],['NFLX','Netflix'],['SPOT','Spotify ADR'],['PINS','Pinterest'],['SNAP','Snap'],['RDDT','Reddit'],
+// REAL ESTATE
+['PLD','Prologis'],['AMT','American Tower'],['EQIX','Equinix'],['CCI','Crown Castle'],['O','Realty Income'],['SPG','Simon Property Group'],['VICI','VICI Properties'],['AVB','AvalonBay Communities'],['EQR','Equity Residential'],['WELL','Welltower'],['DLR','Digital Realty'],['PSA','Public Storage'],['EXR','Extra Space Storage'],
+// ETFs
+['SPY','S&P 500 ETF SPDR'],['VOO','S&P 500 ETF Vanguard'],['IVV','S&P 500 ETF iShares'],['QQQ','Nasdaq 100 ETF'],['DIA','Dow Jones ETF'],['IWM','Russell 2000 ETF'],['VTI','Vanguard Total Market ETF'],['VEA','Vanguard Intl Developed ETF'],['VWO','Vanguard Emerging Markets ETF'],['AGG','US Bond ETF'],['BND','Vanguard Bond ETF'],['TLT','20yr Treasury ETF'],['GLD','Gold ETF SPDR'],['IAU','Gold ETF iShares'],['SLV','Silver ETF'],['GDX','Gold Miners ETF'],['SOXX','Semiconductor ETF'],['SMH','Semiconductor ETF VanEck'],['ARKK','ARK Innovation ETF'],['TQQQ','ProShares UltraPro QQQ 3x'],['SQQQ','ProShares UltraShort QQQ 3x'],['SPXL','S&P 500 Bull 3x ETF'],['SPXS','S&P 500 Bear 3x ETF'],['SOXL','Semiconductor Bull 3x ETF'],['SOXS','Semiconductor Bear 3x ETF'],['JEPI','JPMorgan Equity Premium Income ETF'],['SCHD','Schwab US Dividend Equity ETF'],['VYM','Vanguard High Dividend Yield ETF'],['XLK','Tech Sector ETF'],['XLF','Finance Sector ETF'],['XLE','Energy Sector ETF'],['XLV','Health Sector ETF'],['XLI','Industrial Sector ETF'],['XLY','Consumer Disc Sector ETF'],['XLRE','Real Estate Sector ETF'],['LIT','Lithium Battery Tech ETF'],['ICLN','Clean Energy ETF'],['TAN','Solar ETF'],['JETS','Airlines ETF'],['BITO','Bitcoin Strategy ETF'],['GBTC','Grayscale Bitcoin Trust'],['IBIT','iShares Bitcoin Trust'],
+// CRYPTO
+['BTC-USD','Bitcoin'],['ETH-USD','Ethereum'],['BNB-USD','Binance Coin'],['SOL-USD','Solana'],['XRP-USD','XRP'],['ADA-USD','Cardano'],['AVAX-USD','Avalanche'],['DOGE-USD','Dogecoin'],['DOT-USD','Polkadot'],['LINK-USD','Chainlink'],['MATIC-USD','Polygon'],['LTC-USD','Litecoin'],['BCH-USD','Bitcoin Cash'],['UNI-USD','Uniswap'],['SHIB-USD','Shiba Inu'],['PEPE-USD','Pepe'],['WIF-USD','dogwifhat'],['BONK-USD','Bonk'],['TRX-USD','TRON'],['NEAR-USD','NEAR Protocol'],['APT-USD','Aptos'],['ARB-USD','Arbitrum'],['OP-USD','Optimism'],['SUI-USD','Sui'],['INJ-USD','Injective'],['FTM-USD','Fantom'],['ATOM-USD','Cosmos'],['ALGO-USD','Algorand'],['XLM-USD','Stellar'],['VET-USD','VeChain'],['ICP-USD','Internet Computer'],['HBAR-USD','Hedera'],['AAVE-USD','Aave'],['GRT-USD','The Graph'],['MKR-USD','Maker'],['SNX-USD','Synthetix'],['CRV-USD','Curve DAO'],['SAND-USD','The Sandbox'],['MANA-USD','Decentraland'],['AXS-USD','Axie Infinity'],
+];
+
+let _secDB = null;
+let _secLoading = false;
 let _tickerSearchTimer = null;
+
+async function _loadSecDB() {
+    if (_secDB || _secLoading) return;
+    _secLoading = true;
+    try {
+        const cached = localStorage.getItem('prism_sec_v1');
+        if (cached) { _secDB = JSON.parse(cached); _secLoading = false; return; }
+        const res  = await fetch('https://www.sec.gov/files/company_tickers.json');
+        const json = await res.json();
+        _secDB = Object.values(json).map(c => [c.ticker.toUpperCase(), c.title]);
+        localStorage.setItem('prism_sec_v1', JSON.stringify(_secDB));
+    } catch (_) { _secDB = []; }
+    _secLoading = false;
+}
+_loadSecDB();
 
 function positionTickerDropdown() {
     const input = document.getElementById('ticker-input');
     const box   = document.getElementById('ticker-results');
     if (!input || !box) return;
-    const rect = input.getBoundingClientRect();
+    const rect  = input.getBoundingClientRect();
+    if (rect.width === 0) return;
+    const maxLeft = window.innerWidth - rect.width - 8;
     box.style.top   = (rect.bottom + 6) + 'px';
-    box.style.left  = rect.left + 'px';
+    box.style.left  = Math.max(8, Math.min(rect.left, maxLeft)) + 'px';
     box.style.width = rect.width + 'px';
 }
 
@@ -1672,49 +1777,90 @@ function searchTickers(query) {
     query = query.trim();
     if (query.length < 1) { box.style.display = 'none'; return; }
     clearTimeout(_tickerSearchTimer);
-    _tickerSearchTimer = setTimeout(() => fetchTickerSearch(query), 220);
+    _tickerSearchTimer = setTimeout(() => _doTickerSearch(query), 150);
 }
 
-async function fetchTickerSearch(query) {
+function _doTickerSearch(query) {
     const box = document.getElementById('ticker-results');
+    const q   = query.toUpperCase();
+    const ql  = query.toLowerCase();
+
+    // Combine SEC US data + bundled international list
+    const combined = US_DB.concat(INTL_DB).concat(_secDB && _secDB.length ? _secDB : []);
+
+    const seen = new Set();
+    const results = [];
+    for (const [sym, name] of combined) {
+        if (seen.has(sym)) continue;
+        const symScore  = sym === q ? 100 : sym.startsWith(q) ? 80 : sym.includes(q) ? 50 : 0;
+        const nameScore = name.toLowerCase().startsWith(ql) ? 40 : name.toLowerCase().includes(ql) ? 20 : 0;
+        const score = symScore || nameScore;
+        if (score) { results.push({ sym, name, score }); seen.add(sym); }
+    }
+    results.sort((a, b) => b.score - a.score);
+
+    if (!results.length) { box.style.display = 'none'; return; }
+
     positionTickerDropdown();
-    box.innerHTML = '<div style="padding:10px 15px;font-size:0.75rem;opacity:0.4;">Searching…</div>';
-    box.style.display = 'block';
-
-    const PROXIES = [
-        u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
-        u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
-    ];
-    const target = `https://query1.finance.yahoo.com/v1/finance/search?q=${encodeURIComponent(query)}&lang=en-US&region=US&quotesCount=10&newsCount=0&enableFuzzyQuery=true`;
-
-    let results = [];
-    for (const makeUrl of PROXIES) {
-        try {
-            const res = await fetch(makeUrl(target), { signal: AbortSignal.timeout(5000) });
-            if (!res.ok) continue;
-            const json = await res.json();
-            results = (json.quotes || []).filter(q => q.symbol && q.quoteType !== 'OPTION');
-            break;
-        } catch (_) { continue; }
-    }
-
-    if (results.length === 0) {
-        box.innerHTML = '<div style="padding:10px 15px;font-size:0.75rem;opacity:0.4;">No results found</div>';
-        return;
-    }
-
     box.innerHTML = '';
-    results.slice(0, 10).forEach(q => {
-        const sym  = q.symbol;
-        const name = q.shortname || q.longname || sym;
-        const type = q.quoteType || '';
-        const div  = document.createElement('div');
-        div.className = 'ticker-item';
+    results.slice(0, 10).forEach(({ sym, name }) => {
+        const div = document.createElement('div');
+        div.className   = 'ticker-item';
         div.dataset.sym = sym;
-        div.innerHTML = `<span class="ticker-item-symbol">${sym}</span><span class="ticker-item-sub">${name}</span>`;
-        div.addEventListener('pointerdown', (e) => { e.preventDefault(); selectTicker(sym); });
+        div.innerHTML   = '<span class="ticker-item-symbol">' + sym + '</span>' +
+                          '<span class="ticker-item-sub">'    + name + '</span>';
+        div.addEventListener('pointerdown', e => { e.preventDefault(); selectTicker(sym); });
         box.appendChild(div);
     });
+
+    if (!_secDB || !_secDB.length) {
+        const hint = document.createElement('div');
+        hint.style.cssText = 'padding:5px 15px;font-size:0.6rem;opacity:0.3;border-top:1px solid rgba(255,255,255,0.05);';
+        hint.textContent = 'Loading full US database\u2026';
+        box.appendChild(hint);
+    }
+    box.style.display = 'block';
+}
+
+function tickerInputKey(e) {
+    const box = document.getElementById('ticker-results');
+    const items = box.querySelectorAll('.ticker-item');
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        _tickerHighlight = Math.min(_tickerHighlight + 1, items.length - 1);
+        items.forEach((el, i) => el.classList.toggle('active', i === _tickerHighlight));
+    } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        _tickerHighlight = Math.max(_tickerHighlight - 1, 0);
+        items.forEach((el, i) => el.classList.toggle('active', i === _tickerHighlight));
+    } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const active = box.querySelector('.ticker-item.active') || items[0];
+        if (active) { selectTicker(active.dataset.sym); }
+        else {
+            const val = document.getElementById('ticker-input').value.trim().toUpperCase();
+            if (val) selectTicker(val);
+        }
+    } else if (e.key === 'Escape') {
+        box.style.display = 'none'; _tickerHighlight = -1;
+    } else {
+        _tickerHighlight = -1;
+    }
+}
+
+function selectTicker(symbol) {
+    symbol = symbol.toUpperCase();
+    if (!state.tickers) state.tickers = [];
+    if (!state.tickers.includes(symbol)) {
+        state.tickers.push(symbol);
+        renderTickerTags();
+        save();
+        if (state.showStocks) fetchStocks();
+    }
+    document.getElementById('ticker-input').value = '';
+    document.getElementById('ticker-results').style.display = 'none';
+    _tickerHighlight = -1;
+    document.getElementById('ticker-input').focus();
 }
 
 function addTicker() {
@@ -1732,6 +1878,10 @@ document.addEventListener('pointerdown', e => {
     if (!e.target.closest('#ticker-input') && !e.target.closest('#ticker-results')) {
         const box = document.getElementById('ticker-results');
         if (box) { box.style.display = 'none'; _tickerHighlight = -1; }
+    }
+    if (!e.target.closest('#city-input') && !e.target.closest('#weather-results')) {
+        const box = document.getElementById('weather-results');
+        if (box) box.style.display = 'none';
     }
 });
 
@@ -2560,16 +2710,20 @@ function renderThemeList() {
 // ─────────────────────────────────────────────────
 function applyAll() {
     // ── Accent contrast: compute dark/light fg so UI stays readable on white accent ──
-    const hex = state.accent.replace('#','');
-    const ar = parseInt(hex.slice(0,2),16), ag = parseInt(hex.slice(2,4),16), ab = parseInt(hex.slice(4,6),16);
-    const lum = (0.299*ar + 0.587*ag + 0.114*ab) / 255;
-    document.documentElement.style.setProperty('--accent', state.accent);
-    document.documentElement.style.setProperty('--accent-fg', lum > 0.65 ? '#111' : '#fff');
+    // Only apply state.accent if art hasn't overridden it — preserve dynamic art colour
+    if (!accentFromArt) {
+        const hex = state.accent.replace('#','');
+        const ar = parseInt(hex.slice(0,2),16), ag = parseInt(hex.slice(2,4),16), ab = parseInt(hex.slice(4,6),16);
+        const lum = (0.299*ar + 0.587*ag + 0.114*ab) / 255;
+        document.documentElement.style.setProperty('--accent', state.accent);
+        document.documentElement.style.setProperty('--accent-fg', lum > 0.65 ? '#111' : '#fff');
+    }
     document.documentElement.style.setProperty('--widget-scale', state.scale);
 
     const bgl = document.getElementById('bg-layer');
-    // Only show user bg if artAsBg is off (art bg handled in extractAccentFromArt)
-    if (!state.artAsBg) {
+    // artAsBg: only replace bg-layer when we actually have art loaded (handled in extractAccentFromArt)
+    // For all other cases (artAsBg off, or artAsBg on but no art yet) apply user bg normally
+    if (!state.artAsBg || !accentFromArt) {
         if (state.gradientCss && !state.isStatic && !state.bg) {
             document.body.style.backgroundColor = '#000';
             bgl.style.backgroundImage = state.gradientCss;
@@ -2579,7 +2733,7 @@ function applyAll() {
             bgl.style.backgroundImage = 'none';
         } else {
             document.body.style.backgroundColor = '#000';
-            bgl.style.backgroundImage = `url(${state.bg})`;
+            bgl.style.backgroundImage = state.bg ? `url(${state.bg})` : 'none';
         }
     }
     document.getElementById('static-bg-preview').classList.toggle('active', state.isStatic);
@@ -2656,14 +2810,15 @@ function applyAll() {
     if (tintEl && !state.weatherTint) tintEl.style.opacity = '0';
 
     updateGhostSize();
+    updateBattery();
 }
 
 // ─────────────────────────────────────────────────
-// SNAP ZONES — 11×15 invisible grid (165 points)
-// 11 columns × 15 rows, margins kept so widgets don't clip edges
+// SNAP ZONES — 22×30 invisible grid (660 points)
+// 22 columns × 30 rows, margins kept so widgets don't clip edges
 // ─────────────────────────────────────────────────
 const ZONES = (() => {
-    const cols = 11, rows = 15;
+    const cols = 22, rows = 30;
     const z = [];
     for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
@@ -2762,6 +2917,8 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
             el.classList.add('dragging');
             el.style.willChange = 'transform';
             showGhosts();
+            document.getElementById('center-h').style.display = 'block';
+            document.getElementById('center-v').style.display = 'block';
         }
 
         curPxX = Math.min(window.innerWidth  * 0.95, Math.max(window.innerWidth  * 0.05, anchorX + dx));
@@ -2783,6 +2940,8 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         el.classList.remove('dragging');
         el.style.removeProperty('will-change');
         hideGhosts();
+        document.getElementById('center-h').style.display = 'none';
+        document.getElementById('center-v').style.display = 'none';
         if (!moved) { el.style.transition = ''; return; }
 
         // Find snap target in px
