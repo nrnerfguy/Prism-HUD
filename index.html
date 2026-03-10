@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#000000">
@@ -15,10 +15,16 @@
     <style>
         :root {
             --accent: #007AFF;
+            --vh: 1vh;
             --accent-fg: #fff;       /* text ON top of accent-colored elements */
             --smooth-ease: cubic-bezier(0.4, 0, 0.2, 1);
             --slow-ease: cubic-bezier(0.65, 0, 0.35, 1);
             --widget-shadow: drop-shadow(0px 0px 12px rgba(0,0,0,0.9));
+        }
+            to   { opacity: 1; transform: scale(1); }
+        }
+        #hud-master.revealing {
+            animation: hudReveal 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
 
         /* ── WIDGET PILL ── */
@@ -63,15 +69,9 @@
             font-family: -apple-system, system-ui, sans-serif;
             overflow: hidden;
             position: fixed;
+            height: 100dvh;
             font-feature-settings: "kern" 1, "liga" 1;
             text-rendering: optimizeLegibility;
-        }
-
-        body { animation: pageEntrance 1.5s var(--slow-ease) forwards; opacity: 0; }
-
-        @keyframes pageEntrance {
-            from { opacity: 0; }
-            to   { opacity: 1; }
         }
 
         #bg-layer {
@@ -127,7 +127,7 @@
 
         /* ── CLOCK DIGIT FLIP ── */
         #clock { overflow: visible; white-space: nowrap; display: block; }
-        #clock-widget .widget-pill { white-space: nowrap; min-width: max-content; }
+        #clock-widget .widget-pill { white-space: nowrap; min-width: max-content; overflow: visible; }
         .digit-wrap {
             display: inline-block; position: relative;
             vertical-align: top; white-space: nowrap;
@@ -143,22 +143,22 @@
         #worldclock-widget { flex-direction: column !important; gap: 5px; align-items: stretch; }
         #worldclock-widget .widget-pill { flex-direction: column; gap: 4px; min-width: 160px; }
         .wc-row { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
-        .wc-city { font-size: 0.6rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.55; }
-        .wc-time { font-size: 1.05rem; font-weight: 300; letter-spacing: 2px; }
+        .wc-city { font-size: 0.6rem; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; opacity: 0.55; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
+        .wc-time { font-size: 1.05rem; font-weight: 300; letter-spacing: 2px; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
         .wc-divider { height: 1px; background: rgba(255,255,255,0.07); margin: 2px 0; }
 
         /* ── MOON PHASE WIDGET ── */
         #moon-widget { flex-direction: column !important; align-items: center; gap: 4px; }
         #moon-widget .widget-pill { flex-direction: column; align-items: center; gap: 4px; padding: 10px 18px; }
         #moon-svg { display: block; }
-        #moon-label { font-size: 0.55rem; letter-spacing: 2px; opacity: 0.5; text-transform: uppercase; text-align: center; }
+        #moon-label { font-size: 0.55rem; letter-spacing: 2px; opacity: 0.5; text-transform: uppercase; text-align: center; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
 
         /* ── COUNTDOWN WIDGET ── */
         #countdown-widget { flex-direction: column !important; align-items: center; gap: 4px; }
         #countdown-widget .widget-pill { flex-direction: column; align-items: center; gap: 3px; }
-        #cd-days { font-size: clamp(2.5rem, 8vw, 5rem); font-weight: 900; line-height: 1; letter-spacing: -2px; }
-        #cd-unit { font-size: 0.55rem; letter-spacing: 3px; opacity: 0.45; text-transform: uppercase; }
-        #cd-event { font-size: 0.65rem; letter-spacing: 1.5px; opacity: 0.6; text-transform: uppercase; font-weight: 600; margin-top: 2px; }
+        #cd-days { font-size: clamp(2.5rem, 8vw, 5rem); font-weight: 900; line-height: 1; letter-spacing: -2px; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
+        #cd-unit { font-size: 0.55rem; letter-spacing: 3px; opacity: 0.45; text-transform: uppercase; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
+        #cd-event { font-size: 0.65rem; letter-spacing: 1.5px; opacity: 0.6; text-transform: uppercase; font-weight: 600; margin-top: 2px; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
 
         /* ── SPOTIFY NEXT TRACK ── */
         #np-next-wrap { margin-top: 5px; padding-top: 5px; border-top: 1px solid rgba(255,255,255,0.07); display: none; }
@@ -174,8 +174,13 @@
         #clock.style-bold {
             font-size: clamp(5rem, 25vw, 12rem); font-weight: 900; font-style: italic;
             letter-spacing: -4px; font-family: -apple-system, system-ui, sans-serif;
-            margin-right: -4px;
             text-shadow: 0 2px 0 rgba(0,0,0,0.4), 0 0 60px rgba(0,0,0,0.9), 0 0 120px rgba(0,0,0,0.6);
+            /* Italic glyphs lean right — pull bounding box left so glyphs read as centered */
+            margin-left: -0.1em;
+        }
+        /* Give italic overhang room to breathe on the right without clipping */
+        #clock-widget .widget-pill:has(#clock.style-bold) {
+            overflow: visible;
         }
         #clock.style-thin {
             font-size: clamp(4rem, 22vw, 11rem); font-weight: 100; font-style: normal;
@@ -205,9 +210,16 @@
         .a-center { fill: var(--accent); }
         .a-center-hi { fill: rgba(255,255,255,0.75); }
 
-        #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.85; font-weight: 300; text-shadow: 0 1px 0 rgba(0,0,0,0.5), 0 0 30px rgba(0,0,0,0.9); margin-right: -8px; }
-        #weather-widget { gap: 20px; opacity: 0.85; font-size: 2.4rem; font-weight: 200; text-shadow: 0 1px 0 rgba(0,0,0,0.4), 0 0 30px rgba(0,0,0,0.9); }
-        #battery-widget { font-size: 1.2rem; font-weight: 600; opacity: 0.85; letter-spacing: 4px; display: flex; align-items: center; gap: 12px; text-shadow: 0 0 20px rgba(0,0,0,0.9); }
+        #date { font-size: 1.4rem; text-transform: uppercase; letter-spacing: 8px; opacity: 0.85; font-weight: 300; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); margin-right: -8px; }
+        #weather-widget { gap: 20px; opacity: 0.85; font-size: 2.4rem; font-weight: 200; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
+        #weather-widget .widget-pill { align-items: center; }
+        #icon-container { display: flex; align-items: center; justify-content: center; line-height: 1; }
+        #icon-container svg { display: block; vertical-align: middle; }
+        #temp { line-height: 1; display: flex; align-items: center; }
+        #battery-widget { font-size: 1.2rem; font-weight: 600; opacity: 0.85; letter-spacing: 4px; display: flex; align-items: center; gap: 12px; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
+        #battery-icon { display: flex; align-items: center; justify-content: center; line-height: 1; }
+        #battery-icon svg { display: block; vertical-align: middle; }
+        #battery { line-height: 1; display: flex; align-items: center; }
         .charging-pulse { animation: batteryPulse 2s infinite ease-in-out; }
         @keyframes batteryPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
@@ -224,10 +236,10 @@
             display: flex; align-items: center; justify-content: center; font-size: 1.6rem; opacity: 0.3;
         }
         #np-art.has-art { border-color: var(--accent); box-shadow: 0 0 24px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.05); opacity: 1; }
-        #np-art img { width: 100%; height: 100%; object-fit: cover; image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges; }
+        #np-art img { width: 100%; height: 100%; object-fit: cover; image-rendering: auto; }
         #np-info { text-align: left; overflow: hidden; flex: 1; min-width: 0; }
-        #np-track { font-size: 0.9rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; }
-        #np-artist { font-size: 0.72rem; opacity: 0.55; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 400; }
+        #np-track { font-size: 0.9rem; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #fff; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
+        #np-artist { font-size: 0.72rem; opacity: 0.55; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 400; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
         #np-label { font-size: 0.5rem; text-transform: uppercase; letter-spacing: 3px; opacity: 0.3; margin-top: 5px; font-weight: 600; }
 
         /* ── NAV ── */
@@ -295,19 +307,19 @@
             background: rgba(8,8,10,0.82);
             backdrop-filter: blur(40px) saturate(160%);
             -webkit-backdrop-filter: blur(40px) saturate(160%);
-            padding: 40px 25px;
+            padding: 40px 21px;
             padding-bottom: max(40px, env(safe-area-inset-bottom));
             transition: right 0.4s var(--smooth-ease);
-            z-index: 2000; overflow-y: auto;
+            z-index: 2000; overflow-y: auto; -webkit-overflow-scrolling: touch; overflow-x: visible;
             touch-action: pan-y;
             border-left: 1px solid rgba(255,255,255,0.08); color: #fff; scrollbar-width: none;
         }
         #side-panel.open { right: 0 !important; }
         #side-panel::-webkit-scrollbar { display: none; }
 
-        .panel-content { display: flex; flex-direction: column; gap: 15px; padding-bottom: 80px; }
+        .panel-content { display: flex; flex-direction: column; gap: 15px; padding-bottom: 80px; padding-left: 4px; padding-right: 4px; }
 
-        .control-group { padding: 18px; background: rgba(255,255,255,0.05); border-radius: 20px; border: 1px solid transparent; transition: 0.2s; position: relative; }
+        .control-group { padding: 18px; background: rgba(255,255,255,0.05); border-radius: 20px; border: 1px solid transparent; transition: 0.2s; position: relative; overflow: visible; }
         .control-group:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.1); }
 
         #weather-results {
@@ -369,12 +381,12 @@
         .file-upload-btn { display: block; width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px dashed rgba(255,255,255,0.3); border-radius: 12px; color: #fff; text-align: center; font-size: 0.75rem; font-weight: 600; cursor: pointer; margin-bottom: 15px; transition: all 0.3s var(--smooth-ease); }
         .file-upload-btn:hover { background: rgba(255,255,255,0.15); border-color: var(--accent); box-shadow: 0 0 15px var(--accent); transform: translateY(-1px); }
 
-        .wallpaper-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 5px; }
+        .wallpaper-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 5px; padding: 4px; }
         #static-bg-preview { width: 70px; height: 70px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; position: relative; overflow: hidden; transition: 0.3s; }
-        #static-bg-preview.active { border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
+        #static-bg-preview.active { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 1px; box-shadow: 0 0 15px var(--accent); }
         #static-bg-preview input { position: absolute; opacity: 0; inset: 0; cursor: pointer; width: 100%; height: 100%; }
         .bg-thumb { width: 70px; height: 70px; border-radius: 12px; background-size: cover; background-position: center; border: 2px solid transparent; cursor: pointer; transition: 0.3s; opacity: 0.5; }
-        .bg-thumb.active { border-color: var(--accent); opacity: 1; transform: scale(1.05); }
+        .bg-thumb.active { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 1px; opacity: 1; transform: scale(1.05); }
 
         .theme-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.4); padding: 10px 12px; border-radius: 10px; margin-top: 8px; }
         .theme-actions button { background: none; border: none; color: #fff; font-size: 0.7rem; font-weight: bold; cursor: pointer; opacity: 0.7; margin-left: 10px; }
@@ -418,8 +430,8 @@
         .group-chevron svg { display: block; }
         .control-group.collapsed .group-chevron { transform: rotate(-90deg); }
         .group-header:hover .group-chevron { opacity: 0.9; }
-        .group-body { overflow: hidden; transition: max-height 0.3s ease, opacity 0.25s ease; max-height: 2000px; opacity: 1; }
-        .control-group.collapsed .group-body { max-height: 0; opacity: 0; pointer-events: none; }
+        .group-body { overflow: visible; transition: max-height 0.3s ease, opacity 0.25s ease; max-height: 2000px; opacity: 1; }
+        .control-group.collapsed .group-body { max-height: 0; opacity: 0; pointer-events: none; overflow: hidden; }
 
         /* ── WIDGET CONTEXT MENU ── */
         #widget-ctx-menu {
@@ -449,14 +461,14 @@
         .ctx-icon { font-size: 1rem; width: 20px; text-align: center; }
 
         /* ── GRADIENT PRESETS ── */
-        .gradient-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
+        .gradient-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; padding: 4px; overflow: visible; }
         .grad-swatch {
             height: 48px; border-radius: 10px; cursor: pointer;
             border: 2px solid transparent; transition: transform 0.15s ease, border-color 0.15s ease;
             background-origin: border-box; background-clip: border-box;
         }
         .grad-swatch:hover { transform: scale(1.06); }
-        .grad-swatch.active { border-color: #fff; }
+        .grad-swatch.active { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 1px; }
 
         /* ── POSITION LOCK INDICATOR ── */
         #lock-indicator {
@@ -541,14 +553,16 @@
         .stock-ticker {
             font-size: 0.78rem; font-weight: 800; letter-spacing: 1.5px;
             color: var(--accent); min-width: 44px;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7);
         }
         .stock-price {
             font-size: 0.95rem; font-weight: 600; color: #fff;
-            text-shadow: 0 0 18px rgba(0,0,0,0.8);
+            text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7);
         }
         .stock-change {
             font-size: 0.7rem; font-weight: 700; letter-spacing: 0.5px;
             min-width: 58px; text-align: right;
+            text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7);
         }
         .stock-change.up   { color: #34C759; }
         .stock-change.down { color: #ff4444; }
@@ -574,6 +588,22 @@
         }
         .ticker-tag button:hover { color: #ff4444; }
     </style>
+
+    <script>
+        // Set --vh to actual visible height — prevents iOS elastic bounce & bar movement
+        function setVH() {
+            const vh = (window.visualViewport ? window.visualViewport.height : window.innerHeight) * 0.01;
+            document.documentElement.style.setProperty('--vh', vh + 'px');
+        }
+        setVH();
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', setVH);
+        } else {
+            window.addEventListener('resize', setVH);
+        }
+        // On iOS, scrolling to 0 keeps Safari's bar in compact (top) mode
+        window.addEventListener('scroll', () => window.scrollTo(0, 0), { passive: false });
+    </script>
 </head>
 <body>
 
@@ -591,14 +621,7 @@
 <div id="kb-toast"></div>
 
 <!-- Fullscreen button (bottom-left, fades in on mouse move) -->
-<div id="fullscreen-btn" onclick="toggleFullscreen()" title="Fullscreen (F)">
-    <svg id="fs-enter-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
-    </svg>
-    <svg id="fs-exit-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
-        <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
-    </svg>
-</div>
+
 
 <div id="confirm-modal">
     <div class="modal-box">
@@ -612,8 +635,8 @@
 <!-- ── HUD ── -->
 <div id="hud-master">
     <div id="clock-widget" class="widget">
-        <div class="widget-pill" style="display:flex;flex-direction:column;align-items:center;">
-            <div id="clock" class="style-bold">0:00</div>
+        <div class="widget-pill" style="display:flex;flex-direction:column;align-items:center;text-align:center;">
+            <div id="clock" class="style-bold"></div>
             <svg id="analog-clock" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" overflow="visible">
                 <circle class="a-face" cx="100" cy="100" r="96"/>
                 <g id="a-ticks"></g>
@@ -627,13 +650,13 @@
     </div>
     <div id="date-widget" class="widget"><div class="widget-pill"><div id="date">...</div></div></div>
     <div id="weather-widget" class="widget">
-        <div class="widget-pill" style="display:flex;gap:20px;align-items:center;">
+        <div class="widget-pill" style="display:flex;gap:16px;align-items:center;line-height:1;">
             <div id="icon-container"></div>
             <span id="temp">--°</span>
         </div>
     </div>
     <div id="battery-widget" class="widget">
-        <div class="widget-pill" style="display:flex;align-items:center;gap:12px;">
+        <div class="widget-pill" style="display:flex;align-items:center;gap:12px;line-height:1;">
             <div id="battery-icon"></div>
             <div id="battery">--%</div>
         </div>
@@ -646,14 +669,14 @@
                 <div id="np-artist">—</div>
                 <div id="np-controls">
                     <button class="np-btn" onclick="spotifyPrev()" title="Previous">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h2v12H6zm3.5 6 8.5 6V6z"/></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6 9 12l10 6V6zM5 6v12h2V6H5z"/></svg>
                     </button>
                     <button class="np-btn" id="np-playpause" onclick="spotifyPlayPause()" title="Play/Pause">
                         <svg id="np-play-icon" width="28" height="28" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
                         <svg id="np-pause-icon" width="28" height="28" viewBox="0 0 24 24" fill="currentColor" style="display:none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
                     </button>
                     <button class="np-btn" onclick="spotifyNext()" title="Next">
-                        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 18l8.5-6L6 6v12zm2-8.14 5.15 3.64L8 17.14V9.86zM16 6h2v12h-2z"/></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M5 18l10-6L5 6v12zm14-12v12h-2V6h2z"/></svg>
                     </button>
                 </div>
                 <div id="np-bar"><div id="np-bar-fill"></div></div>
@@ -700,6 +723,10 @@
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
     </svg>
 </div>
+<div id="fullscreen-btn" onclick="toggleFullscreen()" title="Fullscreen (F)">
+    <svg id="fs-enter-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
+    <svg id="fs-exit-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="display:none"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
+</div>
 
 <!-- ── WIDGET CONTEXT MENU ── -->
 <div id="widget-ctx-menu">
@@ -724,7 +751,7 @@
 <div id="side-panel">
     <div class="panel-content">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
-            <img src="logo.png" alt="Prism" width="38" height="38" style="border-radius:10px;flex-shrink:0;">
+            <img src="../assets/icon.png" alt="Prism" width="38" height="38" style="border-radius:10px;flex-shrink:0;">
             <div>
                 <div style="font-size:1.3rem;font-weight:900;letter-spacing:-0.5px;line-height:1;">Prism OS</div>
                 <div style="font-size:0.55rem;opacity:0.35;letter-spacing:3px;text-transform:uppercase;margin-top:2px;">Settings</div>
@@ -756,6 +783,9 @@
             <div class="vol-row">
                 <label>VOL</label>
                 <input type="range" min="0" max="1" step="0.02" value="0.3" id="amb-vol" oninput="setAmbientVolume(this.value)">
+            </div>
+            <div style="text-align:center;margin-top:8px;">
+                <span id="amb-status" class="status-tag off">OFF</span>
             </div>
             </div><!-- /group-body ambient -->
         </div>
@@ -797,6 +827,10 @@
                     <div id="unit-c" class="style-btn active" style="padding:6px 14px;font-size:0.6rem;" onclick="setWeatherUnit('C')">°C</div>
                     <div id="unit-f" class="style-btn"        style="padding:6px 14px;font-size:0.6rem;" onclick="setWeatherUnit('F')">°F</div>
                 </div>
+            </div>
+            <div class="row" style="margin-top:10px;">
+                <label style="font-size:0.5rem;">Weather Tint</label>
+                <div id="sw-weatherTint" class="ios-switch active" onclick="toggle('weatherTint')"></div>
             </div>
             <div class="row" style="margin-top:10px;">
                 <label style="font-size:0.5rem;">Visibility</label>
@@ -992,7 +1026,7 @@
 
         <div class="control-group">
             <label>Accent Color</label>
-            <input type="color" id="color-accent" style="height:45px;width:100%;border:none;background:none;" onchange="state.accent=this.value;applyAll();save();">
+            <input type="color" id="color-accent" style="height:45px;width:100%;border:none;background:none;" onchange="state.accent=this.value;accentFromArt=false;applyAll();save();">
         </div>
 
         <!-- Export / Import -->
@@ -1044,14 +1078,24 @@ let state = {
 // ─────────────────────────────────────────────────
 // PERSIST
 // ─────────────────────────────────────────────────
-function save() { localStorage.setItem('prism_ultra_v3', JSON.stringify(state)); }
+let _saveTimer = null;
+function save() {
+    clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(() => localStorage.setItem('prism_ultra_v3', JSON.stringify(state)), 300);
+}
+function saveNow() { clearTimeout(_saveTimer); localStorage.setItem('prism_ultra_v3', JSON.stringify(state)); }
 
 function load() {
     const saved = localStorage.getItem('prism_ultra_v3');
     if (saved) state = Object.assign(state, JSON.parse(saved));
 
     // Handle Spotify OAuth callback
-    handleSpotifyCallback();
+    // Browser path: check if code is in current URL (non-Electron)
+    const _urlCode = new URLSearchParams(window.location.search).get('code');
+    if (_urlCode) {
+        history.replaceState({}, '', window.location.pathname);
+        handleSpotifyCallback(_urlCode);
+    }
 
     applyAll();
     renderHistory();
@@ -1137,19 +1181,24 @@ function toggleNav(e) {
 // ─────────────────────────────────────────────────
 // FULLSCREEN
 // ─────────────────────────────────────────────────
+let _isElectronFullscreen = false;
 function toggleFullscreen() {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
+    if (navigator.userAgent.includes('Electron') && window.electronAPI) {
+        window.electronAPI.toggleFullscreen();
     } else {
-        document.exitFullscreen().catch(() => {});
+        if (!document.fullscreenElement) document.documentElement.requestFullscreen().catch(() => {});
+        else document.exitFullscreen().catch(() => {});
     }
 }
+function setFullscreenIcons(isFs) {
+    _isElectronFullscreen = isFs;
+    const btn = document.getElementById('fullscreen-btn');
+    if (btn) btn.title = isFs ? 'Exit Fullscreen (F)' : 'Fullscreen (F)';
+}
 
-document.addEventListener('fullscreenchange', () => {
-    const isFs = !!document.fullscreenElement;
-    document.getElementById('fs-enter-icon').style.display = isFs ? 'none'  : 'block';
-    document.getElementById('fs-exit-icon').style.display  = isFs ? 'block' : 'none';
-});
+if (window.electronAPI && window.electronAPI.onFullscreenChange) {
+    window.electronAPI.onFullscreenChange(setFullscreenIcons);
+}
 
 // ─────────────────────────────────────────────────
 // AUTO-DIM ON INACTIVITY
@@ -1212,15 +1261,40 @@ document.addEventListener('keydown', e => {
             break;
         case 'f':
         case 'F':
-            toggleFullscreen();
-            showToast(document.fullscreenElement ? '⤡  Exit Fullscreen' : '⤢  Fullscreen');
-            break;
+break;
         case 'Escape':
             if (document.getElementById('side-panel').classList.contains('open')) toggleNav();
+            
             break;
         case 'd':
             if (dim.isDimmed) { undim(); clearTimeout(dim.timer); } else doDim();
             showToast(dim.isDimmed ? '🌙  Dimmed' : '☀︎  Undimmed');
+            break;
+        case '-':
+        case '_':
+            if (e.metaKey || e.ctrlKey) {
+                e.preventDefault();
+                state.scale = Math.max(0.4, Math.round((parseFloat(state.scale) - 0.1) * 10) / 10);
+                applyAll(); save();
+                showToast('⊖  Scale ' + Math.round(state.scale * 100) + '%');
+            }
+            break;
+        case '=':
+        case '+':
+            if (e.metaKey || e.ctrlKey) {
+                e.preventDefault();
+                state.scale = Math.min(2.0, Math.round((parseFloat(state.scale) + 0.1) * 10) / 10);
+                applyAll(); save();
+                showToast('⊕  Scale ' + Math.round(state.scale * 100) + '%');
+            }
+            break;
+        case '0':
+            if (e.metaKey || e.ctrlKey) {
+                e.preventDefault();
+                state.scale = 1;
+                applyAll(); save();
+                showToast('↺  Scale reset');
+            }
             break;
     }
 });
@@ -1229,9 +1303,11 @@ document.addEventListener('keydown', e => {
 // ALBUM ART ACCENT COLOR EXTRACTION
 // ─────────────────────────────────────────────────
 let accentFromArt = false; // track whether accent is from art or user setting
+let _lastArtUrl = null; // cache last album art URL for instant artAsBg toggle
 
 function extractAccentFromArt(imgUrl) {
     if (!imgUrl) { restoreUserAccent(); return; }
+    _lastArtUrl = imgUrl; // cache for instant artAsBg toggle
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
@@ -1286,7 +1362,7 @@ function extractAccentFromArt(imgUrl) {
             if (state.artAsBg && imgUrl) {
                 const bgl = document.getElementById('bg-layer');
                 bgl.style.backgroundImage = `url(${imgUrl})`;
-                document.body.style.backgroundColor = '#000';
+                document.body.style.backgroundColor = 'transparent';
             }
         } catch (err) { if (!state.artAsBg) { /* CORS block — leave accent as-is */ } else { restoreUserAccent(); } }
     };
@@ -1325,7 +1401,7 @@ function updateClock() {
     const clockEl = document.getElementById('clock');
     if (state.clockStyle === 'analog') {
         updateAnalogClock(now);
-        document.getElementById('date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
+        document.getElementById('date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
         return;
     }
 
@@ -1364,12 +1440,32 @@ function updateClock() {
         _prevClockStr = timeStr;
     }
 
-    document.getElementById('date').innerText = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
+    document.getElementById('date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
     updateAnalogClock(now);
 }
-setInterval(updateClock, 1000);
+// Align clock tick to actual second boundary to prevent drift
+(function scheduleClock() {
+    updateClock();
+    const now = Date.now();
+    const delay = 1000 - (now % 1000);
+    setTimeout(function tick() {
+        updateClock();
+        setInterval(updateClock, 1000);
+    }, delay);
+})();
 // Smooth analog sweep at 50ms when analog style is active
-setInterval(() => { if (state.clockStyle === 'analog') updateAnalogClock(new Date()); }, 50);
+// Analog clock on requestAnimationFrame — full 60fps
+// Only run RAF loop when actually in analog mode — no wasted frames otherwise
+let _rafRunning = false;
+function startAnalogRAF() {
+    if (_rafRunning) return;
+    _rafRunning = true;
+    (function rafClock() {
+        if (state.clockStyle !== 'analog') { _rafRunning = false; return; }
+        updateAnalogClock(new Date());
+        requestAnimationFrame(rafClock);
+    })();
+}
 
 // DOM-only clock style update — safe to call from applyAll()
 function applyClockStyle(style) {
@@ -1386,6 +1482,7 @@ function applyClockStyle(style) {
 function setClockStyle(style) {
     state.clockStyle = style;
     applyClockStyle(style);
+    if (style === 'analog') startAnalogRAF();
     save();
 }
 
@@ -1480,14 +1577,21 @@ function selectCity(name) {
     fetchWeather(); save();
 }
 
+let _weatherGeoCache = {}; // cache city → {latitude, longitude}
 async function fetchWeather() {
     try {
-        const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(state.city)}&count=1`).then(r => r.json());
-        if (!geo.results) return;
-        const { latitude, longitude } = geo.results[0];
+        let latitude, longitude;
+        if (_weatherGeoCache[state.city]) {
+            ({ latitude, longitude } = _weatherGeoCache[state.city]);
+        } else {
+            const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(state.city)}&count=1`).then(r => r.json());
+            if (!geo.results) return;
+            ({ latitude, longitude } = geo.results[0]);
+            _weatherGeoCache[state.city] = { latitude, longitude };
+        }
         const unit = state.weatherUnit === 'F' ? 'fahrenheit' : 'celsius';
         const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&temperature_unit=${unit}`).then(r => r.json());
-        document.getElementById('temp').innerText = Math.round(w.current.temperature_2m) + '°' + state.weatherUnit;
+        document.getElementById('temp').textContent = Math.round(w.current.temperature_2m) + '°' + state.weatherUnit;
         const code = w.current.weather_code;
         let icon = icons.sun;
         if (code >= 1 && code <= 3)   icon = icons.cloud;
@@ -1591,42 +1695,43 @@ async function fetchStocks() {
         return { symbol, ok: false };
     }
 
-    // Show loading state
-    list.innerHTML = state.tickers.map(t =>
-        `<div class="stock-row"><span class="stock-ticker">${t}</span><span class="stock-price" style="opacity:0.3">…</span></div>`
-    ).join('');
+    // Build the initial structure if needed (first load or ticker list changed)
+    const existingTickers = [...list.querySelectorAll('.stock-ticker')].map(el => el.textContent);
+    const tickersChanged = state.tickers.join() !== existingTickers.join();
+    if (list.children.length === 0 || tickersChanged) {
+        list.innerHTML = state.tickers.map((t, i) => `
+            <div class="stock-row" data-ticker="${t}">
+                <span class="stock-ticker">${t}</span>
+                <span class="stock-price" style="opacity:0.3">…</span>
+                <span class="stock-change" style="opacity:0.2">—</span>
+            </div>${i < state.tickers.length - 1 ? '<div class="stock-divider"></div>' : ''}
+        `).join('');
+    }
 
-    // Fetch all tickers in parallel
+    // Fetch all tickers in parallel — DOM is untouched until results arrive
     const results = await Promise.all(state.tickers.map(fetchTicker));
 
-    list.innerHTML = '';
-    let anyOk = false;
-    results.forEach((q, i) => {
-        const row = document.createElement('div');
-        row.className = 'stock-row';
+    // Update each row's price/change in-place — structure never changes, no blank flash
+    results.forEach(q => {
+        const row = list.querySelector(`.stock-row[data-ticker="${q.symbol}"]`);
+        if (!row) return;
+        const priceEl  = row.querySelector('.stock-price');
+        const changeEl = row.querySelector('.stock-change');
         if (q.ok) {
-            anyOk = true;
             const up   = q.change >= 0;
             const sign = up ? '+' : '';
             const cls  = up ? 'up' : 'down';
             const arrow = up ? '▲' : '▼';
-            row.innerHTML = `
-                <span class="stock-ticker">${q.symbol}</span>
-                <span class="stock-price">$${q.price.toFixed(2)}</span>
-                <span class="stock-change ${cls}">${arrow} ${sign}${q.pct.toFixed(2)}%</span>
-            `;
+            priceEl.textContent  = `$${q.price.toFixed(2)}`;
+            priceEl.style.opacity = '';
+            changeEl.textContent = `${arrow} ${sign}${q.pct.toFixed(2)}%`;
+            changeEl.className   = `stock-change ${cls}`;
+            changeEl.style.opacity = '';
         } else {
-            row.innerHTML = `
-                <span class="stock-ticker">${q.symbol}</span>
-                <span class="stock-price" style="opacity:0.35">N/A</span>
-                <span class="stock-change" style="opacity:0.3">—</span>
-            `;
-        }
-        list.appendChild(row);
-        if (i < results.length - 1) {
-            const div = document.createElement('div');
-            div.className = 'stock-divider';
-            list.appendChild(div);
+            priceEl.textContent  = 'N/A';
+            priceEl.style.opacity = '0.35';
+            changeEl.textContent = '—';
+            changeEl.style.opacity = '0.3';
         }
     });
 }
@@ -2030,13 +2135,13 @@ function drawMoon(phase) {
     if (norm < 0.5 || norm > 29.0) {
         // New moon — just dim disk
         svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>`;
-        document.getElementById('moon-label').innerText = getMoonPhaseName(phase);
+        document.getElementById('moon-label').textContent = getMoonPhaseName(phase);
         return;
     }
     if (norm > 14.2 && norm < 15.3) {
         // Full moon
         svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="${accent}" opacity="0.9"/>`;
-        document.getElementById('moon-label').innerText = getMoonPhaseName(phase);
+        document.getElementById('moon-label').textContent = getMoonPhaseName(phase);
         return;
     }
 
@@ -2056,7 +2161,7 @@ function drawMoon(phase) {
         <circle cx="${cx}" cy="${cy}" r="${R}" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
         <path d="${path}" fill="${accent}" opacity="0.9"/>
     `;
-    document.getElementById('moon-label').innerText = getMoonPhaseName(phase);
+    document.getElementById('moon-label').textContent = getMoonPhaseName(phase);
 }
 
 function updateMoon() {
@@ -2080,7 +2185,7 @@ function updateCountdownDisplay() {
     const now    = new Date(); now.setHours(0,0,0,0);
     const days   = Math.round((target - now) / (1000 * 60 * 60 * 24));
     el.innerText = days >= 0 ? days : Math.abs(days);
-    document.getElementById('cd-unit').innerText = days >= 0 ? 'days until' : 'days since';
+    document.getElementById('cd-unit').textContent = days >= 0 ? 'days until' : 'days since';
 }
 
 function updateCountdownSettings() {
@@ -2424,17 +2529,29 @@ async function sha256(plain) {
 const SPOTIFY_CLIENT_ID = '34d7e2f46d844a3ab643ab3529b2c9ab';
 
 async function connectSpotify() {
-    const clientId = SPOTIFY_CLIENT_ID;
-    state.spotifyClientId = clientId;
+    state.spotifyClientId = SPOTIFY_CLIENT_ID;
     save();
 
     const verifier  = generateRandomString(128);
     const challenge = await sha256(verifier);
-    localStorage.setItem('spotify_verifier', verifier);
 
-    const redirectUri = window.location.href.split('?')[0].split('#')[0];
+    const isElectron = navigator.userAgent.includes('Electron');
+    if (isElectron && window.electronAPI) {
+        // Send verifier to main process BEFORE opening browser
+        // Main process will hold it and do the full token exchange
+        window.electronAPI.startSpotifyAuth(verifier);
+    } else {
+        localStorage.setItem('spotify_verifier', verifier);
+        localStorage.setItem('spotify_redirect_uri',
+            window.location.href.split('?')[0].split('#')[0]);
+    }
+
+    const redirectUri = isElectron
+        ? 'http://127.0.0.1:27482'
+        : window.location.href.split('?')[0].split('#')[0];
+
     const params = new URLSearchParams({
-        client_id: clientId,
+        client_id: SPOTIFY_CLIENT_ID,
         response_type: 'code',
         redirect_uri: redirectUri,
         scope: 'user-read-currently-playing user-read-playback-state user-modify-playback-state',
@@ -2442,44 +2559,56 @@ async function connectSpotify() {
         code_challenge: challenge
     });
 
-    window.location = `https://accounts.spotify.com/authorize?${params}`;
+    const authUrl = `https://accounts.spotify.com/authorize?${params}`;
+    if (isElectron) window.open(authUrl, '_blank');
+    else window.location = authUrl;
 }
 
-async function handleSpotifyCallback() {
-    const params   = new URLSearchParams(window.location.search);
-    const code     = params.get('code');
-    const verifier = localStorage.getItem('spotify_verifier');
 
-    if (!code || !verifier || !state.spotifyClientId) return;
-
-    // Clean URL
-    history.replaceState({}, '', window.location.pathname);
+async function handleSpotifyCallback(code) {
+    // Browser path only — Electron path handled entirely in main process
+    const verifier    = localStorage.getItem('spotify_verifier');
+    const redirectUri = localStorage.getItem('spotify_redirect_uri');
+    if (!code || !verifier || !redirectUri) return;
     localStorage.removeItem('spotify_verifier');
-
     try {
         const res = await fetch('https://accounts.spotify.com/api/token', {
             method: 'POST',
             headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-                client_id: state.spotifyClientId,
-                grant_type: 'authorization_code',
-                code,
-                redirect_uri: window.location.href.split('?')[0].split('#')[0],
-                code_verifier: verifier
-            })
+            body: new URLSearchParams({ client_id: SPOTIFY_CLIENT_ID, grant_type: 'authorization_code',
+                code, redirect_uri: redirectUri, code_verifier: verifier })
         });
         const data = await res.json();
-        if (data.access_token) {
-            spotify.accessToken  = data.access_token;
-            spotify.refreshToken = data.refresh_token;
-            spotify.expiresAt    = Date.now() + data.expires_in * 1000;
-            localStorage.setItem('spotify_tokens', JSON.stringify({ a: data.access_token, r: data.refresh_token, e: spotify.expiresAt }));
-            document.getElementById('nowplaying-widget').style.display = 'flex';
-            updateSpotifyUI();
-            pollSpotify();
-        }
-    } catch (e) { console.error('Spotify auth error', e); }
+        if (data.access_token) applySpotifyTokens(data);
+        else showToast('Spotify error: ' + (data.error_description || data.error));
+    } catch(e) { showToast('Spotify failed: ' + e.message); }
 }
+
+function applySpotifyTokens(data) {
+    spotify.accessToken  = data.access_token;
+    spotify.refreshToken = data.refresh_token;
+    spotify.expiresAt    = Date.now() + data.expires_in * 1000;
+    localStorage.setItem('spotify_tokens', JSON.stringify(
+        { a: data.access_token, r: data.refresh_token, e: spotify.expiresAt }
+    ));
+    document.getElementById('nowplaying-widget').style.display = 'flex';
+    updateSpotifyUI();
+    pollSpotify();
+    showToast('✓ Spotify connected!');
+}
+
+
+// Electron: register token listener immediately (IIFE) so it's never missed
+// regardless of when main process sends the tokens
+(function() {
+    if (!navigator.userAgent.includes('Electron') || !window.electronAPI) return;
+    window.electronAPI.onSpotifyTokens((data) => {
+        console.log('[Prism] spotify-tokens received:', data);
+        if (data && data.access_token) applySpotifyTokens(data);
+        else showToast('Spotify error: ' + (data.error_description || data.error || JSON.stringify(data)));
+    });
+})();
+
 
 function loadStoredSpotifyTokens() {
     const t = localStorage.getItem('spotify_tokens');
@@ -2494,26 +2623,33 @@ function loadStoredSpotifyTokens() {
 async function refreshSpotifyToken() {
     if (!spotify.refreshToken || !state.spotifyClientId) return false;
     try {
-        const res = await fetch('https://accounts.spotify.com/api/token', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-            body: new URLSearchParams({
-                client_id: state.spotifyClientId,
-                grant_type: 'refresh_token',
-                refresh_token: spotify.refreshToken
-            })
-        });
-        const data = await res.json();
+        let data;
+        if (navigator.userAgent.includes('Electron') && window.electronAPI) {
+            data = await window.electronAPI.spotifyRefresh(
+                { refreshTok: spotify.refreshToken, clientId: state.spotifyClientId }
+            );
+        } else {
+            const res = await fetch('https://accounts.spotify.com/api/token', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ client_id: state.spotifyClientId,
+                    grant_type: 'refresh_token', refresh_token: spotify.refreshToken })
+            });
+            data = await res.json();
+        }
         if (data.access_token) {
             spotify.accessToken = data.access_token;
             spotify.expiresAt   = Date.now() + data.expires_in * 1000;
             if (data.refresh_token) spotify.refreshToken = data.refresh_token;
-            localStorage.setItem('spotify_tokens', JSON.stringify({ a: spotify.accessToken, r: spotify.refreshToken, e: spotify.expiresAt }));
+            localStorage.setItem('spotify_tokens', JSON.stringify(
+                { a: spotify.accessToken, r: spotify.refreshToken, e: spotify.expiresAt }
+            ));
             return true;
         }
-    } catch (e) {}
+    } catch(e) {}
     return false;
 }
+
 
 async function fetchNowPlaying() {
     if (!spotify.accessToken) return;
@@ -2547,7 +2683,7 @@ async function fetchNowPlaying() {
 function updateNowPlayingUI(data, nextTrack) {
     if (!data || !data.is_playing && !data.item) {
         document.getElementById('np-track').innerText  = 'Nothing playing';
-        document.getElementById('np-artist').innerText = '—';
+        document.getElementById('np-artist').textContent = '—';
         document.getElementById('np-bar-fill').style.width = '0%';
         document.getElementById('np-art').innerHTML    = '♫';
         document.getElementById('np-art').classList.remove('has-art');
@@ -2561,7 +2697,7 @@ function updateNowPlayingUI(data, nextTrack) {
     const artEl = document.getElementById('np-art');
 
     document.getElementById('np-track').innerText  = track.name;
-    document.getElementById('np-artist').innerText = track.artists.map(a => a.name).join(', ');
+    document.getElementById('np-artist').textContent = track.artists.map(a => a.name).join(', ');
 
     if (art) {
         artEl.innerHTML = `<img src="${art}" alt="album art">`;
@@ -2725,14 +2861,14 @@ function applyAll() {
     // For all other cases (artAsBg off, or artAsBg on but no art yet) apply user bg normally
     if (!state.artAsBg || !accentFromArt) {
         if (state.gradientCss && !state.isStatic && !state.bg) {
-            document.body.style.backgroundColor = '#000';
+            document.body.style.backgroundColor = 'transparent';
             bgl.style.backgroundImage = state.gradientCss;
         } else if (state.isStatic) {
             document.body.style.backgroundColor = state.staticColor;
             document.getElementById('static-bg-preview').style.backgroundColor = state.staticColor;
             bgl.style.backgroundImage = 'none';
         } else {
-            document.body.style.backgroundColor = '#000';
+            document.body.style.backgroundColor = 'transparent';
             bgl.style.backgroundImage = state.bg ? `url(${state.bg})` : 'none';
         }
     }
@@ -2788,14 +2924,29 @@ function applyAll() {
     document.getElementById('city-input').value  = state.city;
     document.getElementById('range-scale').value = state.scale;
 
+    // Sync background effect sliders to saved state
+    const blurSlider = document.querySelector('input[oninput*="state.blur"]');
+    const opacSlider = document.querySelector('input[oninput*="state.bgOpacity"]');
+    if (blurSlider) blurSlider.value = state.blur ?? 0;
+    if (opacSlider) opacSlider.value = state.bgOpacity ?? 1;
+
     applyClockStyle(state.clockStyle || 'bold');
 
     document.getElementById('amb-vol').value = state.ambientVolume;
     const ambStatus = document.getElementById('amb-status');
-    if (state.ambientSound) {
-        ambStatus.innerText = state.ambientSound.toUpperCase();
-        ambStatus.className = 'status-tag on';
+    if (ambStatus) {
+        if (state.ambientSound) {
+            ambStatus.innerText = state.ambientSound.toUpperCase();
+            ambStatus.className = 'status-tag on';
+        } else {
+            ambStatus.innerText = 'OFF';
+            ambStatus.className = 'status-tag off';
+        }
     }
+    // Sync ambient button highlights
+    document.querySelectorAll('.ambient-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.sound === state.ambientSound)
+    );
 
     document.getElementById('color-accent').value = state.accent;
 
@@ -2814,11 +2965,11 @@ function applyAll() {
 }
 
 // ─────────────────────────────────────────────────
-// SNAP ZONES — 22×30 invisible grid (660 points)
-// 22 columns × 30 rows, margins kept so widgets don't clip edges
+// SNAP ZONES — 23×31 invisible grid (713 points)
+// 23 columns × 31 rows — odd numbers give a true center point at 50%,50%
 // ─────────────────────────────────────────────────
 const ZONES = (() => {
-    const cols = 22, rows = 30;
+    const cols = 23, rows = 31;
     const z = [];
     for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
@@ -2871,14 +3022,19 @@ function highlightGhost() {}
 function nearestZoneIdx(pxX, pxY) {
     const vw = window.innerWidth, vh = window.innerHeight;
     let best = 0, bestDist = Infinity;
-    ZONES.forEach((z, i) => {
+    for (let i = 0; i < ZONES.length; i++) {
+        const z  = ZONES[i];
         const gx = z.x / 100 * vw;
         const gy = z.y / 100 * vh;
         const d  = Math.hypot(gx - pxX, gy - pxY);
         if (d < bestDist) { bestDist = d; best = i; }
-    });
+    }
     return best;
 }
+
+// Cached DOM refs for hot-path drag code
+const lineH = document.getElementById('center-h');
+const lineV = document.getElementById('center-v');
 
 // ─────────────────────────────────────────────────
 // DRAG ENGINE
@@ -2906,6 +3062,8 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
     let curPxX = anchorX;
     let curPxY = anchorY;
 
+    const CENTER_SNAP_PX = 28; // pixels within which widget snaps to center line
+
     const onMove = (ev) => {
         if (isTouch) ev.preventDefault();
         const { cx, cy } = getXY(ev);
@@ -2917,12 +3075,29 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
             el.classList.add('dragging');
             el.style.willChange = 'transform';
             showGhosts();
-            document.getElementById('center-h').style.display = 'block';
-            document.getElementById('center-v').style.display = 'block';
+            lineH.style.display = 'block';
+            lineV.style.display = 'block';
         }
 
-        curPxX = Math.min(window.innerWidth  * 0.95, Math.max(window.innerWidth  * 0.05, anchorX + dx));
-        curPxY = Math.min(window.innerHeight * 0.95, Math.max(window.innerHeight * 0.05, anchorY + dy));
+        const rawX = Math.min(window.innerWidth  * 0.95, Math.max(window.innerWidth  * 0.05, anchorX + dx));
+        const rawY = Math.min(window.innerHeight * 0.95, Math.max(window.innerHeight * 0.05, anchorY + dy));
+
+        const midX = window.innerWidth  / 2;
+        const midY = window.innerHeight / 2;
+
+        // Snap to center lines if close enough
+        const snapH = Math.abs(rawY - midY) < CENTER_SNAP_PX;
+        const snapV = Math.abs(rawX - midX) < CENTER_SNAP_PX;
+        curPxX = snapV ? midX : rawX;
+        curPxY = snapH ? midY : rawY;
+
+        // Highlight active center lines
+        lineH.style.opacity = snapH ? '1' : '0.25';
+        lineV.style.opacity = snapV ? '1' : '0.25';
+        lineH.style.background = snapH ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)';
+        lineV.style.background = snapV ? 'rgba(255,255,255,0.7)' : 'rgba(255,255,255,0.25)';
+        lineH.style.boxShadow = snapH ? '0 0 12px rgba(255,255,255,0.5)' : '0 0 6px rgba(255,255,255,0.15)';
+        lineV.style.boxShadow = snapV ? '0 0 12px rgba(255,255,255,0.5)' : '0 0 6px rgba(255,255,255,0.15)';
 
         // Move via transform only — zero layout cost, pure GPU composite
         const offsetX = curPxX - anchorX;
@@ -2940,8 +3115,14 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         el.classList.remove('dragging');
         el.style.removeProperty('will-change');
         hideGhosts();
-        document.getElementById('center-h').style.display = 'none';
-        document.getElementById('center-v').style.display = 'none';
+        lineH.style.display = 'none';
+        lineH.style.opacity = '1';
+        lineH.style.background = 'rgba(255,255,255,0.25)';
+        lineH.style.boxShadow = '0 0 6px rgba(255,255,255,0.15)';
+        lineV.style.display = 'none';
+        lineV.style.opacity = '1';
+        lineV.style.background = 'rgba(255,255,255,0.25)';
+        lineV.style.boxShadow = '0 0 6px rgba(255,255,255,0.15)';
         if (!moved) { el.style.transition = ''; return; }
 
         // Find snap target in px
@@ -3016,6 +3197,26 @@ function toggle(key) {
     state[key] = !state[key];
     applyAll();
     if (key === 'batteryDynamic') updateBattery();
+    if (key === 'artAsBg') {
+        const bgl = document.getElementById('bg-layer');
+        if (state.artAsBg && _lastArtUrl) {
+            // Instantly apply cached art — no waiting for next Spotify poll
+            bgl.style.backgroundImage = `url(${_lastArtUrl})`;
+            document.body.style.backgroundColor = 'transparent';
+        } else if (!state.artAsBg) {
+            // Restore user background immediately
+            if (state.gradientCss && !state.isStatic && !state.bg) {
+                document.body.style.backgroundColor = 'transparent';
+                bgl.style.backgroundImage = state.gradientCss;
+            } else if (state.isStatic) {
+                document.body.style.backgroundColor = state.staticColor;
+                bgl.style.backgroundImage = 'none';
+            } else {
+                document.body.style.backgroundColor = 'transparent';
+                bgl.style.backgroundImage = state.bg ? `url(${state.bg})` : 'none';
+            }
+        }
+    }
     if (key === 'weatherTint') {
         // Re-apply or clear the tint immediately
         const tintEl = document.getElementById('weather-tint');
@@ -3287,7 +3488,7 @@ function applyGradient(g) {
     state.bg = '';              // clear any photo bg
     const bgl = document.getElementById('bg-layer');
     bgl.style.backgroundImage = g.css;
-    document.body.style.backgroundColor = '#000';
+    document.body.style.backgroundColor = 'transparent';
     bgl.style.filter  = `blur(${state.blur}px)`;
     bgl.style.opacity = state.bgOpacity;
     save();
@@ -3339,6 +3540,7 @@ function applyWeatherTint(code) {
 // ─────────────────────────────────────────────────
 
 load();
-</script>
+</script>    </div>
+</div>
 </body>
 </html>
