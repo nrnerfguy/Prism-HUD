@@ -4,8 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <meta name="apple-mobile-web-app-title" content="Prism OS">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#000000">
+    <link rel="manifest" href="manifest.json">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Outfit:wght@100;300;400;900&display=block" rel="stylesheet">
@@ -1026,7 +1029,11 @@
 
         <div class="control-group">
             <label>Accent Color</label>
-            <input type="color" id="color-accent" style="height:45px;width:100%;border:none;background:none;" onchange="state.accent=this.value;accentFromArt=false;applyAll();save();">
+            <input type="color" id="color-accent" style="height:45px;width:100%;border:none;background:none;" onchange="state.accent=this.value;state.accentAuto=false;accentFromArt=false;applyAll();save();updateAccentAutoBtn();">
+            <button id="btn-accent-auto" onclick="state.accentAuto=!state.accentAuto;if(state.accentAuto){accentFromArt=false;}save();updateAccentAutoBtn();"
+              style="margin-top:8px;width:100%;padding:9px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);font-size:0.72rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;">
+              AUTO FROM ALBUM ART: ON
+            </button>
         </div>
 
         <!-- Export / Import -->
@@ -1065,7 +1072,7 @@ let state = {
         moon:       { x: 17, y: 25 },
         countdown:  { x: 83, y: 25 }
     },
-    scale: 1, accent: '#007AFF',
+    scale: 1, accent: '#007AFF', accentAuto: true,
     city: 'Calgary', bg: '', history: [],
     isStatic: false, staticColor: '#000000', blur: 0, bgOpacity: 1,
     presets: {}, posLocked: false, activeGradient: '',
@@ -1307,6 +1314,7 @@ let _lastArtUrl = null; // cache last album art URL for instant artAsBg toggle
 
 function extractAccentFromArt(imgUrl) {
     if (!imgUrl) { restoreUserAccent(); return; }
+    if (!state.accentAuto) return; // user has manually locked their accent colour
     _lastArtUrl = imgUrl; // cache for instant artAsBg toggle
     const img = new Image();
     img.crossOrigin = 'anonymous';
@@ -1368,6 +1376,16 @@ function extractAccentFromArt(imgUrl) {
     };
     img.onerror = () => { if (!state.artAsBg) { /* silent fail */ } else { restoreUserAccent(); } };
     img.src = imgUrl;
+}
+
+function updateAccentAutoBtn() {
+    const btn = document.getElementById('btn-accent-auto');
+    if (!btn) return;
+    const auto = state.accentAuto;
+    btn.textContent = 'AUTO FROM ALBUM ART: ' + (auto ? 'ON' : 'OFF');
+    btn.style.background = auto ? 'rgba(0,122,255,0.18)' : 'rgba(255,255,255,0.06)';
+    btn.style.borderColor = auto ? 'rgba(0,122,255,0.4)' : 'rgba(255,255,255,0.12)';
+    btn.style.color       = auto ? 'rgba(120,180,255,0.9)' : 'rgba(255,255,255,0.4)';
 }
 
 function restoreUserAccent() {
@@ -2949,6 +2967,7 @@ function applyAll() {
     );
 
     document.getElementById('color-accent').value = state.accent;
+    updateAccentAutoBtn();
 
     // Weather tint toggle
     const swTint = document.getElementById('sw-weatherTint');
