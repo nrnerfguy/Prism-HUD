@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -683,7 +683,6 @@
                     </button>
                 </div>
                 <div id="np-bar"><div id="np-bar-fill"></div></div>
-                <div class="np-premium-note">Requires Spotify Premium</div>
                 <div id="np-label">SPOTIFY</div>
                 <div id="np-next-wrap">
                     <div id="np-next-label">Next Up</div>
@@ -742,6 +741,16 @@
     <button class="ctx-item" id="ctx-item-reset" onclick="ctxReset()">
         <span class="ctx-icon">↩</span>Reset Position
     </button>
+    <div class="ctx-item" style="flex-direction:column;align-items:flex-start;gap:6px;cursor:default;" onclick="event.stopPropagation()">
+        <div style="display:flex;align-items:center;gap:8px;width:100%;">
+            <span class="ctx-icon">⊡</span>
+            <span style="flex:1;">Widget Scale</span>
+            <span id="ctx-scale-val" style="font-size:0.7rem;opacity:0.5;font-variant-numeric:tabular-nums;">100%</span>
+        </div>
+        <input type="range" id="ctx-scale-slider" min="0.3" max="2.5" step="0.05" value="1"
+            style="width:100%;margin:0;accent-color:var(--accent);"
+            oninput="ctxSetWidgetScale(this.value)">
+    </div>
 </div>
 
 <!-- ── POSITION LOCK INDICATOR ── -->
@@ -754,7 +763,7 @@
 <div id="side-panel">
     <div class="panel-content">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
-            <img src="logo.png" alt="Prism" width="38" height="38" style="border-radius:10px;flex-shrink:0;">
+            <img src="../assets/icon.png" alt="Prism" width="38" height="38" style="border-radius:10px;flex-shrink:0;">
             <div>
                 <div style="font-size:1.3rem;font-weight:900;letter-spacing:-0.5px;line-height:1;">Prism OS</div>
                 <div style="font-size:0.55rem;opacity:0.35;letter-spacing:3px;text-transform:uppercase;margin-top:2px;">Settings</div>
@@ -807,6 +816,17 @@
                 <div class="row">
                     <label style="font-size:0.5rem;">Album Art as Background</label>
                     <div id="sw-artAsBg" class="ios-switch" onclick="toggle('artAsBg')"></div>
+                </div>
+                <div class="row" style="margin-top:10px;">
+                    <label style="font-size:0.5rem;">Auto Accent from Album Art</label>
+                    <div id="sw-accentAuto" class="ios-switch active" onclick="state.accentAuto=!state.accentAuto;if(!state.accentAuto)restoreUserAccent();document.getElementById('sw-accentAuto').classList.toggle('active',state.accentAuto);save();"></div>
+                </div>
+                <div class="row" style="margin-top:10px;">
+                    <label style="font-size:0.5rem;">Show Next Up</label>
+                    <div id="sw-showNextUp" class="ios-switch active" onclick="state.showNextUp=!state.showNextUp;document.getElementById('sw-showNextUp').classList.toggle('active',state.showNextUp);save();"></div>
+                </div>
+                <div style="margin-top:8px;padding:7px 10px;border-radius:8px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.06);">
+                    <span style="font-size:0.46rem;opacity:0.4;letter-spacing:1.5px;text-transform:uppercase;">Playback controls require Spotify Premium</span>
                 </div>
                 <div class="row" style="margin-top:10px;">
                     <label style="font-size:0.5rem;">Visibility</label>
@@ -1030,10 +1050,7 @@
         <div class="control-group">
             <label>Accent Color</label>
             <input type="color" id="color-accent" style="height:45px;width:100%;border:none;background:none;" onchange="state.accent=this.value;state.accentAuto=false;accentFromArt=false;applyAll();save();updateAccentAutoBtn();">
-            <button id="btn-accent-auto" onclick="state.accentAuto=!state.accentAuto;if(state.accentAuto){accentFromArt=false;}save();updateAccentAutoBtn();"
-              style="margin-top:8px;width:100%;padding:9px;border-radius:10px;border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.06);color:rgba(255,255,255,0.5);font-size:0.72rem;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;cursor:pointer;transition:all 0.2s;">
-              AUTO FROM ALBUM ART: ON
-            </button>
+
         </div>
 
         <!-- Export / Import -->
@@ -1072,7 +1089,8 @@ let state = {
         moon:       { x: 17, y: 25 },
         countdown:  { x: 83, y: 25 }
     },
-    scale: 1, accent: '#007AFF', accentAuto: true,
+    scale: 1, accent: '#007AFF', accentAuto: true, showNextUp: true,
+    widgetScales: {},
     city: 'Calgary', bg: '', history: [],
     isStatic: false, staticColor: '#000000', blur: 0, bgOpacity: 1,
     presets: {}, posLocked: false, activeGradient: '',
@@ -1311,6 +1329,7 @@ break;
 // ─────────────────────────────────────────────────
 let accentFromArt = false; // track whether accent is from art or user setting
 let _lastArtUrl = null; // cache last album art URL for instant artAsBg toggle
+let _lastTrackId = null; // prevent album art reload on same track
 
 function extractAccentFromArt(imgUrl) {
     if (!imgUrl) { restoreUserAccent(); return; }
@@ -2713,18 +2732,23 @@ function updateNowPlayingUI(data, nextTrack) {
     const track = data.item;
     const art   = track.album?.images?.[0]?.url;
     const artEl = document.getElementById('np-art');
+    const trackId = track.id || track.name; // unique identifier for current track
 
     document.getElementById('np-track').innerText  = track.name;
     document.getElementById('np-artist').textContent = track.artists.map(a => a.name).join(', ');
 
-    if (art) {
-        artEl.innerHTML = `<img src="${art}" alt="album art">`;
-        artEl.classList.add('has-art');
-        extractAccentFromArt(art);
-    } else {
-        artEl.innerHTML = '♫';
-        artEl.classList.remove('has-art');
-        restoreUserAccent();
+    // Only reload album art if the track has actually changed — prevents flicker on 15s refresh
+    if (trackId !== _lastTrackId) {
+        _lastTrackId = trackId;
+        if (art) {
+            artEl.innerHTML = `<img src="${art}" alt="album art">`;
+            artEl.classList.add('has-art');
+            extractAccentFromArt(art);
+        } else {
+            artEl.innerHTML = '♫';
+            artEl.classList.remove('has-art');
+            restoreUserAccent();
+        }
     }
 
     const pct = data.progress_ms / track.duration_ms * 100;
@@ -2734,9 +2758,9 @@ function updateNowPlayingUI(data, nextTrack) {
     document.getElementById('np-play-icon').style.display  = isPlaying ? 'none'  : 'block';
     document.getElementById('np-pause-icon').style.display = isPlaying ? 'block' : 'none';
 
-    // Next track
+    // Next track — only show if enabled in settings
     const nextWrap = document.getElementById('np-next-wrap');
-    if (nextTrack) {
+    if (nextTrack && state.showNextUp) {
         document.getElementById('np-next-track').innerText  = nextTrack.name;
         document.getElementById('np-next-artist').innerText = nextTrack.artists?.map(a => a.name).join(', ') ?? '';
         nextWrap.style.display = 'block';
@@ -2968,6 +2992,11 @@ function applyAll() {
 
     document.getElementById('color-accent').value = state.accent;
     updateAccentAutoBtn();
+    // Sync new switches
+    const swAccAuto = document.getElementById('sw-accentAuto');
+    if (swAccAuto) swAccAuto.classList.toggle('active', state.accentAuto !== false);
+    const swNextUp = document.getElementById('sw-showNextUp');
+    if (swNextUp) swNextUp.classList.toggle('active', state.showNextUp !== false);
 
     // Weather tint toggle
     const swTint = document.getElementById('sw-weatherTint');
@@ -3016,18 +3045,21 @@ const DEFAULT_POS = {
 
 function positionWidget(key) {
     if (!state.widgetPos) state.widgetPos = JSON.parse(JSON.stringify(DEFAULT_POS));
+    if (!state.widgetScales) state.widgetScales = {};
     const pos = state.widgetPos[key] || DEFAULT_POS[key];
     const el  = document.getElementById(key + '-widget');
     if (!el) return;
     el.style.left = pos.x + '%';
     el.style.top  = pos.y + '%';
-    const sx = state.mirrored ? -state.scale : state.scale;
-    el.style.setProperty('--ws',  state.scale);
+    // Per-widget scale multiplied by global scale
+    const widgetScale = (state.widgetScales[key] !== undefined ? state.widgetScales[key] : 1) * state.scale;
+    const sx = state.mirrored ? -widgetScale : widgetScale;
+    el.style.setProperty('--ws',  widgetScale);
     el.style.setProperty('--wmx', sx);
     // Burn shield drift offset — defaults to 0 if not yet set
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
     const bsy = el.style.getPropertyValue('--bsy') || '0px';
-    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scale(${sx}, ${state.scale})`;
+    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scale(${sx}, ${widgetScale})`;
 }
 
 // Ghost system is fully removed — grid is invisible
@@ -3074,9 +3106,11 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
     el.style.left = origPos.x + '%';
     el.style.top  = origPos.y + '%';
 
-    const sx = state.mirrored ? -state.scale : state.scale;
+    if (!state.widgetScales) state.widgetScales = {};
+    const _ws = (state.widgetScales[key] !== undefined ? state.widgetScales[key] : 1) * state.scale;
+    const sx = state.mirrored ? -_ws : _ws;
     el.style.setProperty('--wmx', sx);
-    el.style.setProperty('--ws',  state.scale);
+    el.style.setProperty('--ws',  _ws);
 
     let curPxX = anchorX;
     let curPxY = anchorY;
@@ -3425,6 +3459,13 @@ let _ctxKey = null;
 
 function showCtxMenu(key, x, y) {
     _ctxKey = key;
+    // Populate per-widget scale slider
+    if (!state.widgetScales) state.widgetScales = {};
+    const _wScale = state.widgetScales[key] !== undefined ? state.widgetScales[key] : 1;
+    const sldr = document.getElementById('ctx-scale-slider');
+    const sldrVal = document.getElementById('ctx-scale-val');
+    if (sldr) sldr.value = _wScale;
+    if (sldrVal) sldrVal.textContent = Math.round(_wScale * 100) + '%';
     const menu = document.getElementById('widget-ctx-menu');
     document.getElementById('ctx-lock-label').textContent = state.posLocked ? 'Unlock Positions' : 'Lock Positions';
     document.getElementById('ctx-lock-icon').textContent  = state.posLocked ? '🔓' : '🔒';
@@ -3450,6 +3491,15 @@ function ctxHide() {
 function ctxReset() {
     if (!_ctxKey) return;
     resetWidget(_ctxKey); hideCtxMenu();
+}
+
+function ctxSetWidgetScale(val) {
+    if (!_ctxKey) return;
+    if (!state.widgetScales) state.widgetScales = {};
+    state.widgetScales[_ctxKey] = parseFloat(val);
+    document.getElementById('ctx-scale-val').textContent = Math.round(val * 100) + '%';
+    positionWidget(_ctxKey);
+    save();
 }
 
 // ─────────────────────────────────────────────────
