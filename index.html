@@ -1,4 +1,4 @@
- <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -19,11 +19,13 @@
         :root {
             --accent: #007AFF;
             --vh: 1vh;
-            --accent-fg: #fff;       /* text ON top of accent-colored elements */
+            --accent-fg: #fff;
             --smooth-ease: cubic-bezier(0.4, 0, 0.2, 1);
             --slow-ease: cubic-bezier(0.65, 0, 0.35, 1);
             --widget-shadow: drop-shadow(0px 0px 12px rgba(0,0,0,0.9));
         }
+        @keyframes hudReveal {
+            from { opacity: 0; transform: scale(0.97); }
             to   { opacity: 1; transform: scale(1); }
         }
         #hud-master.revealing {
@@ -346,13 +348,6 @@
             min-width: 280px;
         }
 
-
-
-
-
-
-
-
         .ticker-item {
             padding: 10px 15px; border-bottom: 1px solid rgba(255,255,255,0.05);
             cursor: pointer; font-size: 0.8rem; text-align: left;
@@ -433,7 +428,7 @@
         .group-chevron svg { display: block; }
         .control-group.collapsed .group-chevron { transform: rotate(-90deg); }
         .group-header:hover .group-chevron { opacity: 0.9; }
-        .group-body { overflow: visible; transition: max-height 0.3s ease, opacity 0.25s ease; max-height: 2000px; opacity: 1; }
+        .group-body { overflow: visible; transition: max-height 0.4s ease, opacity 0.25s ease; max-height: 9999px; opacity: 1; }
         .control-group.collapsed .group-body { max-height: 0; opacity: 0; pointer-events: none; overflow: hidden; }
 
         /* ── WIDGET CONTEXT MENU ── */
@@ -447,7 +442,7 @@
             box-shadow: 0 12px 40px rgba(0,0,0,0.8), inset 0 1px 0 rgba(255,255,255,0.07);
             opacity: 0; transform: scale(0.92) translateY(4px); pointer-events: none;
             transition: opacity 0.18s ease, transform 0.18s ease;
-            min-width: 175px;
+            min-width: 210px;
         }
         #widget-ctx-menu.visible { opacity: 1; transform: scale(1) translateY(0); pointer-events: all; }
         .ctx-item {
@@ -1045,6 +1040,34 @@
         <div class="control-group">
             <div class="row"><label>Widget Scale</label></div>
             <input type="range" id="range-scale" min="0.4" max="2.0" step="0.01" value="1" oninput="state.scale=this.value;applyAll();save();">
+            <button onclick="optimizeScale()" class="update-btn" style="margin-top:10px;background:rgba(255,255,255,0.08);color:#fff;">⊡ Optimize Scale</button>
+        </div>
+
+        <div class="control-group">
+            <label>Display &amp; Sleep</label>
+            <div class="row" style="margin-top:12px;">
+                <label style="font-size:0.5rem;">Always On (prevent sleep)</label>
+                <div id="sw-alwaysOn" class="ios-switch" onclick="toggleAlwaysOn()"></div>
+            </div>
+            <div class="row" style="margin-top:10px;">
+                <label style="font-size:0.5rem;">Sleep Schedule</label>
+                <div id="sw-sleepEnabled" class="ios-switch" onclick="toggleSleepSchedule()"></div>
+            </div>
+            <div id="sleep-schedule-body" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);">
+                <div class="row" style="margin-bottom:10px;">
+                    <label style="font-size:0.5rem;">Sleep at</label>
+                    <input type="time" id="sleep-time-input" value="23:00"
+                        style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;padding:5px 10px;font-size:0.75rem;width:110px;"
+                        onchange="state.sleepTime=this.value;save();scheduleSleepWake();">
+                </div>
+                <div class="row">
+                    <label style="font-size:0.5rem;">Wake at</label>
+                    <input type="time" id="wake-time-input" value="07:00"
+                        style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;padding:5px 10px;font-size:0.75rem;width:110px;"
+                        onchange="state.wakeTime=this.value;save();scheduleSleepWake();">
+                </div>
+                <div id="sleep-status" style="margin-top:10px;font-size:0.48rem;opacity:0.4;letter-spacing:1px;text-transform:uppercase;"></div>
+            </div>
         </div>
 
         <div class="control-group">
@@ -1097,7 +1120,9 @@ let state = {
     clockStyle: 'bold',
     ambientSound: null, ambientVolume: 0.3,
     spotifyClientId: '',
-    weatherTint: true, batteryDynamic: true
+    weatherTint: true, batteryDynamic: true,
+    alwaysOn: false,
+    sleepEnabled: false, sleepTime: '23:00', wakeTime: '07:00'
 };
 
 // ─────────────────────────────────────────────────
@@ -1140,11 +1165,18 @@ function load() {
 
     resetDimTimer();
     createSnapGhosts();
+    if (state.alwaysOn) requestWakeLock();
+    if (state.sleepEnabled) scheduleSleepWake();
     initAllDrag();
     renderGradients();
     initInteractions();
 
     // Stocks
+    // Refresh weather every 10 minutes
+    if (!window._weatherInterval) {
+        window._weatherInterval = setInterval(fetchWeather, 10 * 60 * 1000);
+    }
+
     if (state.showStocks) {
         document.getElementById('stocks-widget').style.display = 'flex';
         startStocksPolling();
@@ -1286,14 +1318,21 @@ document.addEventListener('keydown', e => {
             break;
         case 'f':
         case 'F':
-break;
+            toggleFullscreen();
+            showToast(_isElectronFullscreen ? '⤢  Exit Fullscreen' : '⤡  Fullscreen');
+            break;
         case 'Escape':
             if (document.getElementById('side-panel').classList.contains('open')) toggleNav();
-            
             break;
         case 'd':
-            if (dim.isDimmed) { undim(); clearTimeout(dim.timer); } else doDim();
-            showToast(dim.isDimmed ? '🌙  Dimmed' : '☀︎  Undimmed');
+            if (dim.isDimmed) {
+                undim();
+                clearTimeout(dim.timer);
+                showToast('☀︎  Undimmed');
+            } else {
+                doDim();
+                showToast('🌙  Dimmed');
+            }
             break;
         case '-':
         case '_':
@@ -1398,13 +1437,9 @@ function extractAccentFromArt(imgUrl) {
 }
 
 function updateAccentAutoBtn() {
-    const btn = document.getElementById('btn-accent-auto');
-    if (!btn) return;
-    const auto = state.accentAuto;
-    btn.textContent = 'AUTO FROM ALBUM ART: ' + (auto ? 'ON' : 'OFF');
-    btn.style.background = auto ? 'rgba(0,122,255,0.18)' : 'rgba(255,255,255,0.06)';
-    btn.style.borderColor = auto ? 'rgba(0,122,255,0.4)' : 'rgba(255,255,255,0.12)';
-    btn.style.color       = auto ? 'rgba(120,180,255,0.9)' : 'rgba(255,255,255,0.4)';
+    // Syncs the sw-accentAuto toggle in the Spotify settings panel
+    const sw = document.getElementById('sw-accentAuto');
+    if (sw) sw.classList.toggle('active', state.accentAuto !== false);
 }
 
 function restoreUserAccent() {
@@ -1483,9 +1518,8 @@ function updateClock() {
 // Align clock tick to actual second boundary to prevent drift
 (function scheduleClock() {
     updateClock();
-    const now = Date.now();
-    const delay = 1000 - (now % 1000);
-    setTimeout(function tick() {
+    const delay = 1000 - (Date.now() % 1000);
+    setTimeout(function () {
         updateClock();
         setInterval(updateClock, 1000);
     }, delay);
@@ -1662,8 +1696,12 @@ async function updateBattery() {
     // Battery Status API is not supported on iOS — hide widget silently
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     if (isIOS || !navigator.getBattery) {
-        document.getElementById('battery-widget').style.opacity = '0';
-        document.getElementById('battery-widget').style.pointerEvents = 'none';
+        // Fully disable on iOS — Battery API not available
+        const bw = document.getElementById('battery-widget');
+        bw.style.opacity = '0';
+        bw.style.pointerEvents = 'none';
+        bw.style.display = 'none';
+        state.showBattery = false;
         return;
     }
     try {
@@ -1797,11 +1835,6 @@ function renderTickerTags() {
     });
 }
 
-// ─────────────────────────────────────────────────
-// ─────────────────────────────────────────────────
-// ─────────────────────────────────────────────────
-// ─────────────────────────────────────────────────
-// ─────────────────────────────────────────────────
 // TICKER AUTOCOMPLETE
 // SEC EDGAR (~10k US) loaded on first use + cached.
 // 1500 international tickers bundled as fallback.
@@ -1907,7 +1940,7 @@ function positionTickerDropdown() {
     const box   = document.getElementById('ticker-results');
     if (!input || !box) return;
     const rect  = input.getBoundingClientRect();
-    if (rect.width === 0) return;
+    if (rect.width === 0 || rect.height === 0) return; // panel not open/visible
     const maxLeft = window.innerWidth - rect.width - 8;
     box.style.top   = (rect.bottom + 6) + 'px';
     box.style.left  = Math.max(8, Math.min(rect.left, maxLeft)) + 'px';
@@ -2801,11 +2834,16 @@ function pollSpotify() {
 }
 
 function disconnectSpotify() {
-    spotify.accessToken = null;
+    spotify.accessToken  = null;
     spotify.refreshToken = null;
-    if (spotify.pollInterval) clearInterval(spotify.pollInterval);
+    spotify.expiresAt    = 0;
+    if (spotify.pollInterval) { clearInterval(spotify.pollInterval); spotify.pollInterval = null; }
     localStorage.removeItem('spotify_tokens');
-    document.getElementById('nowplaying-widget').style.display = 'none';
+    _lastTrackId = null; // reset so next connect shows fresh art
+    accentFromArt = false;
+    restoreUserAccent();
+    const npw = document.getElementById('nowplaying-widget');
+    if (npw) npw.style.display = 'none';
     updateSpotifyUI();
 }
 
@@ -2921,6 +2959,17 @@ function applyAll() {
     document.getElementById('sw-mirrored').classList.toggle('active', state.mirrored);
     document.getElementById('sw-is24h').classList.toggle('active', state.is24h);
     document.getElementById('sw-burnShield').classList.toggle('active', state.burnShield);
+    const swAlwaysOn = document.getElementById('sw-alwaysOn');
+    if (swAlwaysOn) swAlwaysOn.classList.toggle('active', !!state.alwaysOn);
+    const swSleep = document.getElementById('sw-sleepEnabled');
+    if (swSleep) swSleep.classList.toggle('active', !!state.sleepEnabled);
+    const sleepBody = document.getElementById('sleep-schedule-body');
+    if (sleepBody) sleepBody.style.display = state.sleepEnabled ? 'block' : 'none';
+    const sleepInp = document.getElementById('sleep-time-input');
+    if (sleepInp) sleepInp.value = state.sleepTime || '23:00';
+    const wakeInp = document.getElementById('wake-time-input');
+    if (wakeInp) wakeInp.value = state.wakeTime || '07:00';
+    document.getElementById('range-scale').value = state.scale;
     document.getElementById('sw-showSeconds').classList.toggle('active', !!state.showSeconds);
     document.getElementById('sw-showPills').classList.toggle('active', !!state.showPills);
     document.getElementById('sw-artAsBg').classList.toggle('active', !!state.artAsBg);
@@ -2964,7 +3013,6 @@ function applyAll() {
     renderTzTags();
 
     document.getElementById('city-input').value  = state.city;
-    document.getElementById('range-scale').value = state.scale;
 
     // Sync background effect sliders to saved state
     const blurSlider = document.querySelector('input[oninput*="state.blur"]');
@@ -3009,7 +3057,8 @@ function applyAll() {
     if (tintEl && !state.weatherTint) tintEl.style.opacity = '0';
 
     updateGhostSize();
-    updateBattery();
+    // updateBattery is async and only needed on dynamic colour changes
+    // It's called explicitly on load and when batteryDynamic toggles
 }
 
 // ─────────────────────────────────────────────────
@@ -3235,6 +3284,187 @@ function startBurnShield() {
             positionWidget(key); // re-apply transform with new drift
         });
     }, 60000);
+}
+
+// ─────────────────────────────────────────────────
+// ALWAYS ON — Wake Lock API
+// ─────────────────────────────────────────────────
+let _wakeLock = null;
+
+async function requestWakeLock() {
+    if (!('wakeLock' in navigator)) return;
+    try {
+        _wakeLock = await navigator.wakeLock.request('screen');
+        _wakeLock.addEventListener('release', () => { _wakeLock = null; });
+    } catch(e) {}
+}
+
+function releaseWakeLock() {
+    if (_wakeLock) { _wakeLock.release(); _wakeLock = null; }
+}
+
+function toggleAlwaysOn() {
+    state.alwaysOn = !state.alwaysOn;
+    const sw = document.getElementById('sw-alwaysOn');
+    if (sw) sw.classList.toggle('active', state.alwaysOn);
+    if (state.alwaysOn) requestWakeLock();
+    else releaseWakeLock();
+    save();
+}
+
+// Re-acquire wake lock when tab becomes visible again (it gets released on tab switch)
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && state.alwaysOn) requestWakeLock();
+});
+
+// ─────────────────────────────────────────────────
+// SLEEP / WAKE SCHEDULE
+// ─────────────────────────────────────────────────
+let _sleepWakeInterval = null;
+let _isSleeping = false;
+
+function toggleSleepSchedule() {
+    state.sleepEnabled = !state.sleepEnabled;
+    const sw = document.getElementById('sw-sleepEnabled');
+    if (sw) sw.classList.toggle('active', state.sleepEnabled);
+    const body = document.getElementById('sleep-schedule-body');
+    if (body) body.style.display = state.sleepEnabled ? 'block' : 'none';
+    if (state.sleepEnabled) scheduleSleepWake();
+    else {
+        clearInterval(_sleepWakeInterval);
+        wakeDisplay(); // ensure display is on if schedule disabled
+    }
+    save();
+}
+
+function scheduleSleepWake() {
+    clearInterval(_sleepWakeInterval);
+    checkSleepWake(); // check immediately
+    _sleepWakeInterval = setInterval(checkSleepWake, 60000); // check every minute
+}
+
+function checkSleepWake() {
+    if (!state.sleepEnabled) return;
+    const now = new Date();
+    const cur = now.getHours() * 60 + now.getMinutes();
+    const [sh, sm] = (state.sleepTime || '23:00').split(':').map(Number);
+    const [wh, wm] = (state.wakeTime || '07:00').split(':').map(Number);
+    const sleepMins = sh * 60 + sm;
+    const wakeMins  = wh * 60 + wm;
+
+    let shouldSleep;
+    if (sleepMins > wakeMins) {
+        // Sleep period crosses midnight e.g. 23:00 → 07:00
+        shouldSleep = cur >= sleepMins || cur < wakeMins;
+    } else {
+        // Sleep period within same day e.g. 13:00 → 15:00
+        shouldSleep = cur >= sleepMins && cur < wakeMins;
+    }
+
+    if (shouldSleep && !_isSleeping) sleepDisplay();
+    else if (!shouldSleep && _isSleeping) wakeDisplay();
+
+    // Update status text
+    const statusEl = document.getElementById('sleep-status');
+    if (statusEl) {
+        if (shouldSleep) {
+            statusEl.textContent = 'Display sleeping · wakes at ' + (state.wakeTime || '07:00');
+        } else {
+            const minsUntilSleep = sleepMins > cur
+                ? sleepMins - cur
+                : (1440 - cur) + sleepMins;
+            const h = Math.floor(minsUntilSleep / 60);
+            const m = minsUntilSleep % 60;
+            statusEl.textContent = 'Sleeping in ' + (h > 0 ? h + 'h ' : '') + m + 'm';
+        }
+    }
+}
+
+function wakeDisplay() {
+    _isSleeping = false;
+    const hud = document.getElementById('hud-master');
+    if (hud) {
+        hud.style.transition = 'opacity 1.5s ease';
+        hud.style.opacity = '1';
+        hud.style.pointerEvents = 'all';
+    }
+    const bgl = document.getElementById('bg-layer');
+    if (bgl) {
+        bgl.style.transition = 'opacity 1.5s ease';
+        bgl.style.opacity = state.bgOpacity ?? 1;
+    }
+    document.body.style.transition = 'background-color 1.5s ease';
+}
+
+function sleepDisplay() {
+    if (_isSleeping) return; // already sleeping — don't re-register listener
+    _isSleeping = true;
+    const hud = document.getElementById('hud-master');
+    if (hud) {
+        hud.style.transition = 'opacity 2s ease';
+        hud.style.opacity = '0';
+        hud.style.pointerEvents = 'none';
+    }
+    const bgl = document.getElementById('bg-layer');
+    if (bgl) {
+        bgl.style.transition = 'opacity 2s ease';
+        bgl.style.opacity = '0';
+    }
+    document.body.style.transition = 'background-color 2s ease';
+    document.body.style.backgroundColor = '#000';
+    // Register a one-time tap to temporarily wake
+    document.addEventListener('click', _tempWakeHandler, { once: true });
+}
+
+// Tap to temporarily wake during sleep hours (30s preview)
+function _tempWakeHandler() {
+    wakeDisplay();
+    setTimeout(() => {
+        if (state.sleepEnabled && _sleepWakeInterval) checkSleepWake();
+    }, 30000);
+}
+
+// ─────────────────────────────────────────────────
+// OPTIMIZED SCALE
+// Finds the largest scale where no widget is clipped
+// ─────────────────────────────────────────────────
+function optimizeScale() {
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const WIDGET_KEYS_VIS = ['clock','date','weather','battery','nowplaying','stocks','worldclock','moon','countdown']
+        .filter(k => state['show' + k.charAt(0).toUpperCase() + k.slice(1)]);
+
+    if (!WIDGET_KEYS_VIS.length) return;
+
+    // Note: per-widget scales are preserved — we only tune global scale
+
+    // Binary search for the largest global scale where all widgets fit
+    let lo = 0.4, hi = 2.5, best = state.scale;
+    for (let iter = 0; iter < 18; iter++) {
+        const mid = (lo + hi) / 2;
+        state.scale = mid;
+        applyAll();
+
+        let allFit = true;
+        for (const key of WIDGET_KEYS_VIS) {
+            const el = document.getElementById(key + '-widget');
+            if (!el) continue;
+            const r = el.getBoundingClientRect();
+            if (r.left < 0 || r.top < 0 || r.right > vw || r.bottom > vh) {
+                allFit = false;
+                break;
+            }
+        }
+
+        if (allFit) { best = mid; lo = mid; }
+        else hi = mid;
+    }
+
+    state.scale = parseFloat(best.toFixed(2));
+    applyAll();
+    save();
+    document.getElementById('range-scale').value = state.scale;
+    showToast('⊡ Scale optimized to ' + Math.round(state.scale * 100) + '%');
 }
 
 // ─────────────────────────────────────────────────
@@ -3469,7 +3699,7 @@ function showCtxMenu(key, x, y) {
     const menu = document.getElementById('widget-ctx-menu');
     document.getElementById('ctx-lock-label').textContent = state.posLocked ? 'Unlock Positions' : 'Lock Positions';
     document.getElementById('ctx-lock-icon').textContent  = state.posLocked ? '🔓' : '🔒';
-    const mw = 175;
+    const mw = 210; // wider to accommodate scale slider
     menu.style.left = Math.min(x - mw / 2, window.innerWidth - mw - 10) + 'px';
     menu.style.top  = Math.max(y, 10) + 'px';
     menu.classList.add('visible');
@@ -3564,6 +3794,12 @@ function applyGradient(g) {
     renderGradients();
 }
 
+// Reposition ticker dropdown on window resize
+window.addEventListener('resize', () => {
+    const box = document.getElementById('ticker-results');
+    if (box && box.style.display === 'block') positionTickerDropdown();
+}, { passive: true });
+
 // ─────────────────────────────────────────────────
 // PREVENT PAGE SCROLL (all devices, especially iOS)
 // ─────────────────────────────────────────────────
@@ -3609,7 +3845,6 @@ function applyWeatherTint(code) {
 // ─────────────────────────────────────────────────
 
 load();
-</script>    </div>
-</div>
+</script>
 </body>
 </html>
