@@ -736,15 +736,19 @@
     <button class="ctx-item" id="ctx-item-reset" onclick="ctxReset()">
         <span class="ctx-icon">↩</span>Reset Position
     </button>
-    <div class="ctx-item" style="flex-direction:column;align-items:flex-start;gap:6px;cursor:default;" onclick="event.stopPropagation()">
+    <div class="ctx-item" style="flex-direction:column;align-items:flex-start;gap:8px;cursor:default;" onclick="event.stopPropagation()">
         <div style="display:flex;align-items:center;gap:8px;width:100%;">
             <span class="ctx-icon">⊡</span>
             <span style="flex:1;">Widget Scale</span>
             <span id="ctx-scale-val" style="font-size:0.7rem;opacity:0.5;font-variant-numeric:tabular-nums;">100%</span>
         </div>
-        <input type="range" id="ctx-scale-slider" min="0.3" max="2.5" step="0.05" value="1"
-            style="width:100%;margin:0;accent-color:var(--accent);"
-            oninput="ctxSetWidgetScale(this.value)">
+        <!-- Custom draggable bar — works reliably on iOS touch -->
+        <div id="ctx-scale-track" style="width:100%;height:28px;display:flex;align-items:center;cursor:ew-resize;touch-action:none;padding:0 2px;">
+            <div style="position:relative;width:100%;height:4px;background:rgba(255,255,255,0.12);border-radius:2px;">
+                <div id="ctx-scale-fill" style="position:absolute;left:0;top:0;height:100%;background:var(--accent);border-radius:2px;width:50%;transition:none;"></div>
+                <div id="ctx-scale-thumb" style="position:absolute;top:50%;width:20px;height:20px;background:#fff;border-radius:50%;transform:translate(-50%,-50%);left:50%;box-shadow:0 2px 6px rgba(0,0,0,0.5);transition:none;"></div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1046,8 +1050,11 @@
         <div class="control-group">
             <label>Display &amp; Sleep</label>
             <div class="row" style="margin-top:12px;">
-                <label style="font-size:0.5rem;">Always On (prevent sleep)</label>
+                <label style="font-size:0.5rem;">Keep Screen On</label>
                 <div id="sw-alwaysOn" class="ios-switch" onclick="toggleAlwaysOn()"></div>
+            </div>
+            <div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);">
+                <span style="font-size:0.44rem;opacity:0.35;letter-spacing:1px;text-transform:uppercase;line-height:1.6;display:block;">Uses Wake Lock API. On iOS, go to Settings → Display → Auto-Lock → Never for best results.</span>
             </div>
             <div class="row" style="margin-top:10px;">
                 <label style="font-size:0.5rem;">Sleep Schedule</label>
@@ -1121,7 +1128,7 @@ let state = {
     ambientSound: null, ambientVolume: 0.3,
     spotifyClientId: '',
     weatherTint: true, batteryDynamic: true,
-    alwaysOn: false,
+    alwaysOn: true,
     sleepEnabled: false, sleepTime: '23:00', wakeTime: '07:00'
 };
 
@@ -1165,7 +1172,10 @@ function load() {
 
     resetDimTimer();
     createSnapGhosts();
-    if (state.alwaysOn) requestWakeLock();
+    if (state.alwaysOn) {
+        requestWakeLock();
+        startWakeLockKeepAlive();
+    }
     if (state.sleepEnabled) scheduleSleepWake();
     initAllDrag();
     renderGradients();
@@ -3290,31 +3300,68 @@ function startBurnShield() {
 // ALWAYS ON — Wake Lock API
 // ─────────────────────────────────────────────────
 let _wakeLock = null;
+let _wakeLockInterval = null;
 
 async function requestWakeLock() {
     if (!('wakeLock' in navigator)) return;
+    // Don't re-request if already held
+    if (_wakeLock !== null) return;
     try {
         _wakeLock = await navigator.wakeLock.request('screen');
-        _wakeLock.addEventListener('release', () => { _wakeLock = null; });
-    } catch(e) {}
+        _wakeLock.addEventListener('release', () => {
+            _wakeLock = null;
+            // iOS releases the lock after a few minutes even if active —
+            // if alwaysOn is still enabled and we're not sleeping, re-acquire
+            if (state.alwaysOn && !_isSleeping && document.visibilityState === 'visible') {
+                setTimeout(requestWakeLock, 500);
+            }
+        });
+    } catch(e) {
+        // Fails silently if page is hidden or permission denied
+        _wakeLock = null;
+    }
 }
 
 function releaseWakeLock() {
-    if (_wakeLock) { _wakeLock.release(); _wakeLock = null; }
+    if (_wakeLock) {
+        _wakeLock.release();
+        _wakeLock = null;
+    }
+    if (_wakeLockInterval) {
+        clearInterval(_wakeLockInterval);
+        _wakeLockInterval = null;
+    }
+}
+
+function startWakeLockKeepAlive() {
+    // Re-request every 25 seconds — iOS typically releases after 30s of no touch
+    // This ensures we re-grab it before iOS can drop it permanently
+    if (_wakeLockInterval) clearInterval(_wakeLockInterval);
+    _wakeLockInterval = setInterval(() => {
+        if (state.alwaysOn && !_isSleeping && document.visibilityState === 'visible') {
+            requestWakeLock();
+        }
+    }, 25000);
 }
 
 function toggleAlwaysOn() {
     state.alwaysOn = !state.alwaysOn;
     const sw = document.getElementById('sw-alwaysOn');
     if (sw) sw.classList.toggle('active', state.alwaysOn);
-    if (state.alwaysOn) requestWakeLock();
-    else releaseWakeLock();
+    if (state.alwaysOn) {
+        requestWakeLock();
+        startWakeLockKeepAlive();
+    } else {
+        releaseWakeLock();
+    }
     save();
 }
 
-// Re-acquire wake lock when tab becomes visible again (it gets released on tab switch)
+// Re-acquire immediately when tab becomes visible again
 document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && state.alwaysOn) requestWakeLock();
+    if (document.visibilityState === 'visible' && state.alwaysOn && !_isSleeping) {
+        requestWakeLock();
+    }
 });
 
 // ─────────────────────────────────────────────────
@@ -3382,6 +3429,11 @@ function checkSleepWake() {
 
 function wakeDisplay() {
     _isSleeping = false;
+    // Re-acquire wake lock on wake if alwaysOn is enabled
+    if (state.alwaysOn) {
+        requestWakeLock();
+        startWakeLockKeepAlive();
+    }
     const hud = document.getElementById('hud-master');
     if (hud) {
         hud.style.transition = 'opacity 1.5s ease';
@@ -3399,6 +3451,8 @@ function wakeDisplay() {
 function sleepDisplay() {
     if (_isSleeping) return; // already sleeping — don't re-register listener
     _isSleeping = true;
+    // Release wake lock during sleep hours — let screen dim naturally
+    releaseWakeLock();
     const hud = document.getElementById('hud-master');
     if (hud) {
         hud.style.transition = 'opacity 2s ease';
@@ -3436,7 +3490,8 @@ function optimizeScale() {
 
     if (!WIDGET_KEYS_VIS.length) return;
 
-    // Note: per-widget scales are preserved — we only tune global scale
+    // Reset all per-widget scales first so we optimize from a clean baseline
+    state.widgetScales = {};
 
     // Binary search for the largest global scale where all widgets fit
     let lo = 0.4, hi = 2.5, best = state.scale;
@@ -3692,10 +3747,7 @@ function showCtxMenu(key, x, y) {
     // Populate per-widget scale slider
     if (!state.widgetScales) state.widgetScales = {};
     const _wScale = state.widgetScales[key] !== undefined ? state.widgetScales[key] : 1;
-    const sldr = document.getElementById('ctx-scale-slider');
-    const sldrVal = document.getElementById('ctx-scale-val');
-    if (sldr) sldr.value = _wScale;
-    if (sldrVal) sldrVal.textContent = Math.round(_wScale * 100) + '%';
+    _updateCtxScaleBar(_wScale);
     const menu = document.getElementById('widget-ctx-menu');
     document.getElementById('ctx-lock-label').textContent = state.posLocked ? 'Unlock Positions' : 'Lock Positions';
     document.getElementById('ctx-lock-icon').textContent  = state.posLocked ? '🔓' : '🔒';
@@ -3841,10 +3893,129 @@ function applyWeatherTint(code) {
 }
 
 // ─────────────────────────────────────────────────
+// DRAGGABLE CONTEXT MENU SCALE BAR
+// ─────────────────────────────────────────────────
+const CTX_SCALE_MIN = 0.3;
+const CTX_SCALE_MAX = 2.5;
+
+function _updateCtxScaleBar(val) {
+    const pct = (val - CTX_SCALE_MIN) / (CTX_SCALE_MAX - CTX_SCALE_MIN) * 100;
+    const fill  = document.getElementById('ctx-scale-fill');
+    const thumb = document.getElementById('ctx-scale-thumb');
+    const label = document.getElementById('ctx-scale-val');
+    if (fill)  fill.style.width  = pct + '%';
+    if (thumb) thumb.style.left  = pct + '%';
+    if (label) label.textContent = Math.round(val * 100) + '%';
+}
+
+(function initCtxScaleBar() {
+    const track = document.getElementById('ctx-scale-track');
+    if (!track) return;
+
+    function scaleFromEvent(clientX) {
+        const rect = track.getBoundingClientRect();
+        const pct  = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+        return parseFloat((CTX_SCALE_MIN + pct * (CTX_SCALE_MAX - CTX_SCALE_MIN)).toFixed(2));
+    }
+
+    function applyVal(val) {
+        _updateCtxScaleBar(val);
+        ctxSetWidgetScale(val);
+    }
+
+    // Mouse
+    let _draggingBar = false;
+    track.addEventListener('mousedown', (e) => {
+        e.stopPropagation();
+        _draggingBar = true;
+        applyVal(scaleFromEvent(e.clientX));
+    });
+    window.addEventListener('mousemove', (e) => {
+        if (!_draggingBar) return;
+        applyVal(scaleFromEvent(e.clientX));
+    });
+    window.addEventListener('mouseup', () => { _draggingBar = false; });
+
+    // Touch — passive:false so we can prevent page scroll while dragging bar
+    track.addEventListener('touchstart', (e) => {
+        e.stopPropagation();
+        applyVal(scaleFromEvent(e.touches[0].clientX));
+    }, { passive: true });
+
+    track.addEventListener('touchmove', (e) => {
+        e.stopPropagation();
+        applyVal(scaleFromEvent(e.touches[0].clientX));
+    }, { passive: true });
+})();
+
+// ─────────────────────────────────────────────────
+// PINCH-TO-SCALE — two fingers on a widget to resize it
+// Works like Google Maps zoom but for individual widgets
+// ─────────────────────────────────────────────────
+function initPinchScale(key) {
+    const el = document.getElementById(key + '-widget');
+    if (!el) return;
+
+    let _pinchStartDist  = null;
+    let _pinchStartScale = 1;
+    let _isPinching      = false;
+
+    el.addEventListener('touchstart', (e) => {
+        if (e.touches.length !== 2) return;
+        e.preventDefault(); // prevent page zoom
+        _isPinching = true;
+        _pinchStartDist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+        );
+        if (!state.widgetScales) state.widgetScales = {};
+        _pinchStartScale = state.widgetScales[key] !== undefined ? state.widgetScales[key] : 1;
+    }, { passive: false });
+
+    el.addEventListener('touchmove', (e) => {
+        if (!_isPinching || e.touches.length !== 2) return;
+        e.preventDefault();
+
+        const dist = Math.hypot(
+            e.touches[0].clientX - e.touches[1].clientX,
+            e.touches[0].clientY - e.touches[1].clientY
+        );
+        const ratio    = dist / _pinchStartDist;
+        const newScale = Math.max(CTX_SCALE_MIN, Math.min(CTX_SCALE_MAX,
+            parseFloat((_pinchStartScale * ratio).toFixed(2))
+        ));
+
+        if (!state.widgetScales) state.widgetScales = {};
+        state.widgetScales[key] = newScale;
+        positionWidget(key);
+
+        // Live-update the context menu bar if it's showing this widget
+        if (_ctxKey === key) _updateCtxScaleBar(newScale);
+    }, { passive: false });
+
+    el.addEventListener('touchend', (e) => {
+        if (e.touches.length < 2) {
+            if (_isPinching) {
+                _isPinching = false;
+                save(); // persist the new scale
+                const finalScale = state.widgetScales[key] || 1;
+                showToast('Scale: ' + Math.round(finalScale * 100) + '%');
+            }
+        }
+    }, { passive: true });
+}
+
+function initAllPinch() {
+    ['clock','date','weather','battery','nowplaying','stocks','worldclock','moon','countdown']
+        .forEach(initPinchScale);
+}
+
+// ─────────────────────────────────────────────────
 // BOOT
 // ─────────────────────────────────────────────────
 
 load();
+initAllPinch();
 </script>
 </body>
 </html>
