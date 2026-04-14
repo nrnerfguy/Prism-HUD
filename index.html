@@ -60,6 +60,13 @@
             -webkit-tap-highlight-color: transparent;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        /* Allow text selection only inside inputs and textareas */
+        input, textarea, [contenteditable] {
+            user-select: text;
+            -webkit-user-select: text;
         }
 
         html {
@@ -69,12 +76,11 @@
 
         body {
             background-color: transparent; color: #fff; margin: 0; padding: 0;
-            width: 100%; height: 100%;
+            width: 100%; height: 100dvh;
             display: flex; justify-content: center; align-items: center;
             font-family: -apple-system, system-ui, sans-serif;
             overflow: hidden;
             position: fixed;
-            height: 100dvh;
             font-feature-settings: "kern" 1, "liga" 1;
             text-rendering: optimizeLegibility;
         }
@@ -101,10 +107,11 @@
         .widget.dragging {
             will-change: transform;
             cursor: grabbing; z-index: 500;
-            opacity: 0.95;
+            opacity: 0.92;
+            filter: drop-shadow(0 8px 24px rgba(0,0,0,0.6));
         }
         .widget.snapping {
-            transition: transform 0.7s cubic-bezier(0.25, 0.1, 0.25, 1), opacity 0.3s ease;
+            transition: transform 0.55s cubic-bezier(0.34, 1.28, 0.64, 1), opacity 0.3s ease;
         }
         @keyframes wiggle {
             0%,100% { transform: translate(-50%,-50%) rotate(0deg)    scale(var(--wmx,1), var(--ws,1)); }
@@ -255,10 +262,11 @@
             border: 1px solid rgba(255,255,255,0.15); border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
             z-index: 1000; cursor: pointer;
-            transition: opacity 0.8s var(--smooth-ease), transform 0.3s var(--smooth-ease), box-shadow 0.3s ease, border-color 0.3s;
+            transition: opacity 0.6s ease, transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease, border-color 0.25s ease;
             opacity: 0.55; color: #fff;
         }
         #nav-ghost-zone { position: absolute; bottom: 0; right: 0; width: 150px; height: 150px; z-index: 999; }
+        #nav-trigger:active { transform: scale(0.92) !important; transition: transform 0.1s ease !important; }
         #nav-trigger:hover, #nav-trigger.active-ui {
             opacity: 1 !important; transform: scale(1.08) rotate(15deg);
             background: rgba(30,30,35,0.9);
@@ -275,9 +283,10 @@
             border: 1px solid rgba(255,255,255,0.1); border-radius: 50%;
             display: flex; justify-content: center; align-items: center;
             z-index: 1000; cursor: pointer; color: rgba(255,255,255,0.7);
-            transition: opacity 0.8s var(--smooth-ease), transform 0.3s var(--smooth-ease), box-shadow 0.3s ease, border-color 0.3s;
+            transition: opacity 0.6s ease, transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.25s ease, border-color 0.25s ease;
             opacity: 0;
         }
+        #fullscreen-btn:active { transform: scale(0.9) !important; opacity: 0.7 !important; }
         #fullscreen-btn:hover {
             opacity: 1 !important; background: rgba(30,30,35,0.9);
             border-color: var(--accent);
@@ -314,9 +323,10 @@
             -webkit-backdrop-filter: blur(40px) saturate(160%);
             padding: 40px 21px;
             padding-bottom: max(40px, env(safe-area-inset-bottom));
-            transition: right 0.4s var(--smooth-ease);
+            transition: right 0.38s cubic-bezier(0.32, 0.72, 0, 1);
             z-index: 2000; overflow-y: auto; -webkit-overflow-scrolling: touch; overflow-x: visible;
             touch-action: pan-y;
+            overscroll-behavior: contain;
             border-left: 1px solid rgba(255,255,255,0.08); color: #fff; scrollbar-width: none;
         }
         #side-panel.open { right: 0 !important; }
@@ -324,7 +334,7 @@
 
         .panel-content { display: flex; flex-direction: column; gap: 15px; padding-bottom: 80px; padding-left: 4px; padding-right: 4px; }
 
-        .control-group { padding: 18px; background: rgba(255,255,255,0.05); border-radius: 20px; border: 1px solid transparent; transition: 0.2s; position: relative; overflow: visible; }
+        .control-group { padding: 18px; background: rgba(255,255,255,0.05); border-radius: 20px; border: 1px solid transparent; transition: background 0.2s ease, border-color 0.2s ease; position: relative; overflow: visible; }
         .control-group:hover { background: rgba(255,255,255,0.08); border-color: rgba(255,255,255,0.1); }
 
         #weather-results {
@@ -336,6 +346,7 @@
         }
         .city-item { padding: 12px 15px; border-bottom: 1px solid rgba(255,255,255,0.05); cursor: pointer; font-size: 0.8rem; transition: background 0.08s ease !important; text-align: left; }
         .city-item:hover { background: var(--accent) !important; color: var(--accent-fg) !important; }
+        .city-item:active { opacity: 0.8; }
         .city-item span { opacity: 0.6; font-size: 0.7rem; display: block; transition: none !important; }
 
         #ticker-results {
@@ -370,24 +381,26 @@
 
         .update-btn { border: none; width: 100%; padding: 12px; border-radius: 12px; margin-top: 10px; font-weight: bold; cursor: pointer; transition: all 0.3s var(--smooth-ease); }
 
-        .ios-switch { position: relative; width: 50px; height: 28px; background: rgba(255,255,255,0.1); border-radius: 20px; cursor: pointer; transition: all 0.3s ease; }
-        .ios-switch::after { content: ''; position: absolute; top: 2px; left: 2px; width: 24px; height: 24px; border-radius: 50%; transition: 0.3s; background: #fff; }
+        .ios-switch { position: relative; width: 50px; height: 28px; background: rgba(255,255,255,0.1); border-radius: 20px; cursor: pointer; transition: background 0.25s ease, box-shadow 0.25s ease; }
+        .ios-switch::after { content: ''; position: absolute; top: 3px; left: 3px; width: 22px; height: 22px; border-radius: 50%; transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), width 0.15s ease; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.3); }
         .ios-switch.active::after { transform: translateX(22px); }
-        .ios-switch:hover { filter: brightness(1.3); box-shadow: 0 0 12px rgba(255,255,255,0.1); }
-        .ios-switch.active:hover { box-shadow: 0 0 15px var(--accent); }
+        .ios-switch:active::after { width: 26px; }
+        .ios-switch:hover { filter: brightness(1.15); }
+        .ios-switch.active:hover { box-shadow: 0 0 12px rgba(var(--accent-rgb,0,122,255),0.4); }
 
         .file-upload-btn { display: block; width: 100%; padding: 12px; background: rgba(255,255,255,0.1); border: 1px dashed rgba(255,255,255,0.3); border-radius: 12px; color: #fff; text-align: center; font-size: 0.75rem; font-weight: 600; cursor: pointer; margin-bottom: 15px; transition: all 0.3s var(--smooth-ease); }
-        .file-upload-btn:hover { background: rgba(255,255,255,0.15); border-color: var(--accent); box-shadow: 0 0 15px var(--accent); transform: translateY(-1px); }
+        .file-upload-btn:hover { background: rgba(255,255,255,0.15); border-color: rgba(255,255,255,0.5); }
+        .file-upload-btn:active { background: rgba(255,255,255,0.08); transform: scale(0.99); }
 
         .wallpaper-grid { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 5px; padding: 4px; }
         #static-bg-preview { width: 70px; height: 70px; border-radius: 12px; border: 2px solid rgba(255,255,255,0.2); cursor: pointer; position: relative; overflow: hidden; transition: 0.3s; }
         #static-bg-preview.active { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 1px; box-shadow: 0 0 15px var(--accent); }
         #static-bg-preview input { position: absolute; opacity: 0; inset: 0; cursor: pointer; width: 100%; height: 100%; }
-        .bg-thumb { width: 70px; height: 70px; border-radius: 12px; background-size: cover; background-position: center; border: 2px solid transparent; cursor: pointer; transition: 0.3s; opacity: 0.5; }
+        .bg-thumb { width: 70px; height: 70px; border-radius: 12px; background-size: cover; background-position: center; border: 2px solid transparent; cursor: pointer; transition: opacity 0.25s ease, border-color 0.25s ease, transform 0.15s ease; opacity: 0.5; }
         .bg-thumb.active { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 1px; opacity: 1; transform: scale(1.05); }
 
         .theme-item { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.4); padding: 10px 12px; border-radius: 10px; margin-top: 8px; }
-        .theme-actions button { background: none; border: none; color: #fff; font-size: 0.7rem; font-weight: bold; cursor: pointer; opacity: 0.7; margin-left: 10px; }
+        .theme-actions button { background: none; border: none; color: #fff; font-size: 0.7rem; font-weight: bold; cursor: pointer; opacity: 0.7; margin-left: 10px; transition: opacity 0.15s ease, transform 0.1s ease; } .theme-actions button:hover { opacity: 1; } .theme-actions button:active { transform: scale(0.9); }
 
         input[type="text"] { width: 100%; background: #000; border: 1px solid rgba(255,255,255,0.2); color: #fff; padding: 12px; border-radius: 12px; margin-top: 10px; outline: none; transition: 0.3s; }
         input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 10px rgba(0,122,255,0.2); }
@@ -412,7 +425,8 @@
             height: 4px; border-radius: 2px; background: rgba(255,255,255,0.1);
         }
 
-        .update-btn:hover { filter: brightness(1.2); box-shadow: 0 0 15px var(--accent); transform: translateY(-1px); }
+        .update-btn:hover { opacity: 0.88; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+        .update-btn:active { transform: translateY(0) scale(0.97); opacity: 0.75; transition: transform 0.08s ease, opacity 0.08s ease; }
         .reset-link { font-size: 0.65rem; color: var(--accent); cursor: pointer; text-transform: uppercase; font-weight: 900; padding: 4px 8px; background: rgba(0,0,0,0.3); border-radius: 6px; transition: all 0.2s ease; }
 
         /* ── COLLAPSIBLE SECTIONS ── */
@@ -449,13 +463,15 @@
             display: flex; align-items: center; gap: 12px;
             padding: 13px 18px; font-size: 0.82rem; font-weight: 500;
             cursor: pointer; border-bottom: 1px solid rgba(255,255,255,0.06);
-            transition: background 0.1s ease; width: 100%; text-align: left;
+            transition: background 0.12s ease; width: 100%; text-align: left;
             background: none; border-radius: 0; color: #fff;
             font-family: inherit;
         }
         .ctx-item:last-child { border-bottom: none; }
-        .ctx-item:hover { background: rgba(255,255,255,0.08); }
+        .ctx-item:hover { background: rgba(255,255,255,0.07); }
+        .ctx-item:active { background: rgba(255,255,255,0.14); transition: background 0.05s ease; }
         .ctx-item.danger { color: #ff4444; }
+        .ctx-item.danger:active { background: rgba(255,68,68,0.15); }
         .ctx-icon { font-size: 1rem; width: 20px; text-align: center; }
 
         /* ── GRADIENT PRESETS ── */
@@ -466,6 +482,7 @@
             background-origin: border-box; background-clip: border-box;
         }
         .grad-swatch:hover { transform: scale(1.06); }
+        .grad-swatch:active { transform: scale(0.97); transition: transform 0.08s ease; }
         .grad-swatch.active { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 1px; }
 
         /* ── POSITION LOCK INDICATOR ── */
@@ -478,7 +495,8 @@
             opacity: 0; transition: opacity 0.3s ease;
         }
         #lock-indicator.visible { opacity: 1; }
-        .reset-link:hover { box-shadow: 0 0 10px var(--accent); transform: scale(1.05); }
+        .reset-link:hover { box-shadow: 0 0 8px rgba(0,0,0,0.3); opacity: 0.85; }
+        .reset-link:active { transform: scale(0.94); opacity: 0.65; transition: transform 0.08s ease; }
 
         /* ── WEATHER TINT ── */
         #weather-tint {
@@ -496,14 +514,16 @@
         .modal-box { background: #111; border: 1px solid rgba(255,255,255,0.1); padding: 30px; border-radius: 25px; text-align: center; max-width: 300px; }
         .modal-box h3 { margin-top: 0; color: #ff4444; }
         .modal-box p { font-size: 0.85rem; opacity: 0.7; margin-bottom: 25px; }
-        .modal-btn { width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; margin-bottom: 10px; }
+        .modal-btn { width: 100%; padding: 12px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; margin-bottom: 10px; transition: opacity 0.15s ease, transform 0.1s ease; } .modal-btn:hover { opacity: 0.88; } .modal-btn:active { transform: scale(0.97); }
         .factory-reset-btn { color: #ff4444; background: none; border: 1px solid rgba(255,68,68,0.2); font-weight: bold; cursor: pointer; width: 100%; margin-top: 10px; padding: 10px; border-radius: 10px; transition: all 0.3s ease; }
-        .factory-reset-btn:hover { color: #fff; background: #ff4444; border-color: #ff4444; box-shadow: 0 0 20px rgba(255,68,68,0.6); transform: scale(0.98); }
+        .factory-reset-btn:hover { color: #fff; background: #ff4444; border-color: #ff4444; box-shadow: 0 0 20px rgba(255,68,68,0.5); }
+        .factory-reset-btn:active { transform: scale(0.96); opacity: 0.85; }
 
         /* ── CLOCK STYLE PICKER ── */
         .style-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 12px; }
-        .style-btn { padding: 12px 4px; background: rgba(255,255,255,0.05); border: 1px solid transparent; border-radius: 12px; color: #fff; font-size: 0.52rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; text-align: center; transition: 0.2s; }
+        .style-btn { padding: 12px 4px; background: rgba(255,255,255,0.05); border: 1px solid transparent; border-radius: 12px; color: #fff; font-size: 0.58rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; text-align: center; transition: background 0.15s ease, border-color 0.15s ease, transform 0.1s ease; }
         .style-btn:hover { background: rgba(255,255,255,0.1); }
+        .style-btn:active { transform: scale(0.94); background: rgba(255,255,255,0.14); transition: transform 0.08s ease; }
         .style-btn.active { border-color: rgba(255,255,255,0.6); color: #fff; background: rgba(255,255,255,0.12); }
         .style-btn .s-icon { font-size: 1.3rem; display: block; margin-bottom: 5px; }
 
@@ -511,6 +531,7 @@
         .ambient-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-top: 12px; }
         .ambient-btn { padding: 14px 8px; background: rgba(255,255,255,0.05); border: 1px solid transparent; border-radius: 12px; color: #fff; font-size: 0.6rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; text-align: center; transition: 0.2s; }
         .ambient-btn:hover { background: rgba(255,255,255,0.1); }
+        .ambient-btn:active { transform: scale(0.95); transition: transform 0.08s ease; }
         .ambient-btn.active { border-color: rgba(255,255,255,0.6); color: #fff; background: rgba(255,255,255,0.12); box-shadow: 0 0 14px rgba(255,255,255,0.1); }
         .ambient-btn .a-icon { font-size: 1.6rem; display: block; margin-bottom: 5px; }
 
@@ -531,13 +552,14 @@
         #np-bar-fill { height: 100%; background: var(--accent); width: 0%; transition: width 1s linear; }
         .np-btn {
             background: none; border: none; color: var(--accent);
-            cursor: pointer; padding: 0; opacity: 0.65; line-height: 1;
-            transition: opacity 0.2s, transform 0.15s;
+            cursor: pointer; padding: 6px; margin: -6px; opacity: 0.65; line-height: 1;
+            transition: opacity 0.15s ease, transform 0.12s cubic-bezier(0.34,1.56,0.64,1);
             filter: var(--widget-shadow);
             flex-shrink: 0;
+            border-radius: 50%;
         }
-        .np-btn:hover  { opacity: 1; transform: scale(1.2); }
-        .np-btn:active { transform: scale(0.88); }
+        .np-btn:hover  { opacity: 1; transform: scale(1.18); }
+        .np-btn:active { transform: scale(0.84); opacity: 0.75; transition: transform 0.07s ease, opacity 0.07s ease; }
         #np-playpause  { opacity: 1; }
         .np-premium-note { font-size: 0.46rem; opacity: 0.28; letter-spacing: 1.5px; text-transform: uppercase; margin-top: 3px; color: #fff; }
 
@@ -581,10 +603,12 @@
         }
         .ticker-tag button {
             background: none; border: none; color: rgba(255,255,255,0.4);
-            cursor: pointer; padding: 0; font-size: 0.8rem; line-height: 1;
-            transition: color 0.15s;
+            cursor: pointer; padding: 4px; margin: -4px; font-size: 0.8rem; line-height: 1;
+            transition: color 0.15s ease, transform 0.1s ease;
+            border-radius: 50%;
         }
         .ticker-tag button:hover { color: #ff4444; }
+        .ticker-tag button:active { transform: scale(0.85); }
     </style>
 
     <script>
@@ -1091,7 +1115,7 @@
             <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importSettings(this)">
         </div>
 
-        <button onclick="toggleNav()" style="width:100%;margin-bottom:8px;padding:13px;background:#fff;color:#000;border:none;border-radius:12px;font-size:0.75rem;font-weight:900;letter-spacing:1px;cursor:pointer;transition:all 0.2s ease;" onmouseover="this.style.background='#e0e0e0'" onmouseout="this.style.background='#fff'">✓ SAVE &amp; CLOSE</button>
+        <button onclick="toggleNav()" style="width:100%;margin-bottom:8px;padding:13px;background:#fff;color:#000;border:none;border-radius:12px;font-size:0.75rem;font-weight:900;letter-spacing:1px;cursor:pointer;transition:opacity 0.15s ease,transform 0.1s ease;" onmouseover="this.style.opacity='0.88'" onmouseout="this.style.opacity='1'" onmousedown="this.style.transform='scale(0.97)'" onmouseup="this.style.transform='scale(1)'">✓ SAVE &amp; CLOSE</button>
         <button onclick="openModal()" class="factory-reset-btn">FACTORY RESET</button>
     </div>
 </div>
@@ -1928,19 +1952,60 @@ const US_DB = [
 
 let _secDB = null;
 let _secLoading = false;
+let _secLoadFailed = false;
 let _tickerSearchTimer = null;
 
+// SEC EDGAR has CORS restrictions — try multiple proxies in order
+const SEC_PROXIES = [
+    url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+    url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+    url => `https://thingproxy.freeboard.io/fetch/${url}`,
+];
+
 async function _loadSecDB() {
-    if (_secDB || _secLoading) return;
+    if (_secDB !== null || _secLoading) return;
     _secLoading = true;
+    _secLoadFailed = false;
+
+    // Check cache — use v2 to bust any empty-array cache from v1
     try {
-        const cached = localStorage.getItem('prism_sec_v1');
-        if (cached) { _secDB = JSON.parse(cached); _secLoading = false; return; }
-        const res  = await fetch('https://www.sec.gov/files/company_tickers.json');
-        const json = await res.json();
-        _secDB = Object.values(json).map(c => [c.ticker.toUpperCase(), c.title]);
-        localStorage.setItem('prism_sec_v1', JSON.stringify(_secDB));
-    } catch (_) { _secDB = []; }
+        const cached = localStorage.getItem('prism_sec_v2');
+        if (cached) {
+            const parsed = JSON.parse(cached);
+            if (parsed && parsed.length > 100) {
+                _secDB = parsed;
+                _secLoading = false;
+                return;
+            }
+            // Cache had empty/bad data — remove and re-fetch
+            localStorage.removeItem('prism_sec_v2');
+        }
+    } catch(_) {}
+
+    const target = 'https://www.sec.gov/files/company_tickers.json';
+
+    for (const makeUrl of SEC_PROXIES) {
+        try {
+            const ctrl = new AbortController();
+            setTimeout(() => ctrl.abort(), 10000);
+            const res  = await fetch(makeUrl(target), { signal: ctrl.signal });
+            if (!res.ok) continue;
+            const json = await res.json();
+            const entries = Object.values(json).map(c => [c.ticker.toUpperCase(), c.title]);
+            if (entries.length < 100) continue; // sanity check — bad response
+            _secDB = entries;
+            try { localStorage.setItem('prism_sec_v2', JSON.stringify(_secDB)); } catch(_) {}
+            _secLoading = false;
+            // Re-run any active search now that data is available
+            const inp = document.getElementById('ticker-input');
+            if (inp && inp.value.trim().length > 0) searchTickers(inp.value);
+            return;
+        } catch(_) { continue; }
+    }
+
+    // All proxies failed
+    _secDB = [];
+    _secLoadFailed = true;
     _secLoading = false;
 }
 _loadSecDB();
@@ -2001,7 +2066,11 @@ function _doTickerSearch(query) {
     if (!_secDB || !_secDB.length) {
         const hint = document.createElement('div');
         hint.style.cssText = 'padding:5px 15px;font-size:0.6rem;opacity:0.3;border-top:1px solid rgba(255,255,255,0.05);';
-        hint.textContent = 'Loading full US database\u2026';
+        hint.textContent = _secLoadFailed
+            ? 'Full US database unavailable offline'
+            : _secLoading
+                ? 'Loading full US database…'
+                : 'Partial results — US database empty';
         box.appendChild(hint);
     }
     box.style.display = 'block';
