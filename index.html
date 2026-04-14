@@ -786,7 +786,7 @@
 <div id="side-panel">
     <div class="panel-content">
         <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
-            <img src="../assets/icon.png" alt="Prism" width="38" height="38" style="border-radius:10px;flex-shrink:0;">
+            <img id="prism-settings-icon" src="logo.png" alt="Prism" width="38" height="38" style="border-radius:10px;flex-shrink:0;">
             <div>
                 <div style="font-size:1.3rem;font-weight:900;letter-spacing:-0.5px;line-height:1;">Prism OS</div>
                 <div style="font-size:0.55rem;opacity:0.35;letter-spacing:3px;text-transform:uppercase;margin-top:2px;">Settings</div>
@@ -1167,6 +1167,14 @@ function save() {
 function saveNow() { clearTimeout(_saveTimer); localStorage.setItem('prism_ultra_v3', JSON.stringify(state)); }
 
 function load() {
+    // Set the correct icon path depending on environment
+    const iconEl = document.getElementById('prism-settings-icon');
+    if (iconEl) {
+        iconEl.src = navigator.userAgent.includes('Electron')
+            ? '../assets/icon.png'
+            : 'logo.png';
+    }
+
     const saved = localStorage.getItem('prism_ultra_v3');
     if (saved) state = Object.assign(state, JSON.parse(saved));
 
@@ -1977,22 +1985,33 @@ async function _loadSecDB() {
                 _secLoading = false;
                 return;
             }
-            // Cache had empty/bad data — remove and re-fetch
             localStorage.removeItem('prism_sec_v2');
         }
     } catch(_) {}
 
     const target = 'https://www.sec.gov/files/company_tickers.json';
+    const isElectron = navigator.userAgent.includes('Electron');
 
-    for (const makeUrl of SEC_PROXIES) {
+    // In Electron, webSecurity is disabled so we can fetch SEC directly — no proxy needed
+    // On the web, SEC blocks CORS so we must go through a proxy
+    const urlsToTry = isElectron
+        ? [target]
+        : SEC_PROXIES.map(fn => fn(target));
+
+    for (const url of urlsToTry) {
         try {
             const ctrl = new AbortController();
-            setTimeout(() => ctrl.abort(), 10000);
-            const res  = await fetch(makeUrl(target), { signal: ctrl.signal });
+            setTimeout(() => ctrl.abort(), 12000);
+            const res  = await fetch(url, { signal: ctrl.signal });
             if (!res.ok) continue;
             const json = await res.json();
-            const entries = Object.values(json).map(c => [c.ticker.toUpperCase(), c.title]);
-            if (entries.length < 100) continue; // sanity check — bad response
+            // SEC JSON is an object keyed by index — values have .ticker and .title
+            const raw = typeof json === 'object' && !Array.isArray(json) ? Object.values(json) : json;
+            const entries = raw.map(c => [
+                (c.ticker || c[0] || '').toUpperCase(),
+                c.title || c[1] || ''
+            ]).filter(([sym]) => sym.length > 0);
+            if (entries.length < 100) continue;
             _secDB = entries;
             try { localStorage.setItem('prism_sec_v2', JSON.stringify(_secDB)); } catch(_) {}
             _secLoading = false;
@@ -2003,7 +2022,6 @@ async function _loadSecDB() {
         } catch(_) { continue; }
     }
 
-    // All proxies failed
     _secDB = [];
     _secLoadFailed = true;
     _secLoading = false;
