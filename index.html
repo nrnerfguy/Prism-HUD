@@ -83,6 +83,8 @@
             position: fixed;
             font-feature-settings: "kern" 1, "liga" 1;
             text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         #bg-layer {
@@ -139,6 +141,9 @@
         /* ── CLOCK DIGIT FLIP ── */
         #clock { overflow: visible; white-space: nowrap; display: block; }
         #clock-widget .widget-pill { white-space: nowrap; min-width: max-content; overflow: visible; }
+        /* Force clock into its own compositing layer at native res — prevents scale pixelation */
+        #clock-widget { isolation: isolate; }
+        #clock { transform: translateZ(0); -webkit-transform: translateZ(0); }
         .digit-wrap {
             display: inline-block; position: relative;
             vertical-align: top; white-space: nowrap;
@@ -179,21 +184,19 @@
 
         /* ── CLOCK STYLES ── */
         #clock {
-            line-height: 1; transition: font-size 0.35s cubic-bezier(0.16,1,0.3,1); touch-action: manipulation;
+            line-height: 1; transition: opacity 0.2s ease; touch-action: manipulation;
             text-rendering: geometricPrecision;
         }
         #clock.style-bold {
             font-size: clamp(5rem, 25vw, 12rem); font-weight: 900; font-style: italic;
             letter-spacing: -4px; font-family: -apple-system, system-ui, sans-serif;
-            text-shadow:
-                0 0 40px var(--accent),
-                0 0 80px rgba(0,0,0,0.95),
-                0 0 160px rgba(0,0,0,0.7);
+            /* Use filter drop-shadow instead of text-shadow — GPU composited, no pixelation */
+            filter: drop-shadow(0 0 18px var(--accent)) drop-shadow(0 0 36px var(--accent));
             /* Italic glyphs lean right — pull bounding box left so glyphs read as centered */
             margin-left: -0.1em;
         }
         /* ── CLOCK GLOW TOGGLE ── */
-        #clock.no-glow { text-shadow: none !important; }
+        #clock.no-glow { filter: none !important; }
 
         /* Give italic overhang room to breathe on the right without clipping */
         #clock-widget .widget-pill:has(#clock.style-bold) {
@@ -203,12 +206,12 @@
             font-size: clamp(4rem, 22vw, 11rem); font-weight: 100; font-style: normal;
             font-family: 'Outfit', sans-serif; letter-spacing: 20px;
             margin-right: -20px;
-            text-shadow: 0 0 30px var(--accent), 0 0 80px rgba(0,0,0,0.95), 0 0 140px rgba(0,0,0,0.7);
+            filter: drop-shadow(0 0 14px var(--accent)) drop-shadow(0 0 28px var(--accent));
         }
         #clock.style-retro {
             font-size: clamp(3.5rem, 18vw, 9rem); font-family: 'Share Tech Mono', monospace;
             font-weight: normal; font-style: normal; letter-spacing: 10px;
-            text-shadow: 0 0 8px currentColor, 0 0 25px currentColor, 0 0 80px currentColor, 0 0 120px currentColor;
+            filter: drop-shadow(0 0 6px currentColor) drop-shadow(0 0 18px currentColor) drop-shadow(0 0 36px currentColor);
             margin-right: -10px;
         }
 
@@ -3257,7 +3260,8 @@ function positionWidget(key) {
     // Burn shield drift offset — defaults to 0 if not yet set
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
     const bsy = el.style.getPropertyValue('--bsy') || '0px';
-    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scale(${sx}, ${widgetScale})`;
+    // Use translateZ(0) to promote to own layer at native res before scale
+    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) translateZ(0) scale(${sx}, ${widgetScale})`;
 }
 
 // Ghost system is fully removed — grid is invisible
@@ -3958,7 +3962,7 @@ function _applyWidgetScaleDirect(key, perWidgetScale) {
     el.style.setProperty('--wmx', sx);
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
     const bsy = el.style.getPropertyValue('--bsy') || '0px';
-    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scale(${sx}, ${widgetScale})`;
+    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) translateZ(0) scale(${sx}, ${widgetScale})`;
 }
 
 // ─────────────────────────────────────────────────
