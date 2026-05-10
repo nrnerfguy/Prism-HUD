@@ -112,8 +112,9 @@
         body.glass-mode #clock { filter: none !important; }
 
         /* ── TRANSPARENT BACKGROUND MODE ── */
-        body.transparent-bg { background: transparent !important; }
+        body.transparent-bg { background-color: transparent !important; }
         body.transparent-bg #bg-layer { display: none !important; }
+        body.transparent-bg #home-indicator-cover { display: none !important; }
 
         /* ── LOW POWER MODE — reduce all animations ── */
         body.low-power * {
@@ -185,6 +186,10 @@
             background-color: #000; /* fills iOS safe areas including home bar */
             height: 100%;
         }
+        /* Transparent mode — must override both html and body */
+        body.transparent-bg, html:has(body.transparent-bg) {
+            background-color: transparent !important;
+        }
 
         body {
             background-color: #000; color: #fff; margin: 0; padding: 0;
@@ -208,7 +213,7 @@
         }
 
         /* #hud-master is now a transparent passthrough — widgets position themselves */
-        #hud-master { position: fixed; inset: 0; pointer-events: none; z-index: 10; }
+        #hud-master { position: fixed; inset: 0; pointer-events: none; z-index: 10; transform: translateZ(0); -webkit-transform: translateZ(0); }
         /* Cover the home indicator area with black so it's invisible on black bg */
         #home-indicator-cover {
             position: fixed; bottom: 0; left: 0; right: 0;
@@ -310,7 +315,7 @@
             text-rendering: geometricPrecision;
         }
         #clock.style-bold {
-            font-size: clamp(5rem, 25vw, 12rem); font-weight: 900; font-style: italic;
+            font-size: clamp(5em, 25vw, 12em); font-weight: 900; font-style: italic;
             letter-spacing: -4px; font-family: -apple-system, system-ui, sans-serif;
             /* Use filter drop-shadow instead of text-shadow — GPU composited, no pixelation */
             filter:
@@ -331,7 +336,7 @@
             overflow: visible;
         }
         #clock.style-thin {
-            font-size: clamp(4rem, 22vw, 11rem); font-weight: 100; font-style: normal;
+            font-size: clamp(4em, 22vw, 11em); font-weight: 100; font-style: normal;
             font-family: 'Outfit', sans-serif; letter-spacing: 20px;
             margin-right: -20px;
             filter:
@@ -340,7 +345,7 @@
                 drop-shadow(0 0 calc(30px * var(--glow-intensity)) var(--accent));
         }
         #clock.style-retro {
-            font-size: clamp(3.5rem, 18vw, 9rem); font-family: 'Share Tech Mono', monospace;
+            font-size: clamp(3.5em, 18vw, 9em); font-family: 'Share Tech Mono', monospace;
             font-weight: normal; font-style: normal; letter-spacing: 10px;
             filter:
                 drop-shadow(0 calc(8px * var(--clock-shadow)) calc(18px * var(--clock-shadow)) rgba(0,0,0,0.9))
@@ -365,13 +370,13 @@
         .a-center { fill: var(--accent); }
         .a-center-hi { fill: rgba(255,255,255,0.75); }
 
-        #date { font-size: 1.35rem; text-transform: uppercase; letter-spacing: 7px; font-weight: 300; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); margin-right: -7px; }
-        #weather-widget { gap: 16px; font-size: 2.1rem; font-weight: 200; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
+        #date { font-size: 1.35em; text-transform: uppercase; letter-spacing: 7px; font-weight: 300; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); margin-right: -7px; }
+        #weather-widget { gap: 16px; font-size: 2.1em; font-weight: 200; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
         #weather-widget .widget-pill { align-items: center; }
-        #icon-container { display: flex; align-items: center; justify-content: center; line-height: 1; }
-        #icon-container svg { display: block; vertical-align: middle; }
+        #icon-container { display: flex; align-items: center; justify-content: center; line-height: 1; font-size: 2.4rem; }
+        #icon-container svg { display: block; vertical-align: middle; overflow: visible; shape-rendering: geometricPrecision; }
         #temp { line-height: 1; display: flex; align-items: center; }
-        #battery-widget { font-size: 1.15rem; font-weight: 500; letter-spacing: 3px; display: flex; align-items: center; gap: 10px; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
+        #battery-widget { font-size: 1.15em; font-weight: 500; letter-spacing: 3px; display: flex; align-items: center; gap: 10px; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
         #battery-icon { display: flex; align-items: center; justify-content: center; line-height: 1; }
         #battery-icon svg { display: block; vertical-align: middle; }
         #battery { line-height: 1; display: flex; align-items: center; }
@@ -382,7 +387,7 @@
         #nowplaying-widget {
             flex-direction: row !important; gap: 14px;
             max-width: 380px; width: 90%; align-items: center;
-            filter: var(--widget-shadow) drop-shadow(0px 0px 20px rgba(0,0,0,0.7));
+            /* no outer filter — prevents rasterisation on Plash/Retina */
         }
         #np-art {
             width: 66px; height: 66px; border-radius: 12px;
@@ -1910,11 +1915,11 @@ function updateAnalogClock(now) {
 // WEATHER
 // ─────────────────────────────────────────────────
 const icons = {
-    sun:   `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`,
-    cloud: `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>`,
-    rain:  `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><line x1="16" y1="13" x2="16" y2="21"/><line x1="8" y1="13" x2="8" y2="21"/><line x1="12" y1="15" x2="12" y2="23"/><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/></svg>`,
-    snow:  `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/><line x1="8" y1="16" x2="8.01" y2="16"/><line x1="8" y1="20" x2="8.01" y2="20"/><line x1="12" y1="18" x2="12.01" y2="18"/><line x1="12" y1="22" x2="12.01" y2="22"/><line x1="16" y1="16" x2="16.01" y2="16"/><line x1="16" y1="20" x2="16.01" y2="20"/></svg>`,
-    storm: `<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9"/><polyline points="13 11 9 17 15 17 11 23"/></svg>`
+    sun:   `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`,
+    cloud: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg>`,
+    rain:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;"><line x1="16" y1="13" x2="16" y2="21"/><line x1="8" y1="13" x2="8" y2="21"/><line x1="12" y1="15" x2="12" y2="23"/><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/></svg>`,
+    snow:  `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;"><path d="M20 17.58A5 5 0 0 0 18 8h-1.26A8 8 0 1 0 4 16.25"/><line x1="8" y1="16" x2="8.01" y2="16"/><line x1="8" y1="20" x2="8.01" y2="20"/><line x1="12" y1="18" x2="12.01" y2="18"/><line x1="12" y1="22" x2="12.01" y2="22"/><line x1="16" y1="16" x2="16.01" y2="16"/><line x1="16" y1="20" x2="16.01" y2="20"/></svg>`,
+    storm: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9"/><polyline points="13 11 9 17 15 17 11 23"/></svg>`
 };
 
 async function searchCities(query) {
@@ -3562,16 +3567,16 @@ function positionWidget(key) {
     if (!el) return;
     el.style.left = pos.x + '%';
     el.style.top  = pos.y + '%';
-    // Per-widget scale multiplied by global scale
     const widgetScale = (state.widgetScales[key] !== undefined ? state.widgetScales[key] : 1) * parseFloat(state.scale);
-    const sx = state.mirrored ? -widgetScale : widgetScale;
     el.style.setProperty('--ws',  widgetScale);
-    el.style.setProperty('--wmx', sx);
-    // Burn shield drift offset — defaults to 0 if not yet set
+    // Scale via font-size so text renders at native device resolution (no bitmap scaling)
+    el.style.fontSize = (widgetScale * 16) + 'px';
+    // Mirror via scaleX only — does not affect rasterisation quality
+    const mirror = state.mirrored ? -1 : 1;
+    el.style.setProperty('--wmx', mirror);
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
     const bsy = el.style.getPropertyValue('--bsy') || '0px';
-    // Use translateZ(0) to promote to own layer at native res before scale
-    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scale(${sx}, ${widgetScale})`;
+    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scaleX(${mirror})`;
 }
 
 // Ghost system is fully removed — grid is invisible
@@ -3682,7 +3687,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
 
             const offsetX = curPxX - anchorX;
             const offsetY = curPxY - anchorY;
-            el.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scale(${sx}, ${_ws})`;
+            el.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scaleX(${state.mirrored ? -1 : 1})`;
             highlightGhost(curPxX, curPxY);
         });
     };
@@ -3727,7 +3732,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         el.style.top  = zone.y + '%';
         const compensateX = curPxX - snapPxX;
         const compensateY = curPxY - snapPxY;
-        el.style.transform = `translate(calc(-50% + ${compensateX}px), calc(-50% + ${compensateY}px)) scale(${sx}, ${_ws})`;
+        el.style.transform = `translate(calc(-50% + ${compensateX}px), calc(-50% + ${compensateY}px)) scaleX(${state.mirrored ? -1 : 1})`;
 
         // Step 2: Force the browser to commit left/top + compensation transform
         // before we apply the spring animation
@@ -3736,7 +3741,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         // Step 3: Animate the transform spring to the final resting position
         el.style.transition = '';
         el.classList.add('snapping');
-        el.style.transform = `translate(-50%, -50%) scale(${sx}, ${_ws})`;
+        el.style.transform = `translate(-50%, -50%) scaleX(${state.mirrored ? -1 : 1})`;
 
         // Step 4: When spring finishes, call positionWidget to write the
         // canonical transform (includes burn shield offsets).
@@ -4416,12 +4421,13 @@ function _applyWidgetScaleDirect(key, perWidgetScale) {
     const el = document.getElementById(key + '-widget');
     if (!el) return;
     const widgetScale = perWidgetScale * parseFloat(state.scale);
-    const sx = state.mirrored ? -widgetScale : widgetScale;
     el.style.setProperty('--ws', widgetScale);
-    el.style.setProperty('--wmx', sx);
+    el.style.fontSize = (widgetScale * 16) + 'px';
+    const mirror = state.mirrored ? -1 : 1;
+    el.style.setProperty('--wmx', mirror);
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
     const bsy = el.style.getPropertyValue('--bsy') || '0px';
-    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scale(${sx}, ${widgetScale})`;
+    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scaleX(${mirror})`;
 }
 
 // ─────────────────────────────────────────────────
