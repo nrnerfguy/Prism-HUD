@@ -31,47 +31,89 @@
         /* Uses background-clip:text so the actual background image/colour
            bleeds through the inside of each character — exactly like the
            screenshot where you can see through the digits */
-        body.glass-mode .widget-pill {
-            background: transparent !important;
-            backdrop-filter: none !important;
-            -webkit-backdrop-filter: none !important;
-            border-color: transparent !important;
+        /* Glass mode — pill background removed only when pills are showing */
+        body.glass-mode.show-pills .widget-pill {
+            background: rgba(255,255,255,0.04) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border-color: rgba(255,255,255,0.08) !important;
             box-shadow: none !important;
         }
-        /* Glass mode — gradient on individual digit spans which are already inline-block */
-        body.glass-mode #clock .digit-wrap,
-        body.glass-mode #clock span:not(.digit-wrap) {
+        /* Other widgets — subtle opacity fade without breaking colour */
+        body.glass-mode #date,
+        body.glass-mode #temp,
+        body.glass-mode #battery-widget,
+        body.glass-mode .np-track-info,
+        body.glass-mode #np-track,
+        body.glass-mode #np-artist,
+        body.glass-mode .stock-ticker,
+        body.glass-mode .stock-price,
+        body.glass-mode .stock-change,
+        body.glass-mode .wc-time,
+        body.glass-mode .wc-city,
+        body.glass-mode #moon-svg,
+        body.glass-mode #moon-label,
+        body.glass-mode #cd-days,
+        body.glass-mode #cd-event {
+            opacity: 0.55;
+        }
+        /* ── GLASS MODE ──
+           Minimal approach: large bold text gets a top-lit chrome gradient
+           via background-clip on the already-inline-block digit-wrap spans.
+           Everything else is untouched — accent colour, layout, battery, NP all normal.
+        */
+        /* Glass mode — pill background removed only when pills are showing */
+        body.glass-mode.show-pills .widget-pill {
+            background: rgba(255,255,255,0.04) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border-color: rgba(255,255,255,0.08) !important;
+            box-shadow: none !important;
+        }
+        /* Other widgets — subtle opacity fade without breaking colour */
+        body.glass-mode #date,
+        body.glass-mode #temp,
+        body.glass-mode #battery-widget,
+        body.glass-mode .np-track-info,
+        body.glass-mode #np-track,
+        body.glass-mode #np-artist,
+        body.glass-mode .stock-ticker,
+        body.glass-mode .stock-price,
+        body.glass-mode .stock-change,
+        body.glass-mode .wc-time,
+        body.glass-mode .wc-city,
+        body.glass-mode #moon-svg,
+        body.glass-mode #moon-label,
+        body.glass-mode #cd-days,
+        body.glass-mode #cd-event {
+            opacity: 0.55;
+        }
+        /* Clock digits — chrome gradient top to bottom */
+        body.glass-mode #clock .digit-wrap {
             background: linear-gradient(to bottom,
-                #ffffff 0%,
-                #e0e0e0 30%,
-                #999999 65%,
-                #555555 100%
+                rgba(255,255,255,1.0)   0%,
+                rgba(255,255,255,0.88) 35%,
+                rgba(255,255,255,0.55) 65%,
+                rgba(255,255,255,0.28) 100%
             );
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
             filter: none !important;
         }
-        body.glass-mode #clock { filter: none !important; }
-        body.glass-mode #date,
-        body.glass-mode #temp {
-            background: linear-gradient(to bottom, #ffffff 0%, #777777 100%);
+        /* Colon between hours and minutes */
+        body.glass-mode #clock span:not(.digit-wrap) {
+            background: linear-gradient(to bottom, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.3) 100%);
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
-            display: block;
+            filter: none !important;
         }
-        /* Other small labels — plain dim white */
-        body.glass-mode #battery-widget,
-        body.glass-mode .wc-city,
-        body.glass-mode #np-track,
-        body.glass-mode #np-artist,
-        body.glass-mode .stock-item,
-        body.glass-mode #moon-label {
-            opacity: 0.35 !important;
-        }
-        body.glass-mode .stock-change { opacity: 0.3 !important; }
-        body.glass-mode #np-art img { opacity: 0.2; border-radius: 12px; }
+        body.glass-mode #clock { filter: none !important; }
+
+        /* ── TRANSPARENT BACKGROUND MODE ── */
+        body.transparent-bg { background: transparent !important; }
+        body.transparent-bg #bg-layer { display: none !important; }
 
         /* ── LOW POWER MODE — reduce all animations ── */
         body.low-power * {
@@ -534,7 +576,7 @@
         .theme-name-input { background: none; border: none; border-bottom: 1px solid var(--accent); color: #fff; font-size: 0.8rem; outline: none; flex: 1; padding: 0 2px; user-select: text; -webkit-user-select: text; }
         .theme-actions button { background: none; border: none; color: #fff; font-size: 0.7rem; font-weight: bold; cursor: pointer; opacity: 0.7; margin-left: 10px; transition: opacity 0.15s ease, transform 0.1s ease; } .theme-actions button:hover { opacity: 1; } .theme-actions button:active { transform: scale(0.9); }
 
-        input[type="text"] { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 11px 14px; border-radius: 12px; margin-top: 10px; outline: none; font-size: 0.82rem; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+        input[type="text"] { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 13px 16px; border-radius: 12px; margin-top: 10px; outline: none; font-size: 0.82rem; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
         input[type="text"]::placeholder { color: rgba(255,255,255,0.25); }
         input[type="text"]:focus { border-color: rgba(255,255,255,0.3); box-shadow: 0 0 0 3px rgba(255,255,255,0.05); }
         input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); margin-top: 10px; border-radius: 2px; vertical-align: middle; }
@@ -1006,6 +1048,7 @@
                 <label style="font-size:0.5rem;display:block;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);">Gradient Presets</label>
                 <div class="gradient-grid" id="gradient-grid"></div>
                 <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);">
+                    <div class="row" style="margin-bottom:10px;"><label style="font-size:0.5rem;">Transparent Background</label><div id="sw-transparentBg" class="ios-switch" onclick="toggleTransparentBg()"></div></div>
                     <div class="row"><label style="font-size:0.5rem;">Blur</label></div>
                     <input type="range" min="0" max="40" step="1" value="0" oninput="state.blur=parseFloat(this.value);document.getElementById('bg-layer').style.filter='blur('+state.blur+'px)';save();">
                     <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Opacity</label></div>
@@ -1126,11 +1169,13 @@
                     <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Match Accent to Album Art</label><div id="sw-accentAuto" class="ios-switch active" onclick="state.accentAuto=!state.accentAuto;if(!state.accentAuto)restoreUserAccent();document.getElementById('sw-accentAuto').classList.toggle('active',state.accentAuto);save();"></div></div>
                     <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Show Upcoming Track</label><div id="sw-showNextUp" class="ios-switch active" onclick="state.showNextUp=!state.showNextUp;document.getElementById('sw-showNextUp').classList.toggle('active',state.showNextUp);save();"></div></div>
                     <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Visible</label><div style="display:flex;align-items:center;"><span id="st-nowplaying" class="status-tag">SHOWN</span><div id="sw-showNowplaying" class="ios-switch active" onclick="toggle('showNowplaying')"></div></div></div>
-                    <div style="margin-top:10px;padding:7px 10px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);">
-                        <span style="font-size:0.44rem;opacity:0.35;letter-spacing:1px;text-transform:uppercase;">Playback controls require Spotify Premium</span>
-                    </div>
-                    <div style="margin-top:8px;padding:7px 10px;border-radius:8px;background:rgba(255,165,0,0.06);border:1px solid rgba(255,165,0,0.15);">
-                        <span style="font-size:0.44rem;opacity:0.5;letter-spacing:1px;text-transform:uppercase;color:#ffaa40;">Spotify integration is currently in beta — availability may be limited</span>
+                    <div style="margin-top:12px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);">
+                        <div style="padding:9px 12px;background:rgba(255,255,255,0.03);">
+                            <span style="font-size:0.44rem;opacity:0.35;letter-spacing:1px;text-transform:uppercase;display:block;">Playback controls require Spotify Premium</span>
+                        </div>
+                        <div style="padding:9px 12px;background:rgba(255,165,0,0.06);border-top:1px solid rgba(255,165,0,0.12);">
+                            <span style="font-size:0.44rem;letter-spacing:1px;text-transform:uppercase;color:#ffaa40;opacity:0.7;display:block;">Spotify integration is currently in beta</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -1303,7 +1348,8 @@ let state = {
     alwaysOn: true,
     sleepEnabled: false, sleepTime: '23:00', wakeTime: '07:00',
     lowPowerMode: false,
-    glassMode: false
+    glassMode: false,
+    transparentBg: false
 };
 
 // ─────────────────────────────────────────────────
@@ -1359,12 +1405,16 @@ function load() {
     applyWidgetOpacity();
     document.body.classList.toggle('low-power', !!state.lowPowerMode);
     document.body.classList.toggle('glass-mode', !!state.glassMode);
+    document.body.classList.toggle('transparent-bg', !!state.transparentBg);
+    const swTBg = document.getElementById('sw-transparentBg');
+    if (swTBg) swTBg.classList.toggle('active', !!state.transparentBg);
     const swLP = document.getElementById('sw-lowPowerMode');
     if (swLP) swLP.classList.toggle('active', !!state.lowPowerMode);
     const swGM = document.getElementById('sw-glassMode');
     if (swGM) swGM.classList.toggle('active', !!state.glassMode);
-    if (state.lowPowerMode) document.body.classList.add('low-power');
-    if (state.glassMode) document.body.classList.add('glass-mode');
+    if (state.lowPowerMode)  document.body.classList.add('low-power');
+    if (state.glassMode)      document.body.classList.add('glass-mode');
+    if (state.transparentBg)  document.body.classList.add('transparent-bg');
     if (state.alwaysOn) {
         requestWakeLock();
         startWakeLockKeepAlive();
@@ -1647,15 +1697,18 @@ function updateAccentAutoBtn() {
 function restoreUserAccent() {
     accentFromArt = false;
     document.documentElement.style.setProperty('--accent', state.accent);
-    // Also recompute fg contrast for user accent
     const hex = state.accent.replace('#','');
     const r = parseInt(hex.slice(0,2),16), g = parseInt(hex.slice(2,4),16), b = parseInt(hex.slice(4,6),16);
     const lum = (0.299*r + 0.587*g + 0.114*b) / 255;
     document.documentElement.style.setProperty('--accent-fg', lum > 0.65 ? '#111' : '#fff');
-    // Restore user background
-    if (state.artAsBg) {
+    // Only restore background if artAsBg is off — don't wipe album art wallpaper
+    if (!state.artAsBg) {
+        if (!state.artAsBg || !_lastArtUrl) applyBackground();
+    }
+    // If artAsBg is on but we have a cached art URL, keep it showing
+    else if (_lastArtUrl) {
         const bgl = document.getElementById('bg-layer');
-        bgl.style.backgroundImage = state.isStatic ? 'none' : `url(${state.bg})`;
+        if (bgl) bgl.style.backgroundImage = `url(${_lastArtUrl})`;
     }
 }
 
@@ -2041,7 +2094,7 @@ async function fetchStocks() {
             const sign = up ? '+' : '';
             const cls  = up ? 'up' : 'down';
             const arrow = up ? '▲' : '▼';
-            priceEl.textContent  = `$${q.price.toFixed(2)}`;
+            priceEl.textContent  = '$' + q.price.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
             priceEl.style.opacity = '';
             changeEl.textContent = `${arrow} ${sign}${q.pct.toFixed(2)}%`;
             changeEl.className   = `stock-change ${cls}`;
@@ -3078,6 +3131,11 @@ function updateNowPlayingUI(data, nextTrack) {
         }
     }
 
+    // Cache for local progress ticking between API calls
+    spotify._lastProgress = data.progress_ms;
+    spotify._lastDuration = track.duration_ms;
+    spotify._isPlaying    = data.is_playing;
+
     const pct = data.progress_ms / track.duration_ms * 100;
     document.getElementById('np-bar-fill').style.width = pct + '%';
 
@@ -3123,8 +3181,17 @@ function spotifyPrev() { spotifyControl('POST', 'previous'); }
 
 function pollSpotify() {
     if (spotify.pollInterval) clearInterval(spotify.pollInterval);
+    if (spotify._progressTick) clearInterval(spotify._progressTick);
     fetchNowPlaying();
-    spotify.pollInterval = setInterval(fetchNowPlaying, 15000);
+    spotify.pollInterval = setInterval(fetchNowPlaying, 5000);
+    // Tick progress bar every second locally — smooth without hammering API
+    spotify._progressTick = setInterval(() => {
+        if (!spotify._lastDuration || !spotify._lastProgress || !spotify._isPlaying) return;
+        spotify._lastProgress = Math.min(spotify._lastProgress + 1000, spotify._lastDuration);
+        const pct = spotify._lastProgress / spotify._lastDuration * 100;
+        const fill = document.getElementById('np-bar-fill');
+        if (fill) fill.style.width = pct + '%';
+    }, 1000);
 }
 
 function disconnectSpotify() {
@@ -3132,6 +3199,7 @@ function disconnectSpotify() {
     spotify.refreshToken = null;
     spotify.expiresAt    = 0;
     if (spotify.pollInterval) { clearInterval(spotify.pollInterval); spotify.pollInterval = null; }
+    if (spotify._progressTick) { clearInterval(spotify._progressTick); spotify._progressTick = null; }
     localStorage.removeItem('spotify_tokens');
     _lastTrackId = null; // reset so next connect shows fresh art
     accentFromArt = false;
@@ -3403,8 +3471,9 @@ function applyAll() {
     applyClockStyle(state.clockStyle || 'bold');
     applyGlowIntensity();
     applyWidgetOpacity();
-    if (state.lowPowerMode) document.body.classList.add('low-power');
-    if (state.glassMode) document.body.classList.add('glass-mode');
+    if (state.lowPowerMode)  document.body.classList.add('low-power');
+    if (state.glassMode)      document.body.classList.add('glass-mode');
+    if (state.transparentBg)  document.body.classList.add('transparent-bg');
     const swGlow = document.getElementById('sw-clockGlow');
     if (swGlow) swGlow.classList.toggle('active', state.clockGlow !== false);
     const glowSlider = document.getElementById('range-glow');
@@ -3771,6 +3840,14 @@ function startWakeLockKeepAlive() {
     }, 25000);
 }
 
+function toggleTransparentBg() {
+    state.transparentBg = !state.transparentBg;
+    const sw = document.getElementById('sw-transparentBg');
+    if (sw) sw.classList.toggle('active', state.transparentBg);
+    document.body.classList.toggle('transparent-bg', state.transparentBg);
+    save();
+}
+
 function toggleGlassMode() {
     state.glassMode = !state.glassMode;
     const sw = document.getElementById('sw-glassMode');
@@ -3797,8 +3874,9 @@ function toggleAlwaysOn() {
     if (sw) sw.classList.toggle('active', state.alwaysOn);
     applyGlowIntensity();
     applyWidgetOpacity();
-    if (state.lowPowerMode) document.body.classList.add('low-power');
-    if (state.glassMode) document.body.classList.add('glass-mode');
+    if (state.lowPowerMode)  document.body.classList.add('low-power');
+    if (state.glassMode)      document.body.classList.add('glass-mode');
+    if (state.transparentBg)  document.body.classList.add('transparent-bg');
     if (state.alwaysOn) {
         requestWakeLock();
         startWakeLockKeepAlive();
@@ -3883,8 +3961,9 @@ function wakeDisplay() {
     // Re-acquire wake lock on wake if alwaysOn is enabled
     applyGlowIntensity();
     applyWidgetOpacity();
-    if (state.lowPowerMode) document.body.classList.add('low-power');
-    if (state.glassMode) document.body.classList.add('glass-mode');
+    if (state.lowPowerMode)  document.body.classList.add('low-power');
+    if (state.glassMode)      document.body.classList.add('glass-mode');
+    if (state.transparentBg)  document.body.classList.add('transparent-bg');
     if (state.alwaysOn) {
         requestWakeLock();
         startWakeLockKeepAlive();
