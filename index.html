@@ -27,89 +27,57 @@
             --widget-opacity: 0.9;
             --clock-shadow: 1; /* 0 = off, 1 = on */
         }
-        /* ── GLASS MODE — background shows through letterforms ── */
-        /* Uses background-clip:text so the actual background image/colour
-           bleeds through the inside of each character — exactly like the
-           screenshot where you can see through the digits */
-        /* Glass mode — pill background removed only when pills are showing */
-        body.glass-mode.show-pills .widget-pill {
-            background: rgba(255,255,255,0.04) !important;
-            backdrop-filter: blur(20px) !important;
-            -webkit-backdrop-filter: blur(20px) !important;
-            border-color: rgba(255,255,255,0.08) !important;
-            box-shadow: none !important;
-        }
-        /* Other widgets — subtle opacity fade without breaking colour */
-        body.glass-mode #date,
-        body.glass-mode #temp,
-        body.glass-mode #battery-widget,
-        body.glass-mode .np-track-info,
-        body.glass-mode #np-track,
-        body.glass-mode #np-artist,
-        body.glass-mode .stock-ticker,
-        body.glass-mode .stock-price,
-        body.glass-mode .stock-change,
-        body.glass-mode .wc-time,
-        body.glass-mode .wc-city,
-        body.glass-mode #moon-svg,
-        body.glass-mode #moon-label,
-        body.glass-mode #cd-days,
-        body.glass-mode #cd-event {
-            opacity: 0.55;
-        }
-        /* ── GLASS MODE ──
-           Minimal approach: large bold text gets a top-lit chrome gradient
-           via background-clip on the already-inline-block digit-wrap spans.
-           Everything else is untouched — accent colour, layout, battery, NP all normal.
-        */
-        /* Glass mode — pill background removed only when pills are showing */
-        body.glass-mode.show-pills .widget-pill {
-            background: rgba(255,255,255,0.04) !important;
-            backdrop-filter: blur(20px) !important;
-            -webkit-backdrop-filter: blur(20px) !important;
-            border-color: rgba(255,255,255,0.08) !important;
-            box-shadow: none !important;
-        }
-        /* Other widgets — subtle opacity fade without breaking colour */
-        body.glass-mode #date,
-        body.glass-mode #temp,
-        body.glass-mode #battery-widget,
-        body.glass-mode .np-track-info,
-        body.glass-mode #np-track,
-        body.glass-mode #np-artist,
-        body.glass-mode .stock-ticker,
-        body.glass-mode .stock-price,
-        body.glass-mode .stock-change,
-        body.glass-mode .wc-time,
-        body.glass-mode .wc-city,
-        body.glass-mode #moon-svg,
-        body.glass-mode #moon-label,
-        body.glass-mode #cd-days,
-        body.glass-mode #cd-event {
-            opacity: 0.55;
-        }
-        /* Clock digits — chrome gradient top to bottom */
+        /* ── GLASS MODE ── */
+        /* Clock digits — accent-tinted chrome gradient top to bottom */
         body.glass-mode #clock .digit-wrap {
             background: linear-gradient(to bottom,
-                rgba(255,255,255,1.0)   0%,
-                rgba(255,255,255,0.88) 35%,
-                rgba(255,255,255,0.55) 65%,
-                rgba(255,255,255,0.28) 100%
+                var(--accent)                    0%,
+                color-mix(in srgb, var(--accent) 80%, #fff) 35%,
+                color-mix(in srgb, var(--accent) 55%, #000) 65%,
+                color-mix(in srgb, var(--accent) 30%, #000) 100%
             );
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
             filter: none !important;
         }
-        /* Colon between hours and minutes */
+        /* Colon */
         body.glass-mode #clock span:not(.digit-wrap) {
-            background: linear-gradient(to bottom, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.3) 100%);
+            background: linear-gradient(to bottom,
+                color-mix(in srgb, var(--accent) 70%, transparent) 0%,
+                color-mix(in srgb, var(--accent) 30%, transparent) 100%
+            );
             -webkit-background-clip: text;
             background-clip: text;
             -webkit-text-fill-color: transparent;
             filter: none !important;
         }
         body.glass-mode #clock { filter: none !important; }
+        /* Glass mode — pill gets subtle frosted treatment when pills are on */
+        body.glass-mode.show-pills .widget-pill {
+            background: rgba(255,255,255,0.04) !important;
+            backdrop-filter: blur(20px) !important;
+            -webkit-backdrop-filter: blur(20px) !important;
+            border-color: rgba(255,255,255,0.08) !important;
+            box-shadow: none !important;
+        }
+        /* Other widgets — subtle opacity reduction */
+        body.glass-mode #date,
+        body.glass-mode #temp,
+        body.glass-mode #battery-widget,
+        body.glass-mode #np-track,
+        body.glass-mode #np-artist,
+        body.glass-mode .stock-ticker,
+        body.glass-mode .stock-price,
+        body.glass-mode .stock-change,
+        body.glass-mode .wc-time,
+        body.glass-mode .wc-city,
+        body.glass-mode #moon-svg,
+        body.glass-mode #moon-label,
+        body.glass-mode #cd-days,
+        body.glass-mode #cd-event {
+            opacity: 0.55;
+        }
 
         /* ── TRANSPARENT BACKGROUND MODE ── */
         body.transparent-bg { background-color: transparent !important; }
@@ -1349,7 +1317,7 @@ let state = {
     isStatic: true, staticColor: '#000000', blur: 0, bgOpacity: 1,
     presets: {}, posLocked: false, activeGradient: '',
     clockStyle: 'bold', clockGlow: false, clockGlowIntensity: 60,
-    widgetOpacity: 0.9, is24h: false,
+    widgetOpacity: 0.9,
     ambientSound: null, ambientVolume: 0.3,
     weatherTint: false, batteryDynamic: true,
     alwaysOn: true,
@@ -1709,11 +1677,10 @@ function restoreUserAccent() {
     const lum = (0.299*r + 0.587*g + 0.114*b) / 255;
     document.documentElement.style.setProperty('--accent-fg', lum > 0.65 ? '#111' : '#fff');
     // Only restore background if artAsBg is off — don't wipe album art wallpaper
-    if (!state.artAsBg) {
-        if (!state.artAsBg || !_lastArtUrl) applyBackground();
-    }
-    // If artAsBg is on but we have a cached art URL, keep it showing
-    else if (_lastArtUrl) {
+    if (!(state.artAsBg && _lastArtUrl)) {
+        applyBackground();
+    } else if (_lastArtUrl) {
+        // artAsBg is on and we have cached art — keep it showing
         const bgl = document.getElementById('bg-layer');
         if (bgl) bgl.style.backgroundImage = `url(${_lastArtUrl})`;
     }
@@ -2954,9 +2921,6 @@ async function sha256(plain) {
 const SPOTIFY_CLIENT_ID = '34d7e2f46d844a3ab643ab3529b2c9ab';
 
 async function connectSpotify() {
-    state.spotifyClientId = SPOTIFY_CLIENT_ID;
-    save();
-
     const verifier  = generateRandomString(128);
     const challenge = await sha256(verifier);
 
@@ -3232,13 +3196,13 @@ function updateSpotifyUI() {
 // ─────────────────────────────────────────────────
 // BACKGROUND
 // ─────────────────────────────────────────────────
-function setStatic(val) { state.staticColor = val; state.isStatic = true; state.gradientCss = ''; state.activeGradient = ''; applyAll(); renderHistory(); save(); }
+function setStatic(val) { state.staticColor = val; state.isStatic = true; state.activeGradient = ''; applyAll(); renderHistory(); save(); }
 
 function handleBg(input) {
     const reader = new FileReader();
     reader.onload = e => {
         const data = e.target.result;
-        state.bg = data; state.isStatic = false; state.gradientCss = ''; state.activeGradient = '';
+        state.bg = data; state.isStatic = false; state.activeGradient = '';
         state.history = [data, ...state.history.filter(x => x !== data)].slice(0, 3);
         applyAll(); renderHistory(); save();
     };
@@ -3302,7 +3266,7 @@ function loadProjectorTheme() {
     state.widgetPos.clock   = { x: 50, y: 52 };
     state.widgetPos.weather = { x: 50, y: 25 };
     state.widgetPos.date    = { x: 50, y: 78 };
-    state.showDate = false; // clean projector look
+
     // Reset per-widget scales and set global scale to 1 (optimizeScale will handle it)
     state.widgetScales = {};
     state.scale = 1;
@@ -3393,10 +3357,11 @@ function applyAll() {
     const bgl = document.getElementById('bg-layer');
     // artAsBg: only replace bg-layer when we actually have art loaded (handled in extractAccentFromArt)
     // For all other cases (artAsBg off, or artAsBg on but no art yet) apply user bg normally
-    if (!state.artAsBg || !accentFromArt) {
-        if (state.gradientCss && !state.isStatic && !state.bg) {
+    // Only skip background when artAsBg is ON and we actually have art loaded
+    if (!(state.artAsBg && _lastArtUrl)) {
+        if (state.activeGradient && !state.isStatic && !state.bg) {
             document.body.style.backgroundColor = 'transparent';
-            bgl.style.backgroundImage = state.gradientCss;
+            bgl.style.backgroundImage = state.activeGradient;
         } else if (state.isStatic) {
             document.body.style.backgroundColor = state.staticColor;
             document.getElementById('static-bg-preview').style.backgroundColor = state.staticColor;
@@ -4124,9 +4089,9 @@ function toggle(key) {
             document.body.style.backgroundColor = 'transparent';
         } else if (!state.artAsBg) {
             // Restore user background immediately
-            if (state.gradientCss && !state.isStatic && !state.bg) {
+            if (state.activeGradient && !state.isStatic && !state.bg) {
                 document.body.style.backgroundColor = 'transparent';
-                bgl.style.backgroundImage = state.gradientCss;
+                bgl.style.backgroundImage = state.activeGradient;
             } else if (state.isStatic) {
                 document.body.style.backgroundColor = state.staticColor;
                 bgl.style.backgroundImage = 'none';
@@ -4481,7 +4446,7 @@ function applyGradient(g) {
     state.isStatic    = false;
     state.artAsBg     = false;
     state.activeGradient = g.label;
-    state.gradientCss = g.css;  // store raw CSS
+    // gradientCss removed — activeGradient is the canonical field
     state.bg = '';              // clear any photo bg
     const bgl = document.getElementById('bg-layer');
     bgl.style.backgroundImage = g.css;
