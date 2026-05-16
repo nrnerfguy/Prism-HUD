@@ -31,10 +31,9 @@
         /* Clock digits — accent-tinted chrome gradient top to bottom */
         body.glass-mode #clock .digit-wrap {
             background: linear-gradient(to bottom,
-                var(--accent)                    0%,
-                color-mix(in srgb, var(--accent) 80%, #fff) 35%,
-                color-mix(in srgb, var(--accent) 55%, #000) 65%,
-                color-mix(in srgb, var(--accent) 30%, #000) 100%
+                var(--accent)                              0%,
+                color-mix(in srgb, var(--accent) 85%, transparent) 50%,
+                color-mix(in srgb, var(--accent) 45%, transparent) 100%
             );
             -webkit-background-clip: text;
             background-clip: text;
@@ -209,8 +208,11 @@
             cursor: grabbing; z-index: 500;
             opacity: 0.88;
         }
+        .widget.snapping .widget-pill {
+            transition: transform 0.42s cubic-bezier(0.34, 1.4, 0.64, 1) !important;
+        }
         .widget.snapping {
-            transition: transform 0.42s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.2s ease;
+            transition: opacity 0.2s ease;
         }
         @keyframes wiggle {
             0%,100% { transform: translate(-50%,-50%) rotate(0deg)    scale(var(--wmx,1), var(--ws,1)); }
@@ -232,8 +234,8 @@
 
         /* ── WIDGET ENTRANCE ── */
         @keyframes widgetIn {
-            from { opacity: 0; transform: translate(-50%,-50%) scale(calc(var(--wmx,1) * 0.88), calc(var(--ws,1) * 0.88)); }
-            to   { opacity: 1; transform: translate(-50%,-50%) scale(var(--wmx,1), var(--ws,1)); }
+            from { opacity: 0; }
+            to   { opacity: 1; }
         }
         .widget.entering { animation: widgetIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
@@ -716,7 +718,7 @@
 
         /* ── STOCKS WIDGET ── */
         #stocks-widget { flex-direction: column !important; gap: 6px; align-items: stretch; }
-        #stocks-widget .widget-pill { flex-direction: column; gap: 5px; min-width: 180px; }
+        #stocks-widget .widget-pill { flex-direction: column; gap: 5px; min-width: 200px; }
         .stock-row {
             display: flex; align-items: center; justify-content: space-between;
             gap: 14px; padding: 2px 0;
@@ -890,7 +892,7 @@
 
 <!-- ── NAV BUTTON ── -->
 <div id="nav-ghost-zone" onmousemove="wakeNav()" onclick="wakeNav()"></div>
-<div id="nav-trigger" onclick="toggleNav(event)">
+<div id="nav-trigger" onclick="toggleNav()">
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3"></circle>
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
@@ -1956,23 +1958,22 @@ function setWeatherUnit(unit) {
 // BATTERY
 // ─────────────────────────────────────────────────
 const batIcons = {
-    // Battery body: x=2..18 (center x=10), y=7..17 (center y=12)
-    // Terminal nub: x=19..20, y=10.5..13.5
     frame: `<rect x="2" y="7" width="16" height="10" rx="2.5" stroke="currentColor" fill="none" stroke-width="1.5" opacity="0.6"/><path d="M19 10.5c1.2 0 1.2 3 0 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>`,
-    // Bolt centered at x=10, y=12. Points: top-tip→knee→bottom-tip, offset so visual center is at 10,12
-    bolt: `<path d="M11.5 7.5 L8 12 L10.5 12 L9.5 16.5 L13 12 L10.5 12 L11.5 7.5Z" fill="white" opacity="0.95"/>`
+    // Bolt uses a separate centred SVG overlay so it stays centred regardless of fill width
+    boltOverlay: `<g transform="translate(10,12)"><path d="M1.5,-4.5 L-2,0 L0.5,0 L-0.5,4.5 L3,0 L0.5,0 Z" fill="white" opacity="0.95"/></g>`
 };
 
 async function updateBattery() {
     // Battery Status API is not supported on iOS — hide widget silently
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     if (isIOS || !navigator.getBattery) {
-        // Fully disable on iOS — Battery API not available
         const bw = document.getElementById('battery-widget');
         bw.style.opacity = '0';
         bw.style.pointerEvents = 'none';
         bw.style.display = 'none';
         state.showBattery = false;
+        // Mark as iOS-disabled so toggle() won't re-show it
+        bw.dataset.iosDisabled = 'true';
         return;
     }
     try {
@@ -1990,7 +1991,7 @@ async function updateBattery() {
             let svg = `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" style="filter:drop-shadow(0 0 2px rgba(0,0,0,0.5))" color="${fillColor}">`;
             svg += batIcons.frame;
             svg += `<rect x="3.5" y="8.5" width="${fillWidth}" height="7" rx="1.5" fill="${fillColor}"/>`;
-            if (isCharging) svg += batIcons.bolt;
+            if (isCharging) svg += batIcons.boltOverlay;
             svg += `</svg>`;
             document.getElementById('battery-icon').innerHTML = svg;
             const bt = document.getElementById('battery');
@@ -2009,7 +2010,11 @@ async function updateBattery() {
 let stocksRefreshTimer = null;
 
 async function fetchStocks() {
-    if (!state.tickers || state.tickers.length === 0) return;
+    if (!state.tickers || state.tickers.length === 0) {
+        const list2 = document.getElementById('stocks-list');
+        if (list2) list2.innerHTML = '<div style="font-size:0.58rem;opacity:0.3;text-align:center;padding:8px;letter-spacing:1px;text-transform:uppercase;">Add tickers in settings</div>';
+        return;
+    }
     const list = document.getElementById('stocks-list');
     if (!list) return;
 
@@ -2490,7 +2495,7 @@ function updateWorldClock() {
         }
     });
 }
-setInterval(updateWorldClock, 1000);
+if (!window._wcInterval) window._wcInterval = setInterval(updateWorldClock, 1000);
 
 // ─────────────────────────────────────────────────
 // MOON PHASE
@@ -2572,7 +2577,7 @@ function updateCountdownDisplay() {
     const evEl = document.getElementById('cd-event');
     if (!el) return;
     evEl.innerText = state.countdownName || 'Event';
-    if (!state.countdownDate) { el.innerText = '—'; return; }
+    if (!state.countdownDate) { el.innerText = '?'; document.getElementById('cd-event').innerText = 'Set a date'; return; }
     const target = new Date(state.countdownDate + 'T00:00:00');
     const now    = new Date(); now.setHours(0,0,0,0);
     const days   = Math.round((target - now) / (1000 * 60 * 60 * 24));
@@ -3410,7 +3415,8 @@ function applyAll() {
         const wasHidden = el.style.opacity === '0' || el.style.display === 'none';
         el.style.opacity = show ? '' : '0'; // '' clears inline, falls back to CSS var(--widget-opacity)
         el.style.pointerEvents = show ? 'all' : 'none';
-        if (show) el.style.display = 'flex';
+        if (show && !el.dataset.iosDisabled) el.style.display = 'flex';
+        if (!show || el.dataset.iosDisabled) { if(el.dataset.iosDisabled) { el.style.opacity='0'; el.style.display='none'; state[key]=false; const _wk2=key.startsWith('show')?key.charAt(4).toLowerCase()+key.slice(5):key; const sw2=document.getElementById('sw-'+_wk2)||document.getElementById('sw-'+key); if(sw2) sw2.classList.remove('active'); return; } }
         // Entrance animation when toggling on
         if (show && wasHidden) {
             el.classList.remove('entering');
@@ -3534,14 +3540,18 @@ function positionWidget(key) {
     if (!el) return;
     el.style.left = pos.x + '%';
     el.style.top  = pos.y + '%';
-    el.style.fontSize = ''; // clear any leftover font-size from previous approach
+    el.style.fontSize = '';
     const widgetScale = (state.widgetScales[key] !== undefined ? state.widgetScales[key] : 1) * parseFloat(state.scale);
     const sx = state.mirrored ? -widgetScale : widgetScale;
     el.style.setProperty('--ws',  widgetScale);
     el.style.setProperty('--wmx', sx);
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
     const bsy = el.style.getPropertyValue('--bsy') || '0px';
-    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scale(${sx}, ${widgetScale})`;
+    // Position via translate on the widget (no scale here — keeps GPU layer at native res)
+    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy}))`;
+    // Scale on the pill — text inside renders at device pixel ratio, not bitmap-scaled
+    const pill = el.querySelector('.widget-pill');
+    if (pill) pill.style.transform = `scale(${sx}, ${widgetScale})`;
 }
 
 // Ghost system is fully removed — grid is invisible
@@ -3623,6 +3633,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
                 moved = true;
                 el.classList.add('dragging');
                 el.style.willChange = 'transform';
+                const _dp = el.querySelector('.widget-pill'); if (_dp) _dp.style.willChange = 'transform';
                 showGhosts();
                 lineH.style.display = 'block';
                 lineV.style.display = 'block';
@@ -3652,7 +3663,9 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
 
             const offsetX = curPxX - anchorX;
             const offsetY = curPxY - anchorY;
-            el.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scale(${sx}, ${_ws})`;
+            el.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`;
+        const _pill = el.querySelector('.widget-pill');
+        if (_pill) _pill.style.transform = `scale(${sx}, ${_ws})`;
             highlightGhost(curPxX, curPxY);
         });
     };
@@ -3672,6 +3685,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
 
         el.classList.remove('dragging');
         el.style.removeProperty('will-change');
+        const _dp2 = el.querySelector('.widget-pill'); if (_dp2) _dp2.style.willChange = 'auto';
         el.style.transition = '';
 
         hideGhosts();
@@ -3697,7 +3711,9 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         el.style.top  = zone.y + '%';
         const compensateX = curPxX - snapPxX;
         const compensateY = curPxY - snapPxY;
-        el.style.transform = `translate(calc(-50% + ${compensateX}px), calc(-50% + ${compensateY}px)) scale(${sx}, ${_ws})`;
+        el.style.transform = `translate(calc(-50% + ${compensateX}px), calc(-50% + ${compensateY}px))`;
+        const _pillC = el.querySelector('.widget-pill');
+        if (_pillC) _pillC.style.transform = `scale(${sx}, ${_ws})`;
 
         // Step 2: Force the browser to commit left/top + compensation transform
         // before we apply the spring animation
@@ -3706,7 +3722,9 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         // Step 3: Animate the transform spring to the final resting position
         el.style.transition = '';
         el.classList.add('snapping');
-        el.style.transform = `translate(-50%, -50%) scale(${sx}, ${_ws})`;
+        el.style.transform = `translate(-50%, -50%)`;
+        const _pillS = el.querySelector('.widget-pill');
+        if (_pillS) _pillS.style.transform = `scale(${sx}, ${_ws})`;
 
         // Step 4: When spring finishes, call positionWidget to write the
         // canonical transform (includes burn shield offsets).
@@ -3720,6 +3738,9 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
             el.style.setProperty('--bsx', '0px');
             el.style.setProperty('--bsy', '0px');
             el.style.transition = '';
+            // Reset pill transition before positionWidget writes final scale
+            const _cp = el.querySelector('.widget-pill');
+            if (_cp) _cp.style.transition = '';
             positionWidget(key);
         };
         const onTransEnd = (e) => {
@@ -4008,7 +4029,9 @@ function optimizeScale() {
         for (const key of WIDGET_KEYS_VIS) {
             const el = document.getElementById(key + '-widget');
             if (!el) continue;
-            const r = el.getBoundingClientRect();
+            // Use pill rect since scale is on the pill now
+            const pill = el.querySelector('.widget-pill') || el;
+            const r = pill.getBoundingClientRect();
             if (r.left < 0 || r.top < 0 || r.right > vw || r.bottom > vh) {
                 allFit = false;
                 break;
@@ -4055,7 +4078,8 @@ function toggle(key) {
             const wasHidden = el.style.opacity === '0' || el.style.display === 'none';
             el.style.opacity = show ? '' : '0';
             el.style.pointerEvents = show ? 'all' : 'none';
-            if (show) el.style.display = 'flex';
+            if (show && !el.dataset.iosDisabled) el.style.display = 'flex';
+        if (!show || el.dataset.iosDisabled) { if(el.dataset.iosDisabled) { el.style.opacity='0'; el.style.display='none'; state[key]=false; const _wk2=key.startsWith('show')?key.charAt(4).toLowerCase()+key.slice(5):key; const sw2=document.getElementById('sw-'+_wk2)||document.getElementById('sw-'+key); if(sw2) sw2.classList.remove('active'); return; } }
             // Entrance animation
             if (show && wasHidden) {
                 el.classList.remove('entering');
@@ -4079,7 +4103,7 @@ function toggle(key) {
 
     if (key === 'burnShield') { /* handled by startBurnShield interval */ }
     if (key === 'mirrored' || key === 'posLocked') applyAll();
-    if (key === 'batteryDynamic') updateBattery();
+    if (key === 'batteryDynamic') { const _bw = document.getElementById('battery-widget'); if (!_bw || !_bw.dataset.iosDisabled) updateBattery(); }
     if (key === 'showSeconds' || key === 'is24h') updateClock();
     if (key === 'artAsBg') {
         const bgl = document.getElementById('bg-layer');
@@ -4356,10 +4380,22 @@ function hideCtxMenu() {
 
 function ctxHide() {
     if (!_ctxKey) return;
-    const showKey = 'show' + _ctxKey.charAt(0).toUpperCase() + _ctxKey.slice(1);
-    // Force to visible state first so toggle always hides it
-    state[showKey] = true;
-    toggle(showKey);
+    const el = document.getElementById(_ctxKey + '-widget');
+    if (el) {
+        el.style.transition = 'opacity 0.3s ease';
+        el.style.opacity = '0';
+        setTimeout(() => {
+            el.style.transition = '';
+            const showKey = 'show' + _ctxKey.charAt(0).toUpperCase() + _ctxKey.slice(1);
+            state[showKey] = false;
+            el.style.pointerEvents = 'none';
+            const st = document.getElementById('st-' + _ctxKey);
+            if (st) { st.innerText = 'HIDDEN'; st.className = 'status-tag off'; }
+            const sw = document.getElementById('sw-show' + _ctxKey.charAt(0).toUpperCase() + _ctxKey.slice(1));
+            if (sw) sw.classList.remove('active');
+            save();
+        }, 300);
+    }
     hideCtxMenu();
 }
 
@@ -4392,7 +4428,9 @@ function _applyWidgetScaleDirect(key, perWidgetScale) {
     el.style.setProperty('--wmx', sx);
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
     const bsy = el.style.getPropertyValue('--bsy') || '0px';
-    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scale(${sx}, ${widgetScale})`;
+    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy}))`;
+    const pill = el.querySelector('.widget-pill');
+    if (pill) pill.style.transform = `scale(${sx}, ${widgetScale})`;
 }
 
 // ─────────────────────────────────────────────────
@@ -4476,7 +4514,8 @@ function clampAllWidgetPositions() {
         if (!el.offsetParent && el.style.display !== 'flex') return; // not rendered
         const pos = state.widgetPos[key];
         if (!pos) return;
-        const rect = el.getBoundingClientRect();
+        const pill2 = el.querySelector('.widget-pill') || el;
+        const rect = pill2.getBoundingClientRect();
         const hw = rect.width  / 2, hh = rect.height / 2;
         const margin = 8;
         const minX = (hw + margin) / vw * 100;
@@ -4493,6 +4532,16 @@ function clampAllWidgetPositions() {
     });
     if (changed) save();
 }
+
+// Close settings panel when clicking outside it
+document.addEventListener('click', (e) => {
+    const panel = document.getElementById('side-panel');
+    const trigger = document.getElementById('nav-trigger');
+    if (panel && panel.classList.contains('open') &&
+        !panel.contains(e.target) && !trigger.contains(e.target)) {
+        toggleNav();
+    }
+}, { passive: true });
 
 // ─────────────────────────────────────────────────
 // PREVENT PAGE SCROLL (all devices, especially iOS)
@@ -4568,12 +4617,14 @@ function _updateCtxScaleBar(val) {
     function promoteWidget() {
         if (!_ctxKey) return;
         const el = document.getElementById(_ctxKey + '-widget');
-        if (el) el.style.willChange = 'transform';
+        const pill = el && el.querySelector('.widget-pill');
+        if (pill) pill.style.willChange = 'transform';
     }
     function demoteWidget() {
         if (!_ctxKey) return;
         const el = document.getElementById(_ctxKey + '-widget');
-        if (el) el.style.willChange = 'auto';
+        const pill = el && el.querySelector('.widget-pill');
+        if (pill) pill.style.willChange = 'auto';
     }
 
     // Mouse
@@ -4627,7 +4678,8 @@ function initPinchScale(key) {
         );
         if (!state.widgetScales) state.widgetScales = {};
         _pinchStartScale = state.widgetScales[key] !== undefined ? state.widgetScales[key] : 1;
-        el.style.willChange = 'transform'; // promote to GPU layer for duration of gesture
+        const _pinchPill = el.querySelector('.widget-pill');
+        if (_pinchPill) _pinchPill.style.willChange = 'transform'; // promote pill to GPU
     }, { passive: false });
 
     let _pinchRaf = false;
@@ -4660,7 +4712,8 @@ function initPinchScale(key) {
         if (e.touches.length < 2) {
             if (_isPinching) {
                 _isPinching = false;
-                el.style.willChange = 'auto'; // release GPU layer
+                const _pp2 = el.querySelector('.widget-pill');
+                if (_pp2) _pp2.style.willChange = 'auto';
                 positionWidget(key); // sync CSS vars and position fully
                 save();
                 const finalScale = state.widgetScales[key] || 1;
