@@ -3559,18 +3559,18 @@ function positionWidget(key) {
     if (!el) return;
     el.style.left = pos.x + '%';
     el.style.top  = pos.y + '%';
-    el.style.fontSize = '';
     const widgetScale = (state.widgetScales[key] !== undefined ? state.widgetScales[key] : 1) * parseFloat(state.scale);
-    const sx = state.mirrored ? -widgetScale : widgetScale;
-    el.style.setProperty('--ws',  widgetScale);
-    el.style.setProperty('--wmx', sx);
+    el.style.setProperty('--ws', widgetScale);
+    // font-size scaling — text renders at native device resolution
+    el.style.fontSize = (widgetScale * 16) + 'px';
+    const mirror = state.mirrored ? -1 : 1;
+    el.style.setProperty('--wmx', mirror);
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
     const bsy = el.style.getPropertyValue('--bsy') || '0px';
-    // Position via translate on the widget (no scale here — keeps GPU layer at native res)
-    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy}))`;
-    // Scale on the pill — text inside renders at device pixel ratio, not bitmap-scaled
+    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scaleX(${mirror})`;
+    // Clear any pill transform left from previous approach
     const pill = el.querySelector('.widget-pill');
-    if (pill) pill.style.transform = `scale(${sx}, ${widgetScale})`;
+    if (pill) pill.style.transform = '';
 }
 
 // Ghost system is fully removed — grid is invisible
@@ -3652,7 +3652,6 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
                 moved = true;
                 el.classList.add('dragging');
                 el.style.willChange = 'transform';
-                const _dp = el.querySelector('.widget-pill'); if (_dp) _dp.style.willChange = 'transform';
                 showGhosts();
                 lineH.style.display = 'block';
                 lineV.style.display = 'block';
@@ -3682,9 +3681,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
 
             const offsetX = curPxX - anchorX;
             const offsetY = curPxY - anchorY;
-            el.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px))`;
-        const _pill = el.querySelector('.widget-pill');
-        if (_pill) _pill.style.transform = `scale(${sx}, ${_ws})`;
+            el.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scaleX(${state.mirrored ? -1 : 1})`;
             highlightGhost(curPxX, curPxY);
         });
     };
@@ -3704,7 +3701,6 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
 
         el.classList.remove('dragging');
         el.style.removeProperty('will-change');
-        const _dp2 = el.querySelector('.widget-pill'); if (_dp2) _dp2.style.willChange = 'auto';
         el.style.transition = '';
 
         hideGhosts();
@@ -3730,9 +3726,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         el.style.top  = zone.y + '%';
         const compensateX = curPxX - snapPxX;
         const compensateY = curPxY - snapPxY;
-        el.style.transform = `translate(calc(-50% + ${compensateX}px), calc(-50% + ${compensateY}px))`;
-        const _pillC = el.querySelector('.widget-pill');
-        if (_pillC) _pillC.style.transform = `scale(${sx}, ${_ws})`;
+        el.style.transform = `translate(calc(-50% + ${compensateX}px), calc(-50% + ${compensateY}px)) scaleX(${state.mirrored ? -1 : 1})`;
 
         // Step 2: Force the browser to commit left/top + compensation transform
         // before we apply the spring animation
@@ -3743,8 +3737,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         // The pill scale stays constant throughout — no jump
         el.style.transition = '';
         el.classList.add('snapping');
-        el.style.transform = `translate(-50%, -50%)`;
-        // Pill scale unchanged — don't touch it
+        el.style.transform = `translate(-50%, -50%) scaleX(${state.mirrored ? -1 : 1})`;
 
         // Step 4: After spring finishes, lock everything in place
         const cleanup = () => {
@@ -4111,9 +4104,7 @@ function optimizeScale() {
         for (const key of WIDGET_KEYS_VIS) {
             const el = document.getElementById(key + '-widget');
             if (!el) continue;
-            // Use pill rect since scale is on the pill now
-            const pill = el.querySelector('.widget-pill') || el;
-            const r = pill.getBoundingClientRect();
+            const r = el.getBoundingClientRect();
             if (r.left < 0 || r.top < 0 || r.right > vw || r.bottom > vh) {
                 allFit = false;
                 break;
@@ -4503,16 +4494,16 @@ function ctxSetWidgetScale(val) {
 function _applyWidgetScaleDirect(key, perWidgetScale) {
     const el = document.getElementById(key + '-widget');
     if (!el) return;
-    el.style.fontSize = '';
     const widgetScale = perWidgetScale * parseFloat(state.scale);
-    const sx = state.mirrored ? -widgetScale : widgetScale;
     el.style.setProperty('--ws', widgetScale);
-    el.style.setProperty('--wmx', sx);
+    el.style.fontSize = (widgetScale * 16) + 'px';
+    const mirror = state.mirrored ? -1 : 1;
+    el.style.setProperty('--wmx', mirror);
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
     const bsy = el.style.getPropertyValue('--bsy') || '0px';
-    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy}))`;
+    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scaleX(${mirror})`;
     const pill = el.querySelector('.widget-pill');
-    if (pill) pill.style.transform = `scale(${sx}, ${widgetScale})`;
+    if (pill) pill.style.transform = '';
 }
 
 // ─────────────────────────────────────────────────
@@ -4596,8 +4587,7 @@ function clampAllWidgetPositions() {
         if (!el.offsetParent && el.style.display !== 'flex') return; // not rendered
         const pos = state.widgetPos[key];
         if (!pos) return;
-        const pill2 = el.querySelector('.widget-pill') || el;
-        const rect = pill2.getBoundingClientRect();
+        const rect = el.getBoundingClientRect();
         const hw = rect.width  / 2, hh = rect.height / 2;
         const margin = 8;
         const minX = (hw + margin) / vw * 100;
@@ -4699,14 +4689,12 @@ function _updateCtxScaleBar(val) {
     function promoteWidget() {
         if (!_ctxKey) return;
         const el = document.getElementById(_ctxKey + '-widget');
-        const pill = el && el.querySelector('.widget-pill');
-        if (pill) pill.style.willChange = 'transform';
+        if (el) el.style.willChange = 'font-size';
     }
     function demoteWidget() {
         if (!_ctxKey) return;
         const el = document.getElementById(_ctxKey + '-widget');
-        const pill = el && el.querySelector('.widget-pill');
-        if (pill) pill.style.willChange = 'auto';
+        if (el) el.style.willChange = 'auto';
     }
 
     // Mouse
@@ -4760,8 +4748,7 @@ function initPinchScale(key) {
         );
         if (!state.widgetScales) state.widgetScales = {};
         _pinchStartScale = state.widgetScales[key] !== undefined ? state.widgetScales[key] : 1;
-        const _pinchPill = el.querySelector('.widget-pill');
-        if (_pinchPill) _pinchPill.style.willChange = 'transform'; // promote pill to GPU
+        el.style.willChange = 'font-size';
     }, { passive: false });
 
     let _pinchRaf = false;
@@ -4794,8 +4781,7 @@ function initPinchScale(key) {
         if (e.touches.length < 2) {
             if (_isPinching) {
                 _isPinching = false;
-                const _pp2 = el.querySelector('.widget-pill');
-                if (_pp2) _pp2.style.willChange = 'auto';
+                el.style.willChange = 'auto';
                 positionWidget(key); // sync CSS vars and position fully
                 save();
                 const finalScale = state.widgetScales[key] || 1;
