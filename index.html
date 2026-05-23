@@ -1258,7 +1258,8 @@
             <div style="margin-top:6px;padding:6px 8px;border-radius:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05);">
                 <span style="font-size:0.44rem;opacity:0.35;letter-spacing:1px;text-transform:uppercase;line-height:1.6;display:block;">On iOS, add to Home Screen via Share → Add to Home Screen for fullscreen mode. Set Auto-Lock to Never in Settings → Display.</span>
             </div>
-            <div class="row" style="margin-top:12px;"><label>Sleep Schedule</label><div id="sw-sleepEnabled" class="ios-switch" onclick="toggleSleepSchedule()"></div></div>
+            <div class="row"><label>Auto-Dim After Inactivity</label><div id="sw-autoDim" class="ios-switch" onclick="toggleAutoDim()"></div></div>
+            <div class="row" style="margin-top:10px;"><label>Sleep Schedule</label><div id="sw-sleepEnabled" class="ios-switch" onclick="toggleSleepSchedule()"></div></div>
             <div id="sleep-schedule-body" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);">
                 <div class="row" style="margin-bottom:10px;">
                     <label style="font-size:0.5rem;">Sleep at</label>
@@ -1326,7 +1327,8 @@ let state = {
     sleepEnabled: false, sleepTime: '23:00', wakeTime: '07:00',
     lowPowerMode: false,
     glassMode: false,
-    transparentBg: false
+    transparentBg: false,
+    autoDim: false
 };
 
 // ─────────────────────────────────────────────────
@@ -1386,6 +1388,10 @@ function load() {
     applyGlowIntensity();
     applyWidgetOpacity();
     document.body.classList.toggle('low-power', !!state.lowPowerMode);
+    const swAD = document.getElementById('sw-autoDim');
+    if (swAD) swAD.classList.toggle('active', !!state.autoDim);
+    // If autoDim was just disabled, make sure screen is undimmed
+    if (!state.autoDim) { clearTimeout(dim.timer); undim(); }
     document.body.classList.toggle('glass-mode', !!state.glassMode);
     document.body.classList.toggle('transparent-bg', !!state.transparentBg);
     const swTBg = document.getElementById('sw-transparentBg');
@@ -1515,6 +1521,7 @@ function resetDimTimer() {
 }
 
 function doDim() {
+    if (!state.autoDim) return; // auto-dim disabled
     dim.isDimmed = true;
     document.getElementById('dim-overlay').classList.add('dimmed');
 }
@@ -3905,6 +3912,15 @@ function toggleAlwaysOn() {
     state.alwaysOn = !state.alwaysOn;
     const sw = document.getElementById('sw-alwaysOn');
     if (sw) sw.classList.toggle('active', state.alwaysOn);
+    
+    // Automatically turn off Auto-Dim when Always On is activated
+    if (state.alwaysOn && state.autoDim) {
+        state.autoDim = false;
+        const swAutoDim = document.getElementById('sw-autoDim');
+        if (swAutoDim) swAutoDim.classList.remove('active');
+        if (typeof dim !== 'undefined' && dim.timer) clearTimeout(dim.timer);
+        if (typeof undim === 'function') undim();
+    }
     applyGlowIntensity();
     applyWidgetOpacity();
     if (state.lowPowerMode)  document.body.classList.add('low-power');
@@ -3952,6 +3968,29 @@ document.addEventListener('visibilitychange', () => {
 // ─────────────────────────────────────────────────
 let _sleepWakeInterval = null;
 let _isSleeping = false;
+
+function toggleAutoDim() {
+    state.autoDim = !state.autoDim;
+    const sw = document.getElementById('sw-autoDim');
+    if (sw) sw.classList.toggle('active', state.autoDim);
+    
+    // Turn off Always On when Auto-Dim is enabled, to prevent conflicts
+    if (state.autoDim && state.alwaysOn) {
+        state.alwaysOn = false;
+        const swAlwaysOn = document.getElementById('sw-alwaysOn');
+        if (swAlwaysOn) swAlwaysOn.classList.remove('active');
+        if (typeof releaseWakeLock === 'function') releaseWakeLock();
+    }
+    
+    if (!state.autoDim) {
+        // Immediately undim if currently dimmed
+        clearTimeout(dim.timer);
+        undim();
+    } else {
+        resetDimTimer();
+    }
+    save();
+}
 
 function toggleSleepSchedule() {
     state.sleepEnabled = !state.sleepEnabled;
