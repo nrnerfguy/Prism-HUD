@@ -199,9 +199,7 @@
             user-select: none; -webkit-user-select: none;
             /* Ensure sub-pixel text rendering within compositing layer */
             -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-            text-rendering: geometricPrecision;
-            transform-style: preserve-3d;
+            text-rendering: optimizeLegibility;
             /* No will-change here — only set during active drag to avoid permanent GPU layer overhead */
         }
         .widget.dragging {
@@ -761,8 +759,16 @@
         .ticker-tag button:hover { color: #ff4444; }
         .ticker-tag button:active { transform: scale(0.85); }
     
-        /* Crisp SVGs */
-        .widget svg { width: 1em; height: 1em; }
+        /* -- INJECTED SCALING FIXES -- */
+        /* Make SVGs scale relative to the font-size set by the zoom logic */
+        #icon-container svg { width: 1em; height: 1em; }
+        #battery-icon svg { width: 1em; height: 1em; }
+        /* Ensure crisp rendering for the whole widget */
+        .widget {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            text-rendering: optimizeLegibility;
+        }
 </style>
 
     <script>
@@ -3570,12 +3576,12 @@ function positionWidget(key) {
     const widgetScale = (state.widgetScales[key] !== undefined ? state.widgetScales[key] : 1) * parseFloat(state.scale);
     el.style.setProperty('--ws', widgetScale);
     // font-size scaling — text renders at native device resolution
-    el.style.fontSize = (widgetScale * 16) + 'px';
+    el.style.fontSize = '16px'; // Prevent double scaling since we are now using transform: scale()
     const mirror = state.mirrored ? -1 : 1;
     el.style.setProperty('--wmx', mirror);
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
     const bsy = el.style.getPropertyValue('--bsy') || '0px';
-    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scaleX(${mirror})`;
+    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scaleX(${mirror}) scale(${widgetScale})`;
     // Clear any pill transform left from previous approach
     const pill = el.querySelector('.widget-pill');
     if (pill) pill.style.transform = '';
@@ -3914,7 +3920,7 @@ function toggleAlwaysOn() {
     const sw = document.getElementById('sw-alwaysOn');
     if (sw) sw.classList.toggle('active', state.alwaysOn);
     
-    // Automatically manage dimming state
+    // Manage auto-dim behavior automatically
     if (state.alwaysOn) {
         if (typeof dim !== 'undefined' && dim.timer) clearTimeout(dim.timer);
         if (typeof undim === 'function') undim();
@@ -3928,15 +3934,10 @@ function toggleAlwaysOn() {
     if (state.glassMode)      document.body.classList.add('glass-mode');
     if (state.transparentBg)  document.body.classList.add('transparent-bg');
     if (state.alwaysOn) {
-        // Try immediately
         requestWakeLock().catch(() => {});
         startWakeLockKeepAlive();
-        
-        // Also request on first click (required by Safari/some Chromium)
         const _wlGesture = () => {
-            if (state.alwaysOn && _wakeLock === null) {
-                requestWakeLock();
-            }
+            if (state.alwaysOn && _wakeLock === null) requestWakeLock();
             document.removeEventListener('click', _wlGesture);
             document.removeEventListener('touchstart', _wlGesture);
         };
@@ -4515,12 +4516,12 @@ function _applyWidgetScaleDirect(key, perWidgetScale) {
     if (!el) return;
     const widgetScale = perWidgetScale * parseFloat(state.scale);
     el.style.setProperty('--ws', widgetScale);
-    el.style.fontSize = (widgetScale * 16) + 'px';
+    el.style.fontSize = '16px'; // Prevent double scaling since we are now using transform: scale()
     const mirror = state.mirrored ? -1 : 1;
     el.style.setProperty('--wmx', mirror);
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
     const bsy = el.style.getPropertyValue('--bsy') || '0px';
-    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scaleX(${mirror})`;
+    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scaleX(${mirror}) scale(${widgetScale})`;
     const pill = el.querySelector('.widget-pill');
     if (pill) pill.style.transform = '';
 }
