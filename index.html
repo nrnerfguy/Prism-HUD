@@ -775,10 +775,6 @@
             text-rendering: optimizeLegibility;
         }
 
-    .widget {
-        transform-style: preserve-3d;
-        will-change: transform;
-    }
     #icon-container svg {
         width: 0.75em !important;
         height: 0.75em !important;
@@ -1443,9 +1439,8 @@ function load() {
     createSnapGhosts();
     applyGlowIntensity();
     applyWidgetOpacity();
-    document.body.classList.toggle('low-power', !!state.lowPowerMode);
-    
-    document.body.classList.toggle('glass-mode', !!state.glassMode);
+    document.body.classList.toggle('low-power',      !!state.lowPowerMode);
+    document.body.classList.toggle('glass-mode',     !!state.glassMode);
     document.body.classList.toggle('transparent-bg', !!state.transparentBg);
     const swTBg = document.getElementById('sw-transparentBg');
     if (swTBg) swTBg.classList.toggle('active', !!state.transparentBg);
@@ -1453,9 +1448,6 @@ function load() {
     if (swLP) swLP.classList.toggle('active', !!state.lowPowerMode);
     const swGM = document.getElementById('sw-glassMode');
     if (swGM) swGM.classList.toggle('active', !!state.glassMode);
-    if (state.lowPowerMode)  document.body.classList.add('low-power');
-    if (state.glassMode)      document.body.classList.add('glass-mode');
-    if (state.transparentBg)  document.body.classList.add('transparent-bg');
     if (state.alwaysOn) {
         // Try immediately — works on Chrome/Edge desktop
         requestWakeLock().catch(() => {});
@@ -1974,29 +1966,45 @@ const icons = {
     storm: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" style="width:1em;height:1em;"><path d="M19 16.9A5 5 0 0 0 18 7h-1.26a8 8 0 1 0-11.62 9"/><polyline points="13 11 9 17 15 17 11 23"/></svg>`
 };
 
+let _cityDebounceTimer = null;
+let _cityFetchCtrl     = null;
+
 async function searchCities(query) {
     const box = document.getElementById('weather-results');
     if (query.length < 2) { box.style.display = 'none'; return; }
-    try {
-        const res  = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${query}&count=5&language=en&format=json`);
-        const data = await res.json();
-        if (data.results) {
-            box.innerHTML = '';
-            data.results.forEach(city => {
-                const div = document.createElement('div');
-                div.className = 'city-item';
-                const region = [city.admin1, city.country_code.toUpperCase()].filter(Boolean).join(', ');
-                div.textContent = city.name;
-                const sub = document.createElement('span');
-                sub.textContent = region;
-                div.appendChild(document.createTextNode(' '));
-                div.appendChild(sub);
-                div.onclick = () => selectCity(city.name);
-                box.appendChild(div);
-            });
-            box.style.display = 'block';
-        } else { box.style.display = 'none'; }
-    } catch (e) { console.error(e); }
+
+    // Debounce: wait 300ms of silence before firing
+    clearTimeout(_cityDebounceTimer);
+    _cityDebounceTimer = setTimeout(async () => {
+        // Cancel any previous in-flight request so stale results never overwrite fresh ones
+        if (_cityFetchCtrl) _cityFetchCtrl.abort();
+        _cityFetchCtrl = new AbortController();
+        try {
+            const res  = await fetch(
+                `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=en&format=json`,
+                { signal: _cityFetchCtrl.signal }
+            );
+            const data = await res.json();
+            if (data.results) {
+                box.innerHTML = '';
+                data.results.forEach(city => {
+                    const div = document.createElement('div');
+                    div.className = 'city-item';
+                    const region = [city.admin1, city.country_code.toUpperCase()].filter(Boolean).join(', ');
+                    div.textContent = city.name;
+                    const sub = document.createElement('span');
+                    sub.textContent = region;
+                    div.appendChild(document.createTextNode(' '));
+                    div.appendChild(sub);
+                    div.onclick = () => selectCity(city.name);
+                    box.appendChild(div);
+                });
+                box.style.display = 'block';
+            } else { box.style.display = 'none'; }
+        } catch (e) {
+            if (e.name !== 'AbortError') console.error(e);
+        }
+    }, 300);
 }
 
 function selectCity(name) {
@@ -2133,6 +2141,8 @@ async function fetchStocks() {
     }
 
     // Build the initial structure if needed (first load or ticker list changed)
+    const safeTickers = state.tickers.filter(t => /^[A-Z0-9.\-\^=]{1,10}$/.test(t));
+    if (safeTickers.length !== state.tickers.length) state.tickers = safeTickers;
     const existingTickers = [...list.querySelectorAll('.stock-ticker')].map(el => el.textContent);
     const tickersChanged = state.tickers.join() !== existingTickers.join();
     if (list.children.length === 0 || tickersChanged) {
@@ -2398,8 +2408,14 @@ function _doTickerSearch(query) {
         const div = document.createElement('div');
         div.className   = 'ticker-item';
         div.dataset.sym = sym;
-        div.innerHTML   = '<span class="ticker-item-symbol">' + sym + '</span>' +
-                          '<span class="ticker-item-sub">'    + name + '</span>';
+        const symSpan = document.createElement('span');
+        symSpan.className = 'ticker-item-symbol';
+        symSpan.textContent = sym;
+        const nameSpan = document.createElement('span');
+        nameSpan.className = 'ticker-item-sub';
+        nameSpan.textContent = name;
+        div.appendChild(symSpan);
+        div.appendChild(nameSpan);
         div.addEventListener('pointerdown', e => { e.preventDefault(); selectTicker(sym); });
         box.appendChild(div);
     });
@@ -2444,7 +2460,10 @@ function tickerInputKey(e) {
 }
 
 function selectTicker(symbol) {
-    symbol = symbol.toUpperCase();
+    symbol = symbol.toUpperCase().trim();
+    // Validate: only uppercase letters, digits, dot, dash, caret, equals — max 10 chars
+    // This covers stocks (AAPL), indices (^GSPC), FX (EURUSD=X), and crypto (BTC-USD)
+    if (!/^[A-Z0-9.\-\^=]{1,10}$/.test(symbol)) return;
     if (!state.tickers) state.tickers = [];
     if (!state.tickers.includes(symbol)) {
         state.tickers.push(symbol);
@@ -3148,11 +3167,17 @@ function applySpotifyTokens(data) {
 function loadStoredSpotifyTokens() {
     const t = localStorage.getItem('spotify_tokens');
     if (!t) return false;
-    const d = JSON.parse(t);
-    spotify.accessToken  = d.a;
-    spotify.refreshToken = d.r;
-    spotify.expiresAt    = d.e;
-    return !!spotify.accessToken;
+    try {
+        const d = JSON.parse(t);
+        spotify.accessToken  = d.a;
+        spotify.refreshToken = d.r;
+        spotify.expiresAt    = d.e;
+        return !!spotify.accessToken;
+    } catch (e) {
+        console.warn('Prism OS: spotify_tokens corrupted, clearing.', e);
+        localStorage.removeItem('spotify_tokens');
+        return false;
+    }
 }
 
 async function refreshSpotifyToken() {
@@ -3216,7 +3241,7 @@ async function fetchNowPlaying() {
 }
 
 function updateNowPlayingUI(data, nextTrack) {
-    if (!data || !data.is_playing && !data.item) {
+    if (!data || !data.item) {
         document.getElementById('np-track').innerText  = 'Nothing playing';
         document.getElementById('np-artist').textContent = '—';
         document.getElementById('np-bar-fill').style.width = '0%';
