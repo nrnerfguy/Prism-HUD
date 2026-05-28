@@ -200,7 +200,12 @@
             /* Ensure sub-pixel text rendering within compositing layer */
             -webkit-font-smoothing: antialiased;
             text-rendering: optimizeLegibility;
-            /* No will-change here — only set during active drag to avoid permanent GPU layer overhead */
+            /* Promote each widget to its own GPU layer at native DPR.
+               Without this, WebKit rasterises the element at layout size first,
+               then the scale() transform stretches those pixels and text blurs.
+               translateZ(0) forces rasterisation AFTER the scale is known. */
+            transform: translateZ(0);
+            -webkit-transform: translateZ(0);
         }
         .widget.dragging {
             will-change: transform;
@@ -1355,11 +1360,33 @@ let state = {
 // PERSIST
 // ─────────────────────────────────────────────────
 let _saveTimer = null;
+function _trySave() {
+    try {
+        localStorage.setItem('prism_ultra_v3', JSON.stringify(state));
+    } catch (e) {
+        if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
+            // Storage full — most likely caused by base64 wallpaper history.
+            // Drop all but the most recent wallpaper and retry once.
+            if (state.history && state.history.length > 1) {
+                state.history = state.history.slice(0, 1);
+                try { localStorage.setItem('prism_ultra_v3', JSON.stringify(state)); } catch (_) {
+                    // Still failing — clear wallpaper history entirely and retry.
+                    state.history = [];
+                    try { localStorage.setItem('prism_ultra_v3', JSON.stringify(state)); } catch (__) {
+                        console.warn('Prism OS: localStorage quota exceeded, settings not saved.');
+                    }
+                }
+            }
+        } else {
+            console.warn('Prism OS: could not save settings —', e.message);
+        }
+    }
+}
 function save() {
     clearTimeout(_saveTimer);
-    _saveTimer = setTimeout(() => localStorage.setItem('prism_ultra_v3', JSON.stringify(state)), 300);
+    _saveTimer = setTimeout(_trySave, 300);
 }
-function saveNow() { clearTimeout(_saveTimer); localStorage.setItem('prism_ultra_v3', JSON.stringify(state)); }
+function saveNow() { clearTimeout(_saveTimer); _trySave(); }
 
 function load() {
     // Set the correct icon path depending on environment
@@ -1376,7 +1403,16 @@ function load() {
     }
 
     const saved = localStorage.getItem('prism_ultra_v3');
-    if (saved) state = Object.assign(state, JSON.parse(saved));
+    if (saved) {
+        try {
+            const parsed = JSON.parse(saved);
+            if (typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)) {
+                state = Object.assign(state, parsed);
+            }
+        } catch (e) {
+            console.warn('Prism OS: saved settings were corrupted and have been reset.', e);
+        }
+    }
 
     // Handle Spotify OAuth callback
     // Browser path: check if code is in current URL (non-Electron)
@@ -1745,7 +1781,7 @@ function updateClock() {
     const clockEl = document.getElementById('clock');
     if (state.clockStyle === 'analog') {
         updateAnalogClock(now);
-        document.getElementById('date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
+        document.getElementById('date').textContent = now.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
         return;
     }
 
@@ -1784,7 +1820,7 @@ function updateClock() {
         _prevClockStr = timeStr;
     }
 
-    document.getElementById('date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
+    document.getElementById('date').textContent = now.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
     updateAnalogClock(now);
 }
 // Align clock tick to actual second boundary to prevent drift
@@ -1804,11 +1840,15 @@ function startAnalogRAF() {
     if (_rafRunning) return;
     _rafRunning = true;
     (function rafClock() {
-        if (state.clockStyle !== 'analog') { _rafRunning = false; return; }
+        if (state.clockStyle !== 'analog' || document.hidden) { _rafRunning = false; return; }
         updateAnalogClock(new Date());
         requestAnimationFrame(rafClock);
     })();
 }
+// Resume RAF when tab becomes visible again (if still in analog mode)
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden && state.clockStyle === 'analog') startAnalogRAF();
+});
 
 // DOM-only clock style update — safe to call from applyAll()
 function applyClockStyle(style) {
@@ -1945,7 +1985,12 @@ async function searchCities(query) {
             data.results.forEach(city => {
                 const div = document.createElement('div');
                 div.className = 'city-item';
-                div.innerHTML = `${city.name} <span>${city.admin1 || ''}, ${city.country_code.toUpperCase()}</span>`;
+                const region = [city.admin1, city.country_code.toUpperCase()].filter(Boolean).join(', ');
+                div.textContent = city.name;
+                const sub = document.createElement('span');
+                sub.textContent = region;
+                div.appendChild(document.createTextNode(' '));
+                div.appendChild(sub);
                 div.onclick = () => selectCity(city.name);
                 box.appendChild(div);
             });
@@ -2147,7 +2192,14 @@ function renderTickerTags() {
     state.tickers.forEach(t => {
         const tag = document.createElement('div');
         tag.className = 'ticker-tag';
-        tag.innerHTML = `<span>${t}</span><button onclick="removeTicker('${t}')" title="Remove">✕</button>`;
+        const label = document.createElement('span');
+        label.textContent = t;
+        const btn = document.createElement('button');
+        btn.textContent = '✕';
+        btn.title = 'Remove';
+        btn.addEventListener('click', () => removeTicker(t));
+        tag.appendChild(label);
+        tag.appendChild(btn);
         container.appendChild(tag);
     });
 }
@@ -2501,10 +2553,17 @@ function renderTzTags() {
     if (!state.timezones) state.timezones = [];
     container.innerHTML = '';
     state.timezones.forEach(tz => {
-        const label = TZ_OPTIONS.find(o => o.tz === tz)?.label ?? tz.split('/').pop().replace('_', ' ');
+        const label = TZ_OPTIONS.find(o => o.tz === tz)?.label ?? tz.split('/').pop().replace(/_/g, ' ');
         const tag = document.createElement('div');
         tag.className = 'ticker-tag';
-        tag.innerHTML = `<span>${label}</span><button onclick="removeTimezone('${tz}')" title="Remove">✕</button>`;
+        const labelEl = document.createElement('span');
+        labelEl.textContent = label;
+        const btn = document.createElement('button');
+        btn.textContent = '✕';
+        btn.title = 'Remove';
+        btn.addEventListener('click', () => removeTimezone(tz));
+        tag.appendChild(labelEl);
+        tag.appendChild(btn);
         container.appendChild(tag);
     });
 }
@@ -2520,14 +2579,21 @@ function updateWorldClock() {
     const now = new Date();
     list.innerHTML = '';
     state.timezones.forEach((tz, i) => {
-        const label = TZ_OPTIONS.find(o => o.tz === tz)?.label ?? tz.split('/').pop().replace('_', ' ');
-        const timeStr = now.toLocaleTimeString('en-US', {
+        const label = TZ_OPTIONS.find(o => o.tz === tz)?.label ?? tz.split('/').pop().replace(/_/g, ' ');
+        const timeStr = now.toLocaleTimeString(undefined, {
             timeZone: tz, hour: 'numeric', minute: '2-digit',
             hour12: !state.is24h
         });
         const row = document.createElement('div');
         row.className = 'wc-row';
-        row.innerHTML = `<span class="wc-city">${label}</span><span class="wc-time">${timeStr}</span>`;
+        const cityEl = document.createElement('span');
+        cityEl.className = 'wc-city';
+        cityEl.textContent = label;
+        const timeEl = document.createElement('span');
+        timeEl.className = 'wc-time';
+        timeEl.textContent = timeStr;
+        row.appendChild(cityEl);
+        row.appendChild(timeEl);
         list.appendChild(row);
         if (i < state.timezones.length - 1) {
             const div = document.createElement('div');
@@ -2648,15 +2714,51 @@ function exportSettings() {
     URL.revokeObjectURL(url);
 }
 
+// Keys that are safe to import and their expected types.
+// Anything not in this list is silently ignored.
+const IMPORTABLE_KEYS = {
+    accent: 'string', accentAuto: 'boolean', is24h: 'boolean', showSeconds: 'boolean',
+    clockStyle: 'string', clockGlow: 'boolean', clockGlowIntensity: 'number',
+    city: 'string', weatherUnit: 'string', showWeather: 'boolean',
+    showClock: 'boolean', showDate: 'boolean', showBattery: 'boolean',
+    showNowplaying: 'boolean', showStocks: 'boolean', showWorldclock: 'boolean',
+    showMoon: 'boolean', showCountdown: 'boolean', showNextUp: 'boolean',
+    tickers: 'array', timezones: 'array',
+    countdownName: 'string', countdownDate: 'string',
+    bg: 'string', isStatic: 'boolean', staticColor: 'string', activeGradient: 'string',
+    history: 'array', blur: 'number', bgOpacity: 'number', widgetOpacity: 'number',
+    scale: 'number', mirrored: 'boolean', showPills: 'boolean',
+    glassMode: 'boolean', transparentBg: 'boolean', lowPowerMode: 'boolean',
+    alwaysOn: 'boolean', sleepEnabled: 'boolean', sleepTime: 'string', wakeTime: 'string',
+    artAsBg: 'boolean', weatherTint: 'boolean',
+    widgetPos: 'object', widgetScales: 'object',
+    presets: 'object', spotifyClientId: 'string',
+};
+
 function importSettings(input) {
     const file = input.files[0];
     if (!file) return;
+    // Guard: only accept small files (< 10 MB) to avoid huge base64 bombs
+    if (file.size > 10 * 1024 * 1024) { alert('Settings file is too large.'); return; }
     const reader = new FileReader();
     reader.onload = e => {
         try {
             const imported = JSON.parse(e.target.result);
-            // Merge carefully — don't overwrite keys that don't exist in new format
-            state = Object.assign(state, imported);
+            if (typeof imported !== 'object' || imported === null || Array.isArray(imported)) {
+                throw new Error('Not an object');
+            }
+            // Whitelist merge — only copy known safe keys with correct types
+            const safe = {};
+            for (const [key, expectedType] of Object.entries(IMPORTABLE_KEYS)) {
+                if (!(key in imported)) continue;
+                const val = imported[key];
+                const actualType = Array.isArray(val) ? 'array' : typeof val;
+                if (actualType !== expectedType) continue;
+                // Extra guard: string values must not be excessively long
+                if (typeof val === 'string' && val.length > 5 * 1024 * 1024) continue;
+                safe[key] = val;
+            }
+            state = Object.assign(state, safe);
             save();
             applyAll();
             renderHistory();
@@ -2666,7 +2768,6 @@ function importSettings(input) {
             updateCountdownDisplay();
             updateWorldClock();
             if (state.showStocks) fetchStocks();
-            // Reset the input so same file can be re-imported
             input.value = '';
         } catch (err) {
             alert('Invalid settings file.');
@@ -3138,7 +3239,11 @@ function updateNowPlayingUI(data, nextTrack) {
     if (trackId !== _lastTrackId) {
         _lastTrackId = trackId;
         if (art) {
-            artEl.innerHTML = `<img src="${art}" alt="album art">`;
+            artEl.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = art;
+            img.alt = 'album art';
+            artEl.appendChild(img);
             artEl.classList.add('has-art');
             extractAccentFromArt(art);
         } else {
@@ -3379,7 +3484,16 @@ function renderThemeList() {
         const actions = document.createElement('div');
         actions.className = 'theme-actions';
         actions.style.flexShrink = '0';
-        actions.innerHTML = `<button onclick="loadTheme('${name}')" style="color:var(--accent);">Load</button><button onclick="deleteTheme('${name}')" style="color:#ff4444;">✕</button>`;
+        const loadBtn = document.createElement('button');
+        loadBtn.textContent = 'Load';
+        loadBtn.style.color = 'var(--accent)';
+        loadBtn.addEventListener('click', () => loadTheme(name));
+        const delBtn = document.createElement('button');
+        delBtn.textContent = '✕';
+        delBtn.style.color = '#ff4444';
+        delBtn.addEventListener('click', () => deleteTheme(name));
+        actions.appendChild(loadBtn);
+        actions.appendChild(delBtn);
 
         item.appendChild(nameSpan);
         item.appendChild(actions);
@@ -3585,12 +3699,11 @@ function positionWidget(key) {
     el.style.top  = pos.y + '%';
     const widgetScale = (state.widgetScales[key] !== undefined ? state.widgetScales[key] : 1) * parseFloat(state.scale);
     el.style.setProperty('--ws', widgetScale);
-    // font-size scaling — text renders at native device resolution
-    el.style.fontSize = '16px'; // Prevent double scaling since we are now using transform: scale()
     const mirror = state.mirrored ? -1 : 1;
     el.style.setProperty('--wmx', mirror);
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
     const bsy = el.style.getPropertyValue('--bsy') || '0px';
+    el.style.fontSize = '16px';
     el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scaleX(${mirror}) scale(${widgetScale})`;
     // Clear any pill transform left from previous approach
     const pill = el.querySelector('.widget-pill');
@@ -3705,7 +3818,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
 
             const offsetX = curPxX - anchorX;
             const offsetY = curPxY - anchorY;
-            el.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scaleX(${state.mirrored ? -1 : 1})`;
+            el.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scaleX(${state.mirrored ? -1 : 1}) scale(${_ws})`;
             highlightGhost(curPxX, curPxY);
         });
     };
@@ -3750,7 +3863,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         el.style.top  = zone.y + '%';
         const compensateX = curPxX - snapPxX;
         const compensateY = curPxY - snapPxY;
-        el.style.transform = `translate(calc(-50% + ${compensateX}px), calc(-50% + ${compensateY}px)) scaleX(${state.mirrored ? -1 : 1})`;
+        el.style.transform = `translate(calc(-50% + ${compensateX}px), calc(-50% + ${compensateY}px)) scaleX(${state.mirrored ? -1 : 1}) scale(${_ws})`;
 
         // Step 2: Force the browser to commit left/top + compensation transform
         // before we apply the spring animation
@@ -3761,7 +3874,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         // The pill scale stays constant throughout — no jump
         el.style.transition = '';
         el.classList.add('snapping');
-        el.style.transform = `translate(-50%, -50%) scaleX(${state.mirrored ? -1 : 1})`;
+        el.style.transform = `translate(-50%, -50%) scaleX(${state.mirrored ? -1 : 1}) scale(${_ws})`;
 
         // Step 4: After spring finishes, lock everything in place
         const cleanup = () => {
@@ -4526,11 +4639,11 @@ function _applyWidgetScaleDirect(key, perWidgetScale) {
     if (!el) return;
     const widgetScale = perWidgetScale * parseFloat(state.scale);
     el.style.setProperty('--ws', widgetScale);
-    el.style.fontSize = '16px'; // Prevent double scaling since we are now using transform: scale()
     const mirror = state.mirrored ? -1 : 1;
     el.style.setProperty('--wmx', mirror);
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
     const bsy = el.style.getPropertyValue('--bsy') || '0px';
+    el.style.fontSize = '16px';
     el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scaleX(${mirror}) scale(${widgetScale})`;
     const pill = el.querySelector('.widget-pill');
     if (pill) pill.style.transform = '';
