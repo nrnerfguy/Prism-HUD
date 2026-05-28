@@ -2,7 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
+    <!-- Plash / macOS WebView: request native Retina resolution -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Prism OS">
@@ -26,7 +27,21 @@
             --widget-opacity: 0.9;
             --clock-shadow: 1; /* 0 = off, 1 = on */
         }
-        /* ── GLASS MODE ── */
+        /* ── PLASH / MACOS WEBVIEW RETINA FIXES ── */
+        /* Prevent the WebView from scaling fonts down and resampling at 1× */
+        html {
+            -webkit-text-size-adjust: 100%;
+            text-size-adjust: 100%;
+        }
+        /* Background image should never be resampled — render at native pixel density */
+        #bg-layer {
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+        /* Ensure all widget text and SVGs render at the display's full DPR */
+        .widget, .widget * {
+            -webkit-font-smoothing: subpixel-antialiased;
+        }
         /* Clock digits — accent-tinted chrome gradient top to bottom */
         body.glass-mode #clock .digit-wrap {
             background: linear-gradient(to bottom,
@@ -796,6 +811,32 @@
         }
         // On iOS, scrolling to 0 keeps Safari's bar in compact (top) mode
         window.addEventListener('scroll', () => window.scrollTo(0, 0), { passive: false });
+
+        // ── PLASH / MACOS WEBVIEW: fix Retina DPR ──
+        // Plash sometimes reports devicePixelRatio=1 on Retina displays.
+        // We detect this by comparing screen.width to the CSS pixel viewport — on a
+        // 2× Retina display the physical pixel count is always double the CSS pixels.
+        // If DPR=1 but the screen looks like a Retina display, inject a corrected
+        // initial-scale so the WebView rasterizes at 2× (native resolution).
+        (function fixPlashDPR() {
+            const dpr = window.devicePixelRatio || 1;
+            // Only intervene if DPR is reported as exactly 1 — could be Plash's bug
+            if (dpr !== 1) return;
+            // Heuristic: real 1× displays are rare at widths > 1400px logical pixels
+            // A 14" MacBook at 2× Retina has screen.width=1512px physical but reports
+            // window.innerWidth≈1512 logical — which is impossibly large for a 1× panel.
+            // More reliably: check if screen.width (always physical) >> innerWidth * dpr
+            const physW = window.screen.width;
+            const cssW  = window.innerWidth;
+            // If physical pixels are more than 1.5× CSS pixels, DPR is being underreported
+            if (physW / cssW > 1.5) {
+                const correctedDPR = Math.round(physW / cssW);
+                const vp = document.querySelector('meta[name=viewport]');
+                if (vp) {
+                    vp.content = `width=device-width, initial-scale=${1 / correctedDPR}, viewport-fit=cover`;
+                }
+            }
+        })();
     </script>
 </head>
 <body>
@@ -4795,6 +4836,10 @@ document.addEventListener('touchmove', e => {
 document.addEventListener('wheel', e => {
     if (!e.target.closest('#side-panel')) e.preventDefault();
 }, { passive: false });
+
+// Block native WebKit pinch-zoom (gesturestart fires before touchmove on macOS WebView / Plash)
+document.addEventListener('gesturestart',  e => { if (!e.target.closest('#side-panel')) e.preventDefault(); }, { passive: false });
+document.addEventListener('gesturechange', e => { if (!e.target.closest('#side-panel')) e.preventDefault(); }, { passive: false });
 
 // ─────────────────────────────────────────────────
 // WEATHER TINT
