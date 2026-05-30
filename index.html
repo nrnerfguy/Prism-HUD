@@ -3862,9 +3862,10 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
                 lineV.style.display = 'block';
             }
 
-            // Clamp to viewport using widget's actual rendered size
+            // Clamp to viewport using widget's actual VISUAL size (layout rect × scale)
             const rect = el.getBoundingClientRect();
-            const hw = rect.width / 2, hh = rect.height / 2;
+            const hw = (rect.width  / 2) * _ws;
+            const hh = (rect.height / 2) * _ws;
             const margin = 8;
             const rawX = Math.min(window.innerWidth  - hw - margin, Math.max(hw + margin, anchorX + dx));
             const rawY = Math.min(window.innerHeight - hh - margin, Math.max(hh + margin, anchorY + dy));
@@ -4798,13 +4799,19 @@ function clampAllWidgetPositions() {
         if (!el.offsetParent && el.style.display !== 'flex') return; // not rendered
         const pos = state.widgetPos[key];
         if (!pos) return;
+        // Use visual (scaled) size — getBoundingClientRect returns layout size which
+        // ignores transform: scale(), so we multiply by the widget's actual scale factor
         const rect = el.getBoundingClientRect();
-        const hw = rect.width  / 2, hh = rect.height / 2;
+        const ws = (state.widgetScales && state.widgetScales[key] !== undefined
+            ? state.widgetScales[key] : 1) * parseFloat(state.scale || 1);
+        const hw = (rect.width  / 2) * ws;
+        const hh = (rect.height / 2) * ws;
         const margin = 8;
-        const minX = (hw + margin) / vw * 100;
-        const maxX = (vw - hw - margin) / vw * 100;
-        const minY = (hh + margin) / vh * 100;
-        const maxY = (vh - hh - margin) / vh * 100;
+        // If widget is larger than the viewport, allow it to sit at center (50%)
+        const minX = hw + margin > vw / 2 ? 50 : (hw + margin) / vw * 100;
+        const maxX = hw + margin > vw / 2 ? 50 : (vw - hw - margin) / vw * 100;
+        const minY = hh + margin > vh / 2 ? 50 : (hh + margin) / vh * 100;
+        const maxY = hh + margin > vh / 2 ? 50 : (vh - hh - margin) / vh * 100;
         const clampedX = Math.min(maxX, Math.max(minX, pos.x));
         const clampedY = Math.min(maxY, Math.max(minY, pos.y));
         if (clampedX !== pos.x || clampedY !== pos.y) {
