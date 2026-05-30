@@ -95,7 +95,6 @@
         /* ── TRANSPARENT BACKGROUND MODE ── */
         body.transparent-bg { background-color: transparent !important; }
         body.transparent-bg #bg-layer { display: none !important; }
-        body.transparent-bg #home-indicator-cover { display: none !important; }
 
         /* ── LOW POWER MODE — reduce all animations ── */
         body.low-power * {
@@ -175,6 +174,9 @@
         body {
             background-color: #000; color: #fff; margin: 0; padding: 0;
             width: 100%; height: 100dvh;
+            /* Extend body into bottom safe area so iOS home indicator zone
+               is filled by the page background rather than defaulting to black */
+            min-height: calc(100dvh + env(safe-area-inset-bottom, 0px));
             display: flex; justify-content: center; align-items: center;
             font-family: -apple-system, system-ui, sans-serif;
             overflow: hidden;
@@ -186,7 +188,11 @@
         }
 
         #bg-layer {
-            position: fixed; inset: -50px; z-index: -1;
+            position: fixed;
+            top: -50px; left: -50px; right: -50px;
+            /* Extend past the bottom safe area so wallpaper fills the home indicator zone */
+            bottom: calc(-50px - env(safe-area-inset-bottom, 0px));
+            z-index: -1;
             background-size: cover; background-position: center; background-repeat: no-repeat;
             background-color: #000;
             transition: opacity 0.3s, filter 0.3s; pointer-events: none;
@@ -197,11 +203,7 @@
         #hud-master { position: fixed; inset: 0; pointer-events: none; z-index: 10; transform: translateZ(0); -webkit-transform: translateZ(0); }
         /* Cover the home indicator area with black so it's invisible on black bg */
         #home-indicator-cover {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            height: env(safe-area-inset-bottom, 0px);
-            background: #000;
-            z-index: 9999;
-            pointer-events: none;
+            display: none;
         }
 
         .widget {
