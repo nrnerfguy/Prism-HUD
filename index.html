@@ -163,7 +163,9 @@
         }
 
         html {
-            background-color: #000; /* fills iOS safe areas including home bar */
+            /* background-color is set dynamically by syncHomeBarColor()
+               so the iOS home indicator zone matches the actual wallpaper edge */
+            background-color: #000;
             height: 100%;
         }
         /* Transparent mode — must override both html and body */
@@ -3601,6 +3603,7 @@ function applyAll() {
             bgl.style.backgroundImage = state.bg ? `url(${state.bg})` : 'none';
         }
     }
+    syncHomeBarColor();
     document.getElementById('static-bg-preview').classList.toggle('active', state.isStatic);
     bgl.style.filter  = `blur(${state.blur}px)`;
     bgl.style.opacity = state.bgOpacity;
@@ -3979,8 +3982,14 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
     document.documentElement.addEventListener('mouseleave', onEnd); // cursor exits browser
 }
 
+// Tracks which widget has claimed the current touch — prevents overlapping widgets both dragging
+let _touchOwnerKey = null;
+
 function initAllDrag() {
     WIDGET_KEYS.forEach(key => initWidgetDrag(key));
+    // Reset ownership when all fingers lift
+    document.addEventListener('touchend',    () => { _touchOwnerKey = null; }, { passive: true });
+    document.addEventListener('touchcancel', () => { _touchOwnerKey = null; }, { passive: true });
 }
 
 // ─────────────────────────────────────────────────
@@ -4409,6 +4418,7 @@ function toggle(key) {
                 bgl.style.backgroundImage = state.bg ? `url(${state.bg})` : 'none';
             }
         }
+        syncHomeBarColor();
     }
     if (key === 'weatherTint') {
         // Re-apply or clear the tint immediately
@@ -4531,25 +4541,45 @@ function initWidgetDrag(key) {
     let _ctxTimer = null, _hasMoved = false, _dragStarted = false;
     let _sx = 0, _sy = 0;
 
-    el.addEventListener('touchstart', (e) => {
+    // iOS only fires touchstart on the element's LAYOUT rect, not its visual (scaled) rect.
+    // For large widgets the layout rect is tiny, so most touches miss it entirely.
+    // We use a document-level touchstart and manually hit-test against the true visual bounds.
+    function _visualHitTest(tx, ty) {
+        const layoutRect = el.getBoundingClientRect();
+        const ws = (state.widgetScales && state.widgetScales[key] !== undefined
+            ? state.widgetScales[key] : 1) * parseFloat(state.scale || 1);
+        // Center of the element in screen coords
+        const cx = layoutRect.left + layoutRect.width  / 2;
+        const cy = layoutRect.top  + layoutRect.height / 2;
+        // Visual half-dimensions
+        const hw = (layoutRect.width  / 2) * ws;
+        const hh = (layoutRect.height / 2) * ws;
+        return tx >= cx - hw && tx <= cx + hw && ty >= cy - hh && ty <= cy + hh;
+    }
+
+    function _onDocTouchStart(e) {
         if (e.target.closest('button, input, a')) return;
         if (document.getElementById('widget-ctx-menu').classList.contains('visible')) return;
+        // Another widget already claimed this touch
+        if (_touchOwnerKey !== null) return;
+        const t = e.touches[0];
+        if (!_visualHitTest(t.clientX, t.clientY)) return;
+
+        // Claim this touch for this widget
+        _touchOwnerKey = key;
 
         _hasMoved   = false;
         _dragStarted = false;
-        _sx = e.touches[0].clientX;
-        _sy = e.touches[0].clientY;
+        _sx = t.clientX;
+        _sy = t.clientY;
 
-        // Start drag immediately (no threshold, no delay)
         if (!state.posLocked) {
             _dragStarted = true;
             startDrag(key, el, e, true, false);
         }
 
-        // Context menu fires only if finger never moved for 500ms
         _ctxTimer = setTimeout(() => {
             if (!_hasMoved) {
-                // Cancel any active drag before showing menu — prevents iOS flicker
                 if (_activeDragCancel) { _activeDragCancel(); _activeDragCancel = null; }
                 if (navigator.vibrate) navigator.vibrate(35);
                 el.classList.add('long-press-ready');
@@ -4557,7 +4587,9 @@ function initWidgetDrag(key) {
                 showCtxMenu(key, _sx, Math.max(_sy - 170, 60));
             }
         }, 500);
-    }, { passive: true });
+    }
+
+    document.addEventListener('touchstart', _onDocTouchStart, { passive: true });
 
     el.addEventListener('touchmove', (e) => {
         const dx = Math.abs(e.touches[0].clientX - _sx);
@@ -4778,6 +4810,7 @@ function applyGradient(g) {
     bgl.style.opacity = state.bgOpacity;
     save();
     renderGradients();
+    syncHomeBarColor();
 }
 
 // Reposition ticker dropdown on window resize
@@ -4851,7 +4884,51 @@ document.addEventListener('gesturestart',  e => { if (!e.target.closest('#side-p
 document.addEventListener('gesturechange', e => { if (!e.target.closest('#side-panel')) e.preventDefault(); }, { passive: false });
 
 // ─────────────────────────────────────────────────
-// WEATHER TINT
+// SYNC HOME BAR COLOR
+// iOS standalone PWA paints the home indicator zone using the <html>
+// element's background-color. We keep it in sync with the actual bottom
+// edge of the current background so the bar blends in instead of showing black.
+// ─────────────────────────────────────────────────
+function syncHomeBarColor() {
+    const html = document.documentElement;
+    if (state.transparentBg) {
+        // Transparent mode — let the OS default show through
+        html.style.backgroundColor = 'transparent';
+        return;
+    }
+    if (state.isStatic && state.staticColor) {
+        // Solid color background — exact match is trivial
+        html.style.backgroundColor = state.staticColor;
+        return;
+    }
+    if (state.bg || (state.artAsBg && _lastArtUrl)) {
+        // Photo or album art wallpaper — sample the bottom-center of the image
+        // using a tiny offscreen canvas so we can match the actual pixel color
+        const imgUrl = (state.artAsBg && _lastArtUrl) ? _lastArtUrl : state.bg;
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+            try {
+                const canvas = document.createElement('canvas');
+                canvas.width = 1; canvas.height = 1;
+                const ctx = canvas.getContext('2d');
+                // Sample the bottom-center pixel of the image
+                ctx.drawImage(img, Math.floor(img.width * 0.5), img.height - 1, 1, 1, 0, 0, 1, 1);
+                const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+                html.style.backgroundColor = `rgb(${r},${g},${b})`;
+            } catch (e) {
+                // CORS or tainted canvas — fall back to black
+                html.style.backgroundColor = '#000';
+            }
+        };
+        img.onerror = () => { html.style.backgroundColor = '#000'; };
+        img.src = imgUrl;
+        return;
+    }
+    // Gradient or no background — use black (gradients can't be sampled easily)
+    html.style.backgroundColor = '#000';
+}
+
 // Maps weather codes to atmospheric color overlays
 // ─────────────────────────────────────────────────
 function applyWeatherTint(code) {
