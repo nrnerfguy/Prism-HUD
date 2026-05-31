@@ -2,8 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
-    <!-- Plash / macOS WebView: request native Retina resolution -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Prism OS">
@@ -27,16 +26,7 @@
             --widget-opacity: 0.9;
             --clock-shadow: 1; /* 0 = off, 1 = on */
         }
-        /* ── PLASH / MACOS WEBVIEW RETINA FIXES ── */
-        /* Prevent the WebView from scaling fonts down */
-        html {
-            -webkit-text-size-adjust: 100%;
-            text-size-adjust: 100%;
-        }
-        /* Ensure all widget text renders sharply */
-        .widget, .widget * {
-            -webkit-font-smoothing: antialiased;
-        }
+        /* ── GLASS MODE ── */
         /* Clock digits — accent-tinted chrome gradient top to bottom */
         body.glass-mode #clock .digit-wrap {
             background: linear-gradient(to bottom,
@@ -90,6 +80,7 @@
         /* ── TRANSPARENT BACKGROUND MODE ── */
         body.transparent-bg { background-color: transparent !important; }
         body.transparent-bg #bg-layer { display: none !important; }
+        body.transparent-bg #home-indicator-cover { display: none !important; }
 
         /* ── LOW POWER MODE — reduce all animations ── */
         body.low-power * {
@@ -158,7 +149,7 @@
         }
 
         html {
-            background-color: #000;
+            background-color: #000; /* fills iOS safe areas including home bar */
             height: 100%;
         }
         /* Transparent mode — must override both html and body */
@@ -191,7 +182,11 @@
         #hud-master { position: fixed; inset: 0; pointer-events: none; z-index: 10; transform: translateZ(0); -webkit-transform: translateZ(0); }
         /* Cover the home indicator area with black so it's invisible on black bg */
         #home-indicator-cover {
-            display: none;
+            position: fixed; bottom: 0; left: 0; right: 0;
+            height: env(safe-area-inset-bottom, 0px);
+            background: #000;
+            z-index: 9999;
+            pointer-events: none;
         }
 
         .widget {
@@ -205,12 +200,7 @@
             /* Ensure sub-pixel text rendering within compositing layer */
             -webkit-font-smoothing: antialiased;
             text-rendering: optimizeLegibility;
-            /* Promote each widget to its own GPU layer at native DPR.
-               Without this, WebKit rasterises the element at layout size first,
-               then the scale() transform stretches those pixels and text blurs.
-               translateZ(0) forces rasterisation AFTER the scale is known. */
-            transform: translateZ(0);
-            -webkit-transform: translateZ(0);
+            /* No will-change here — only set during active drag to avoid permanent GPU layer overhead */
         }
         .widget.dragging {
             will-change: transform;
@@ -353,7 +343,7 @@
         #weather-widget { gap: 16px; font-size: 2.1rem; font-weight: 200; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
         #weather-widget .widget-pill { align-items: center; }
         #icon-container { display: flex; align-items: center; justify-content: center; line-height: 1; font-size: 2.4rem; }
-        #icon-container svg { display: block; vertical-align: middle; overflow: visible; shape-rendering: geometricPrecision; }
+        #icon-container svg { display: block; vertical-align: middle; overflow: hidden; }
         #temp { line-height: 1; display: flex; align-items: center; }
         #battery-widget { font-size: 1.15rem; font-weight: 500; letter-spacing: 3px; display: flex; align-items: center; gap: 4px; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
         #battery-icon { display: flex; align-items: center; justify-content: center; line-height: 1; }
@@ -779,11 +769,6 @@
             -moz-osx-font-smoothing: grayscale;
             text-rendering: optimizeLegibility;
         }
-
-    #icon-container svg {
-        width: 0.75em !important;
-        height: 0.75em !important;
-    }
 
 </style>
 
@@ -1366,12 +1351,9 @@ function _trySave() {
         localStorage.setItem('prism_ultra_v3', JSON.stringify(state));
     } catch (e) {
         if (e.name === 'QuotaExceededError' || e.name === 'NS_ERROR_DOM_QUOTA_REACHED') {
-            // Storage full — most likely caused by base64 wallpaper history.
-            // Drop all but the most recent wallpaper and retry once.
             if (state.history && state.history.length > 1) {
                 state.history = state.history.slice(0, 1);
                 try { localStorage.setItem('prism_ultra_v3', JSON.stringify(state)); } catch (_) {
-                    // Still failing — clear wallpaper history entirely and retry.
                     state.history = [];
                     try { localStorage.setItem('prism_ultra_v3', JSON.stringify(state)); } catch (__) {
                         console.warn('Prism OS: localStorage quota exceeded, settings not saved.');
@@ -1444,8 +1426,9 @@ function load() {
     createSnapGhosts();
     applyGlowIntensity();
     applyWidgetOpacity();
-    document.body.classList.toggle('low-power',      !!state.lowPowerMode);
-    document.body.classList.toggle('glass-mode',     !!state.glassMode);
+    document.body.classList.toggle('low-power', !!state.lowPowerMode);
+    
+    document.body.classList.toggle('glass-mode', !!state.glassMode);
     document.body.classList.toggle('transparent-bg', !!state.transparentBg);
     const swTBg = document.getElementById('sw-transparentBg');
     if (swTBg) swTBg.classList.toggle('active', !!state.transparentBg);
@@ -1453,6 +1436,7 @@ function load() {
     if (swLP) swLP.classList.toggle('active', !!state.lowPowerMode);
     const swGM = document.getElementById('sw-glassMode');
     if (swGM) swGM.classList.toggle('active', !!state.glassMode);
+
     if (state.alwaysOn) {
         // Try immediately — works on Chrome/Edge desktop
         requestWakeLock().catch(() => {});
@@ -1842,6 +1826,7 @@ function startAnalogRAF() {
         requestAnimationFrame(rafClock);
     })();
 }
+
 // Resume RAF when tab becomes visible again (if still in analog mode)
 document.addEventListener('visibilitychange', () => {
     if (!document.hidden && state.clockStyle === 'analog') startAnalogRAF();
@@ -1977,11 +1962,8 @@ let _cityFetchCtrl     = null;
 async function searchCities(query) {
     const box = document.getElementById('weather-results');
     if (query.length < 2) { box.style.display = 'none'; return; }
-
-    // Debounce: wait 300ms of silence before firing
     clearTimeout(_cityDebounceTimer);
     _cityDebounceTimer = setTimeout(async () => {
-        // Cancel any previous in-flight request so stale results never overwrite fresh ones
         if (_cityFetchCtrl) _cityFetchCtrl.abort();
         _cityFetchCtrl = new AbortController();
         try {
@@ -2145,9 +2127,10 @@ async function fetchStocks() {
         return { symbol, ok: false };
     }
 
-    // Build the initial structure if needed (first load or ticker list changed)
+    // Sanitize tickers already in state before writing to DOM
     const safeTickers = state.tickers.filter(t => /^[A-Z0-9.\-\^=]{1,10}$/.test(t));
     if (safeTickers.length !== state.tickers.length) state.tickers = safeTickers;
+    // Build the initial structure if needed (first load or ticker list changed)
     const existingTickers = [...list.querySelectorAll('.stock-ticker')].map(el => el.textContent);
     const tickersChanged = state.tickers.join() !== existingTickers.join();
     if (list.children.length === 0 || tickersChanged) {
@@ -2466,8 +2449,6 @@ function tickerInputKey(e) {
 
 function selectTicker(symbol) {
     symbol = symbol.toUpperCase().trim();
-    // Validate: only uppercase letters, digits, dot, dash, caret, equals — max 10 chars
-    // This covers stocks (AAPL), indices (^GSPC), FX (EURUSD=X), and crypto (BTC-USD)
     if (!/^[A-Z0-9.\-\^=]{1,10}$/.test(symbol)) return;
     if (!state.tickers) state.tickers = [];
     if (!state.tickers.includes(symbol)) {
@@ -2738,8 +2719,6 @@ function exportSettings() {
     URL.revokeObjectURL(url);
 }
 
-// Keys that are safe to import and their expected types.
-// Anything not in this list is silently ignored.
 const IMPORTABLE_KEYS = {
     accent: 'string', accentAuto: 'boolean', is24h: 'boolean', showSeconds: 'boolean',
     clockStyle: 'string', clockGlow: 'boolean', clockGlowIntensity: 'number',
@@ -2762,7 +2741,6 @@ const IMPORTABLE_KEYS = {
 function importSettings(input) {
     const file = input.files[0];
     if (!file) return;
-    // Guard: only accept small files (< 10 MB) to avoid huge base64 bombs
     if (file.size > 10 * 1024 * 1024) { alert('Settings file is too large.'); return; }
     const reader = new FileReader();
     reader.onload = e => {
@@ -2771,14 +2749,12 @@ function importSettings(input) {
             if (typeof imported !== 'object' || imported === null || Array.isArray(imported)) {
                 throw new Error('Not an object');
             }
-            // Whitelist merge — only copy known safe keys with correct types
             const safe = {};
             for (const [key, expectedType] of Object.entries(IMPORTABLE_KEYS)) {
                 if (!(key in imported)) continue;
                 const val = imported[key];
                 const actualType = Array.isArray(val) ? 'array' : typeof val;
                 if (actualType !== expectedType) continue;
-                // Extra guard: string values must not be excessively long
                 if (typeof val === 'string' && val.length > 5 * 1024 * 1024) continue;
                 safe[key] = val;
             }
@@ -2792,6 +2768,7 @@ function importSettings(input) {
             updateCountdownDisplay();
             updateWorldClock();
             if (state.showStocks) fetchStocks();
+            // Reset the input so same file can be re-imported
             input.value = '';
         } catch (err) {
             alert('Invalid settings file.');
@@ -3563,7 +3540,6 @@ function applyAll() {
             bgl.style.backgroundImage = state.bg ? `url(${state.bg})` : 'none';
         }
     }
-    syncHomeBarColor();
     document.getElementById('static-bg-preview').classList.toggle('active', state.isStatic);
     bgl.style.filter  = `blur(${state.blur}px)`;
     bgl.style.opacity = state.bgOpacity;
@@ -3730,11 +3706,13 @@ function positionWidget(key) {
     el.style.top  = pos.y + '%';
     const widgetScale = (state.widgetScales[key] !== undefined ? state.widgetScales[key] : 1) * parseFloat(state.scale);
     el.style.setProperty('--ws', widgetScale);
+    el.style.fontSize = '16px';
+    // font-size scaling — text renders at native device resolution
+    el.style.fontSize = '16px'; // Prevent double scaling since we are now using transform: scale()
     const mirror = state.mirrored ? -1 : 1;
     el.style.setProperty('--wmx', mirror);
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
     const bsy = el.style.getPropertyValue('--bsy') || '0px';
-    el.style.fontSize = '16px';
     el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scaleX(${mirror}) scale(${widgetScale})`;
     // Clear any pill transform left from previous approach
     const pill = el.querySelector('.widget-pill');
@@ -3825,10 +3803,10 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
                 lineV.style.display = 'block';
             }
 
-            // Clamp to viewport using widget's actual VISUAL size (layout rect × scale)
+            // getBoundingClientRect already returns the post-scale visual size on iOS
             const rect = el.getBoundingClientRect();
-            const hw = (rect.width  / 2) * _ws;
-            const hh = (rect.height / 2) * _ws;
+            const hw = rect.width  / 2;
+            const hh = rect.height / 2;
             const margin = 8;
             const rawX = Math.min(window.innerWidth  - hw - margin, Math.max(hw + margin, anchorX + dx));
             const rawY = Math.min(window.innerHeight - hh - margin, Math.max(hh + margin, anchorY + dy));
@@ -3942,14 +3920,8 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
     document.documentElement.addEventListener('mouseleave', onEnd); // cursor exits browser
 }
 
-// Tracks which widget has claimed the current touch — prevents overlapping widgets both dragging
-let _touchOwnerKey = null;
-
 function initAllDrag() {
     WIDGET_KEYS.forEach(key => initWidgetDrag(key));
-    // Reset ownership when all fingers lift
-    document.addEventListener('touchend',    () => { _touchOwnerKey = null; }, { passive: true });
-    document.addEventListener('touchcancel', () => { _touchOwnerKey = null; }, { passive: true });
 }
 
 // ─────────────────────────────────────────────────
@@ -4378,7 +4350,6 @@ function toggle(key) {
                 bgl.style.backgroundImage = state.bg ? `url(${state.bg})` : 'none';
             }
         }
-        syncHomeBarColor();
     }
     if (key === 'weatherTint') {
         // Re-apply or clear the tint immediately
@@ -4501,45 +4472,25 @@ function initWidgetDrag(key) {
     let _ctxTimer = null, _hasMoved = false, _dragStarted = false;
     let _sx = 0, _sy = 0;
 
-    // iOS only fires touchstart on the element's LAYOUT rect, not its visual (scaled) rect.
-    // For large widgets the layout rect is tiny, so most touches miss it entirely.
-    // We use a document-level touchstart and manually hit-test against the true visual bounds.
-    function _visualHitTest(tx, ty) {
-        const layoutRect = el.getBoundingClientRect();
-        const ws = (state.widgetScales && state.widgetScales[key] !== undefined
-            ? state.widgetScales[key] : 1) * parseFloat(state.scale || 1);
-        // Center of the element in screen coords
-        const cx = layoutRect.left + layoutRect.width  / 2;
-        const cy = layoutRect.top  + layoutRect.height / 2;
-        // Visual half-dimensions
-        const hw = (layoutRect.width  / 2) * ws;
-        const hh = (layoutRect.height / 2) * ws;
-        return tx >= cx - hw && tx <= cx + hw && ty >= cy - hh && ty <= cy + hh;
-    }
-
-    function _onDocTouchStart(e) {
+    el.addEventListener('touchstart', (e) => {
         if (e.target.closest('button, input, a')) return;
         if (document.getElementById('widget-ctx-menu').classList.contains('visible')) return;
-        // Another widget already claimed this touch
-        if (_touchOwnerKey !== null) return;
-        const t = e.touches[0];
-        if (!_visualHitTest(t.clientX, t.clientY)) return;
-
-        // Claim this touch for this widget
-        _touchOwnerKey = key;
 
         _hasMoved   = false;
         _dragStarted = false;
-        _sx = t.clientX;
-        _sy = t.clientY;
+        _sx = e.touches[0].clientX;
+        _sy = e.touches[0].clientY;
 
+        // Start drag immediately (no threshold, no delay)
         if (!state.posLocked) {
             _dragStarted = true;
             startDrag(key, el, e, true, false);
         }
 
+        // Context menu fires only if finger never moved for 500ms
         _ctxTimer = setTimeout(() => {
             if (!_hasMoved) {
+                // Cancel any active drag before showing menu — prevents iOS flicker
                 if (_activeDragCancel) { _activeDragCancel(); _activeDragCancel = null; }
                 if (navigator.vibrate) navigator.vibrate(35);
                 el.classList.add('long-press-ready');
@@ -4547,27 +4498,22 @@ function initWidgetDrag(key) {
                 showCtxMenu(key, _sx, Math.max(_sy - 170, 60));
             }
         }, 500);
-    }
+    }, { passive: true });
 
-    document.addEventListener('touchstart', _onDocTouchStart, { passive: true });
-
-    document.addEventListener('touchmove', (e) => {
-        if (_touchOwnerKey !== key) return;
+    el.addEventListener('touchmove', (e) => {
         const dx = Math.abs(e.touches[0].clientX - _sx);
         const dy = Math.abs(e.touches[0].clientY - _sy);
         if (dx > 4 || dy > 4) {
             _hasMoved = true;
             clearTimeout(_ctxTimer);
+            // Hide menu if it snuck in
             if (document.getElementById('widget-ctx-menu').classList.contains('visible')) {
                 hideCtxMenu();
             }
         }
     }, { passive: true });
 
-    document.addEventListener('touchend', () => {
-        if (_touchOwnerKey !== key) return;
-        clearTimeout(_ctxTimer);
-    }, { passive: true });
+    el.addEventListener('touchend', () => clearTimeout(_ctxTimer), { passive: true });
 }
 // ─────────────────────────────────────────────────
 // CONTEXT MENU HELPERS
@@ -4703,11 +4649,12 @@ function _applyWidgetScaleDirect(key, perWidgetScale) {
     if (!el) return;
     const widgetScale = perWidgetScale * parseFloat(state.scale);
     el.style.setProperty('--ws', widgetScale);
+    el.style.fontSize = '16px';
+    el.style.fontSize = '16px'; // Prevent double scaling since we are now using transform: scale()
     const mirror = state.mirrored ? -1 : 1;
     el.style.setProperty('--wmx', mirror);
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
     const bsy = el.style.getPropertyValue('--bsy') || '0px';
-    el.style.fontSize = '16px';
     el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scaleX(${mirror}) scale(${widgetScale})`;
     const pill = el.querySelector('.widget-pill');
     if (pill) pill.style.transform = '';
@@ -4773,7 +4720,6 @@ function applyGradient(g) {
     bgl.style.opacity = state.bgOpacity;
     save();
     renderGradients();
-    syncHomeBarColor();
 }
 
 // Reposition ticker dropdown on window resize
@@ -4795,15 +4741,11 @@ function clampAllWidgetPositions() {
         if (!el.offsetParent && el.style.display !== 'flex') return; // not rendered
         const pos = state.widgetPos[key];
         if (!pos) return;
-        // Use visual (scaled) size — getBoundingClientRect returns layout size which
-        // ignores transform: scale(), so we multiply by the widget's actual scale factor
+        // getBoundingClientRect returns the post-scale visual size — use directly
         const rect = el.getBoundingClientRect();
-        const ws = (state.widgetScales && state.widgetScales[key] !== undefined
-            ? state.widgetScales[key] : 1) * parseFloat(state.scale || 1);
-        const hw = (rect.width  / 2) * ws;
-        const hh = (rect.height / 2) * ws;
+        const hw = rect.width  / 2;
+        const hh = rect.height / 2;
         const margin = 8;
-        // If widget is larger than the viewport, allow it to sit at center (50%)
         const minX = hw + margin > vw / 2 ? 50 : (hw + margin) / vw * 100;
         const maxX = hw + margin > vw / 2 ? 50 : (vw - hw - margin) / vw * 100;
         const minY = hh + margin > vh / 2 ? 50 : (hh + margin) / vh * 100;
@@ -4842,27 +4784,12 @@ document.addEventListener('wheel', e => {
     if (!e.target.closest('#side-panel')) e.preventDefault();
 }, { passive: false });
 
-// Block native WebKit pinch-zoom (gesturestart fires before touchmove on macOS WebView / Plash)
+// Block native WebKit pinch-zoom on macOS/Plash
 document.addEventListener('gesturestart',  e => { if (!e.target.closest('#side-panel')) e.preventDefault(); }, { passive: false });
 document.addEventListener('gesturechange', e => { if (!e.target.closest('#side-panel')) e.preventDefault(); }, { passive: false });
 
 // ─────────────────────────────────────────────────
-// SYNC HOME BAR COLOR
-// iOS standalone PWA paints the home indicator zone using the <html>
-// element's background-color. We keep it in sync with the current
-// solid background color when possible, otherwise leave it black.
-// ─────────────────────────────────────────────────
-function syncHomeBarColor() {
-    const html = document.documentElement;
-    if (state.transparentBg) {
-        html.style.backgroundColor = 'transparent';
-    } else if (state.isStatic && state.staticColor) {
-        html.style.backgroundColor = state.staticColor;
-    } else {
-        html.style.backgroundColor = '#000';
-    }
-}
-
+// WEATHER TINT
 // Maps weather codes to atmospheric color overlays
 // ─────────────────────────────────────────────────
 function applyWeatherTint(code) {
