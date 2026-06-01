@@ -342,9 +342,9 @@
         #date { font-size: 1.35rem; text-transform: uppercase; letter-spacing: 7px; font-weight: 300; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); margin-right: -7px; }
         #weather-widget { gap: 16px; font-size: 2.1rem; font-weight: 200; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
         #weather-widget .widget-pill { align-items: center; }
-        #icon-container { display: flex; align-items: center; justify-content: center; line-height: 1; font-size: 2.4rem; }
-        #icon-container svg { display: block; vertical-align: middle; overflow: hidden; }
-        #temp { line-height: 1; display: flex; align-items: center; }
+        #icon-container { display: flex; align-items: center; justify-content: center; line-height: 1; font-size: 2rem; }
+        #icon-container svg { display: block; vertical-align: middle; overflow: visible; shape-rendering: geometricPrecision; }
+        #temp { line-height: 1; display: flex; align-items: center; font-size: 2rem; font-weight: 200; }
         #battery-widget { font-size: 1.15rem; font-weight: 500; letter-spacing: 3px; display: flex; align-items: center; gap: 4px; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
         #battery-icon { display: flex; align-items: center; justify-content: center; line-height: 1; }
         #battery-icon svg { display: block; vertical-align: middle; }
@@ -769,6 +769,15 @@
             -moz-osx-font-smoothing: grayscale;
             text-rendering: optimizeLegibility;
         }
+
+    .widget {
+        transform-style: preserve-3d;
+        will-change: transform;
+    }
+    #icon-container svg {
+        width: 1em !important;
+        height: 1em !important;
+    }
 
 </style>
 
