@@ -211,9 +211,9 @@
             transition: transform 0.42s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.2s ease;
         }
         @keyframes wiggle {
-            0%,100% { transform: translate(-50%,-50%) rotate(0deg); }
-            25%     { transform: translate(-50%,-50%) rotate(-1.5deg); }
-            75%     { transform: translate(-50%,-50%) rotate(1.5deg); }
+            0%,100% { transform: translate(-50%,-50%) scaleX(var(--wmx,1)) scale(var(--ws,1)) rotate(0deg); }
+            25%     { transform: translate(-50%,-50%) scaleX(var(--wmx,1)) scale(var(--ws,1)) rotate(-1.5deg); }
+            75%     { transform: translate(-50%,-50%) scaleX(var(--wmx,1)) scale(var(--ws,1)) rotate(1.5deg); }
         }
         .widget.long-press-ready { animation: wiggle 0.35s ease; }
 
@@ -1048,9 +1048,9 @@
                 <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);">
                     <div class="row" style="margin-bottom:10px;"><label style="font-size:0.5rem;">Transparent Background</label><div id="sw-transparentBg" class="ios-switch" onclick="toggleTransparentBg()"></div></div>
                     <div class="row"><label style="font-size:0.5rem;">Blur</label></div>
-                    <input type="range" min="0" max="40" step="1" value="0" oninput="state.blur=parseFloat(this.value);document.getElementById('bg-layer').style.filter='blur('+state.blur+'px)';save();">
+                    <input id="range-blur" type="range" min="0" max="40" step="1" value="0" oninput="state.blur=parseFloat(this.value);document.getElementById('bg-layer').style.filter='blur('+state.blur+'px)';save();">
                     <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Opacity</label></div>
-                    <input type="range" min="0" max="1" step="0.01" value="1" oninput="state.bgOpacity=parseFloat(this.value);document.getElementById('bg-layer').style.opacity=state.bgOpacity;save();">
+                    <input id="range-opacity" type="range" min="0" max="1" step="0.01" value="1" oninput="state.bgOpacity=parseFloat(this.value);document.getElementById('bg-layer').style.opacity=state.bgOpacity;save();">
                 </div>
             </div>
         </div>
@@ -1664,6 +1664,7 @@ document.addEventListener('keydown', e => {
 // ─────────────────────────────────────────────────
 let accentFromArt = false; // track whether accent is from art or user setting
 let _lastArtUrl = null; // cache last album art URL for instant artAsBg toggle
+let _lastWeatherCode = null; // cache last weather code for weatherTint toggle
 let _lastTrackId = null; // prevent album art reload on same track
 
 function extractAccentFromArt(imgUrl) {
@@ -2014,19 +2015,22 @@ let _weatherGeoCache = {}; // cache city → {latitude, longitude}
 async function fetchWeather() {
     try {
         let latitude, longitude;
+        const _wCtrl = new AbortController();
+        const _wTimeout = setTimeout(() => _wCtrl.abort(), 8000);
         if (_weatherGeoCache[state.city]) {
             ({ latitude, longitude } = _weatherGeoCache[state.city]);
         } else {
-            const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(state.city)}&count=1`).then(r => r.json());
-            if (!geo.results) return;
+            const geo = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(state.city)}&count=1`, { signal: _wCtrl.signal }).then(r => r.json());
+            if (!geo.results) { clearTimeout(_wTimeout); return; }
             ({ latitude, longitude } = geo.results[0]);
             _weatherGeoCache[state.city] = { latitude, longitude };
         }
         const unit = state.weatherUnit === 'F' ? 'fahrenheit' : 'celsius';
-        const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&temperature_unit=${unit}`).then(r => r.json());
+        const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,weather_code&temperature_unit=${unit}`, { signal: _wCtrl.signal }).then(r => r.json());
+        clearTimeout(_wTimeout);
         document.getElementById('temp').textContent = Math.round(w.current.temperature_2m) + '°' + state.weatherUnit;
         const code = w.current.weather_code;
-        state._lastWeatherCode = code; // cache for weatherTint toggle
+        _lastWeatherCode = code; // cache for weatherTint toggle
         let icon = icons.sun;
         if (code >= 1 && code <= 3)   icon = icons.cloud;
         else if (code >= 45 && code <= 67) icon = icons.rain;
@@ -2591,29 +2595,37 @@ function updateWorldClock() {
         return;
     }
     const now = new Date();
-    list.innerHTML = '';
-    state.timezones.forEach((tz, i) => {
-        const label = TZ_OPTIONS.find(o => o.tz === tz)?.label ?? tz.split('/').pop().replace(/_/g, ' ');
-        const timeStr = now.toLocaleTimeString(undefined, {
+    const existingRows = list.querySelectorAll('.wc-time');
+    // If timezone count changed or list is empty, rebuild structure
+    if (existingRows.length !== state.timezones.length) {
+        list.innerHTML = '';
+        state.timezones.forEach((tz, i) => {
+            const label = TZ_OPTIONS.find(o => o.tz === tz)?.label ?? tz.split('/').pop().replace(/_/g, ' ');
+            const row = document.createElement('div');
+            row.className = 'wc-row';
+            const cityEl = document.createElement('span');
+            cityEl.className = 'wc-city';
+            cityEl.textContent = label;
+            const timeEl = document.createElement('span');
+            timeEl.className = 'wc-time';
+            row.appendChild(cityEl);
+            row.appendChild(timeEl);
+            list.appendChild(row);
+            if (i < state.timezones.length - 1) {
+                const div = document.createElement('div');
+                div.className = 'wc-divider';
+                list.appendChild(div);
+            }
+        });
+    }
+    // Update only the time text — no DOM restructuring
+    list.querySelectorAll('.wc-time').forEach((el, i) => {
+        const tz = state.timezones[i];
+        if (!tz) return;
+        el.textContent = now.toLocaleTimeString(undefined, {
             timeZone: tz, hour: 'numeric', minute: '2-digit',
             hour12: !state.is24h
         });
-        const row = document.createElement('div');
-        row.className = 'wc-row';
-        const cityEl = document.createElement('span');
-        cityEl.className = 'wc-city';
-        cityEl.textContent = label;
-        const timeEl = document.createElement('span');
-        timeEl.className = 'wc-time';
-        timeEl.textContent = timeStr;
-        row.appendChild(cityEl);
-        row.appendChild(timeEl);
-        list.appendChild(row);
-        if (i < state.timezones.length - 1) {
-            const div = document.createElement('div');
-            div.className = 'wc-divider';
-            list.appendChild(div);
-        }
     });
 }
 if (!window._wcInterval) window._wcInterval = setInterval(updateWorldClock, 1000);
@@ -3172,18 +3184,19 @@ function loadStoredSpotifyTokens() {
 }
 
 async function refreshSpotifyToken() {
-    if (!spotify.refreshToken || !state.spotifyClientId) return false;
+    if (!spotify.refreshToken) return false;
+    const _clientId = state.spotifyClientId || SPOTIFY_CLIENT_ID;
     try {
         let data;
         if (navigator.userAgent.includes('Electron') && window.electronAPI) {
             data = await window.electronAPI.spotifyRefresh(
-                { refreshTok: spotify.refreshToken, clientId: state.spotifyClientId }
+                { refreshTok: spotify.refreshToken, clientId: _clientId }
             );
         } else {
             const res = await fetch('https://accounts.spotify.com/api/token', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ client_id: state.spotifyClientId,
+                body: new URLSearchParams({ client_id: _clientId,
                     grant_type: 'refresh_token', refresh_token: spotify.refreshToken })
             });
             data = await res.json();
@@ -3366,6 +3379,14 @@ function updateSpotifyUI() {
 function setStatic(val) { state.staticColor = val; state.isStatic = true; state.activeGradient = ''; applyAll(); renderHistory(); save(); }
 
 function handleBg(input) {
+    const file = input.files[0];
+    if (!file) return;
+    // Reject files over 8MB — base64 encoding inflates by ~33%, so 8MB → ~10.7MB stored
+    if (file.size > 8 * 1024 * 1024) {
+        showToast('Image too large (max 8MB)');
+        input.value = '';
+        return;
+    }
     const reader = new FileReader();
     reader.onload = e => {
         const data = e.target.result;
@@ -3373,7 +3394,9 @@ function handleBg(input) {
         state.history = [data, ...state.history.filter(x => x !== data)].slice(0, 3);
         applyAll(); renderHistory(); save();
     };
-    reader.readAsDataURL(input.files[0]);
+    reader.onerror = () => showToast('Failed to read image');
+    reader.readAsDataURL(file);
+    input.value = '';
 }
 
 function renderHistory() {
@@ -3614,17 +3637,17 @@ function applyAll() {
 
     // Sync background effect sliders to saved state
     // Now using direct apply on oninput, just sync values here
-    const blurSlider = document.querySelector('#side-panel input[type=range][min="0"][max="40"]');
-    const opacSlider = document.querySelector('#side-panel input[type=range][min="0"][max="1"][step="0.01"]');
+    const blurSlider = document.getElementById('range-blur');
+    const opacSlider = document.getElementById('range-opacity');
     if (blurSlider) blurSlider.value = state.blur ?? 0;
     if (opacSlider) opacSlider.value = state.bgOpacity ?? 1;
 
     applyClockStyle(state.clockStyle || 'bold');
     applyGlowIntensity();
     applyWidgetOpacity();
-    if (state.lowPowerMode)  document.body.classList.add('low-power');
-    if (state.glassMode)      document.body.classList.add('glass-mode');
-    if (state.transparentBg)  document.body.classList.add('transparent-bg');
+    document.body.classList.toggle('low-power',      !!state.lowPowerMode);
+    document.body.classList.toggle('glass-mode',      !!state.glassMode);
+    document.body.classList.toggle('transparent-bg',  !!state.transparentBg);
     const swGlow = document.getElementById('sw-clockGlow');
     if (swGlow) swGlow.classList.toggle('active', state.clockGlow !== false);
     const glowSlider = document.getElementById('range-glow');
@@ -3716,8 +3739,6 @@ function positionWidget(key) {
     const widgetScale = (state.widgetScales[key] !== undefined ? state.widgetScales[key] : 1) * parseFloat(state.scale);
     el.style.setProperty('--ws', widgetScale);
     el.style.fontSize = '16px';
-    // font-size scaling — text renders at native device resolution
-    el.style.fontSize = '16px'; // Prevent double scaling since we are now using transform: scale()
     const mirror = state.mirrored ? -1 : 1;
     el.style.setProperty('--wmx', mirror);
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
@@ -4072,9 +4093,9 @@ function toggleAlwaysOn() {
     
     applyGlowIntensity();
     applyWidgetOpacity();
-    if (state.lowPowerMode)  document.body.classList.add('low-power');
-    if (state.glassMode)      document.body.classList.add('glass-mode');
-    if (state.transparentBg)  document.body.classList.add('transparent-bg');
+    document.body.classList.toggle('low-power',      !!state.lowPowerMode);
+    document.body.classList.toggle('glass-mode',      !!state.glassMode);
+    document.body.classList.toggle('transparent-bg',  !!state.transparentBg);
     if (state.alwaysOn) {
         requestWakeLock().catch(() => {});
         startWakeLockKeepAlive();
@@ -4177,9 +4198,9 @@ function wakeDisplay() {
     // Re-acquire wake lock on wake if alwaysOn is enabled
     applyGlowIntensity();
     applyWidgetOpacity();
-    if (state.lowPowerMode)  document.body.classList.add('low-power');
-    if (state.glassMode)      document.body.classList.add('glass-mode');
-    if (state.transparentBg)  document.body.classList.add('transparent-bg');
+    document.body.classList.toggle('low-power',      !!state.lowPowerMode);
+    document.body.classList.toggle('glass-mode',      !!state.glassMode);
+    document.body.classList.toggle('transparent-bg',  !!state.transparentBg);
     if (state.alwaysOn) {
         // Try immediately — works on Chrome/Edge desktop
         requestWakeLock().catch(() => {});
@@ -4364,7 +4385,8 @@ function toggle(key) {
         // Re-apply or clear the tint immediately
         const tintEl = document.getElementById('weather-tint');
         if (tintEl && !state.weatherTint) tintEl.style.opacity = '0';
-        else fetchWeather(); // re-fetch to trigger applyWeatherTint with current code
+        else if (_lastWeatherCode !== null) applyWeatherTint(_lastWeatherCode);
+        else fetchWeather();
     }
     save();
 }
@@ -4659,7 +4681,6 @@ function _applyWidgetScaleDirect(key, perWidgetScale) {
     const widgetScale = perWidgetScale * parseFloat(state.scale);
     el.style.setProperty('--ws', widgetScale);
     el.style.fontSize = '16px';
-    el.style.fontSize = '16px'; // Prevent double scaling since we are now using transform: scale()
     const mirror = state.mirrored ? -1 : 1;
     el.style.setProperty('--wmx', mirror);
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
@@ -4732,11 +4753,13 @@ function applyGradient(g) {
 }
 
 // Reposition ticker dropdown on window resize
+let _resizeTimer = null;
 window.addEventListener('resize', () => {
     const box = document.getElementById('ticker-results');
     if (box && box.style.display === 'block') positionTickerDropdown();
-    // Re-clamp widget positions to new viewport
-    clampAllWidgetPositions();
+    // Debounce clamp — resize events fire dozens of times per second
+    clearTimeout(_resizeTimer);
+    _resizeTimer = setTimeout(clampAllWidgetPositions, 150);
 }, { passive: true });
 
 // Clamp all widget positions so none are off-screen
