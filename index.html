@@ -80,7 +80,6 @@
         /* ── TRANSPARENT BACKGROUND MODE ── */
         body.transparent-bg { background-color: transparent !important; }
         body.transparent-bg #bg-layer { display: none !important; }
-        body.transparent-bg #home-indicator-cover { display: none !important; }
 
         /* ── LOW POWER MODE — reduce all animations ── */
         body.low-power * {
@@ -180,14 +179,6 @@
 
         /* #hud-master is now a transparent passthrough — widgets position themselves */
         #hud-master { position: fixed; inset: 0; pointer-events: none; z-index: 10; transform: translateZ(0); -webkit-transform: translateZ(0); }
-        /* Cover the home indicator area with black so it's invisible on black bg */
-        #home-indicator-cover {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            height: env(safe-area-inset-bottom, 0px);
-            background: #000;
-            z-index: 9999;
-            pointer-events: none;
-        }
 
         .widget {
             position: fixed;
@@ -216,10 +207,15 @@
             75%     { transform: translate(-50%,-50%) scaleX(var(--wmx,1)) scale(var(--ws,1)) rotate(1.5deg); }
         }
         .widget.long-press-ready { animation: wiggle 0.35s ease; }
+        body.no-transitions *, body.no-transitions *::before, body.no-transitions *::after { transition: none !important; animation: none !important; }
 
         /* snap ghosts removed — grid is invisible, snapping still works */
 
         /* ── ACCENT TRANSITION — only on specific properties, not everything ── */
+        button, .ios-switch, .style-btn, .update-btn, .file-upload-btn, .reset-link,
+        .status-tag, #nav-trigger, #fullscreen-btn, .ctx-item, .history-item, .gradient-swatch,
+        .theme-item, .ticker-item, .city-item, .tz-option { touch-action: manipulation; }
+
         .widget-pill, #nav-trigger, #fullscreen-btn, .ios-switch, .status-tag, .reset-link, .update-btn {
             transition: color 0.6s ease, border-color 0.6s ease, background-color 0.6s ease, box-shadow 0.6s ease;
         }
@@ -446,11 +442,11 @@
         /* ── SIDE PANEL ── */
         #side-panel {
             position: fixed; right: -380px; top: 0; width: 360px;
-            height: 100dvh; /* dvh includes iOS safe areas unlike bottom:0 */
+            height: 100vh; height: 100dvh; /* dvh includes iOS safe areas unlike bottom:0 */
             background: rgba(9,9,12,0.92);
             backdrop-filter: blur(60px) saturate(180%);
             -webkit-backdrop-filter: blur(60px) saturate(180%);
-            padding: 40px 20px;
+            padding: max(40px, env(safe-area-inset-top)) 20px 40px;
             padding-bottom: max(40px, env(safe-area-inset-bottom));
             transition: right 0.38s cubic-bezier(0.32, 0.72, 0, 1);
             z-index: 2000; overflow-y: auto; -webkit-overflow-scrolling: touch; overflow-x: visible;
@@ -547,10 +543,10 @@
         .bg-thumb.active { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: 1px; opacity: 1; transform: scale(1.05); }
 
         .theme-item { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); padding: 10px 14px; border-radius: 10px; margin-top: 8px; font-size: 0.8rem; gap: 8px; }
-        .theme-name-input { background: none; border: none; border-bottom: 1px solid var(--accent); color: #fff; font-size: 0.8rem; outline: none; flex: 1; padding: 0 2px; user-select: text; -webkit-user-select: text; }
+        .theme-name-input { background: none; border: none; border-bottom: 1px solid var(--accent); color: #fff; font-size: 16px; outline: none; flex: 1; padding: 0 2px; user-select: text; -webkit-user-select: text; }
         .theme-actions button { background: none; border: none; color: #fff; font-size: 0.7rem; font-weight: bold; cursor: pointer; opacity: 0.7; margin-left: 10px; transition: opacity 0.15s ease, transform 0.1s ease; } .theme-actions button:hover { opacity: 1; } .theme-actions button:active { transform: scale(0.9); }
 
-        input[type="text"] { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 13px 16px; border-radius: 12px; margin-top: 10px; outline: none; font-size: 0.82rem; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+        input[type="text"] { width: 100%; background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.1); color: #fff; padding: 13px 16px; border-radius: 12px; margin-top: 10px; outline: none; font-size: 16px; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
         input[type="text"]::placeholder { color: rgba(255,255,255,0.25); }
         input[type="text"]:focus { border-color: rgba(255,255,255,0.3); box-shadow: 0 0 0 3px rgba(255,255,255,0.05); }
         input[type="range"] { -webkit-appearance: none; width: 100%; height: 4px; background: rgba(255,255,255,0.1); margin-top: 10px; border-radius: 2px; vertical-align: middle; }
@@ -804,7 +800,6 @@
 <video id="nosleep-video" muted playsinline loop
     style="position:fixed;top:-1px;left:-1px;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1;">
 </video>
-<div id="home-indicator-cover"></div>
 <div id="weather-tint"></div>
 <div id="vignette"></div>
 <div id="ticker-results"></div>
@@ -1235,7 +1230,7 @@
                     <label style="font-size:0.5rem;">Event Name</label>
                     <input type="text" id="cd-name-input" placeholder="e.g. Summer" style="margin-top:6px;" oninput="updateCountdownSettings()">
                     <label style="font-size:0.5rem;margin-top:10px;display:block;">Target Date</label>
-                    <input type="date" id="cd-date-input" style="margin-top:6px;width:100%;background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:10px 14px;font-size:0.8rem;outline:none;color-scheme:dark;" oninput="updateCountdownSettings()">
+                    <input type="date" id="cd-date-input" style="margin-top:6px;width:100%;background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:10px 14px;font-size:16px;outline:none;color-scheme:dark;" oninput="updateCountdownSettings()">
                 </div>
             </div>
         </div>
@@ -1284,11 +1279,11 @@
             <div id="sleep-schedule-body" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);">
                 <div class="row" style="margin-bottom:10px;">
                     <label style="font-size:0.5rem;">Sleep at</label>
-                    <input type="time" id="sleep-time-input" value="23:00" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;padding:5px 10px;font-size:0.75rem;width:110px;color-scheme:dark;" onchange="state.sleepTime=this.value;save();scheduleSleepWake();">
+                    <input type="time" id="sleep-time-input" value="23:00" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;padding:5px 10px;font-size:16px;width:110px;color-scheme:dark;" onchange="state.sleepTime=this.value;save();scheduleSleepWake();">
                 </div>
                 <div class="row">
                     <label style="font-size:0.5rem;">Wake at</label>
-                    <input type="time" id="wake-time-input" value="07:00" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;padding:5px 10px;font-size:0.75rem;width:110px;color-scheme:dark;" onchange="state.wakeTime=this.value;save();scheduleSleepWake();">
+                    <input type="time" id="wake-time-input" value="07:00" style="background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:8px;color:#fff;padding:5px 10px;font-size:16px;width:110px;color-scheme:dark;" onchange="state.wakeTime=this.value;save();scheduleSleepWake();">
                 </div>
                 <div id="sleep-status" style="margin-top:10px;font-size:0.48rem;opacity:0.4;letter-spacing:1px;text-transform:uppercase;"></div>
             </div>
@@ -1448,7 +1443,7 @@ function load() {
 
     if (state.alwaysOn) {
         // Try immediately — works on Chrome/Edge desktop
-        requestWakeLock().catch(() => {});
+        requestWakeLock();
         startWakeLockKeepAlive();
         // Also request on first click — ensures it activates after user gesture
         // (required by Safari and some Chromium versions)
@@ -2005,6 +2000,9 @@ async function searchCities(query) {
 }
 
 function selectCity(name) {
+    // Cancel any pending debounced search so dropdown doesn't reopen
+    clearTimeout(_cityDebounceTimer);
+    if (_cityFetchCtrl) { _cityFetchCtrl.abort(); _cityFetchCtrl = null; }
     state.city = name;
     document.getElementById('city-input').value = name;
     document.getElementById('weather-results').style.display = 'none';
@@ -2208,7 +2206,7 @@ function renderTickerTags() {
         const btn = document.createElement('button');
         btn.textContent = '✕';
         btn.title = 'Remove';
-        btn.addEventListener('click', () => removeTicker(t));
+        btn.addEventListener('click', (e) => { e.stopPropagation(); removeTicker(t); });
         tag.appendChild(label);
         tag.appendChild(btn);
         container.appendChild(tag);
@@ -2579,7 +2577,7 @@ function renderTzTags() {
         const btn = document.createElement('button');
         btn.textContent = '✕';
         btn.title = 'Remove';
-        btn.addEventListener('click', () => removeTimezone(tz));
+        btn.addEventListener('click', (e) => { e.stopPropagation(); removeTimezone(tz); });
         tag.appendChild(labelEl);
         tag.appendChild(btn);
         container.appendChild(tag);
@@ -2729,15 +2727,30 @@ setInterval(updateCountdownDisplay, 60000);
 // ─────────────────────────────────────────────────
 // EXPORT / IMPORT SETTINGS
 // ─────────────────────────────────────────────────
-function exportSettings() {
+async function exportSettings() {
     const data = JSON.stringify(state, null, 2);
+    const filename = `prism-os-settings-${new Date().toISOString().slice(0,10)}.json`;
+    // iOS PWA: a.click() download doesn't work — use Web Share API if available
+    if (navigator.share) {
+        try {
+            const file = new File([data], filename, { type: 'application/json' });
+            await navigator.share({ files: [file], title: 'Prism OS Settings' });
+            return;
+        } catch (e) {
+            if (e.name !== 'AbortError') {
+                // Share failed — fall through to blob download
+            } else { return; }
+        }
+    }
     const blob = new Blob([data], { type: 'application/json' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
     a.href = url;
-    a.download = `prism-os-settings-${new Date().toISOString().slice(0,10)}.json`;
+    a.download = filename;
+    document.body.appendChild(a);
     a.click();
-    URL.revokeObjectURL(url);
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 100);
 }
 
 const IMPORTABLE_KEYS = {
@@ -2804,7 +2817,13 @@ function importSettings(input) {
 const ambient = { ctx: null, gainNode: null, active: null, stoppers: [] };
 
 function ensureCtx() {
-    if (!ambient.ctx) ambient.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    if (!ambient.ctx) {
+        ambient.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    // iOS suspends AudioContext until a user gesture — resume it
+    if (ambient.ctx.state === 'suspended') {
+        ambient.ctx.resume();
+    }
     if (ambient.ctx.state === 'suspended') ambient.ctx.resume();
 }
 
@@ -3526,11 +3545,11 @@ function renderThemeList() {
         const loadBtn = document.createElement('button');
         loadBtn.textContent = 'Load';
         loadBtn.style.color = 'var(--accent)';
-        loadBtn.addEventListener('click', () => loadTheme(name));
+        loadBtn.addEventListener('click', (e) => { e.stopPropagation(); loadTheme(name); });
         const delBtn = document.createElement('button');
         delBtn.textContent = '✕';
         delBtn.style.color = '#ff4444';
-        delBtn.addEventListener('click', () => deleteTheme(name));
+        delBtn.addEventListener('click', (e) => { e.stopPropagation(); deleteTheme(name); });
         actions.appendChild(loadBtn);
         actions.appendChild(delBtn);
 
@@ -3612,7 +3631,7 @@ function applyAll() {
         el.style.opacity = show ? '' : '0'; // '' clears inline, falls back to CSS var(--widget-opacity)
         el.style.pointerEvents = show ? 'all' : 'none';
         if (show && !el.dataset.iosDisabled) el.style.display = 'flex';
-        if (!show || el.dataset.iosDisabled) { if(el.dataset.iosDisabled) { el.style.opacity='0'; el.style.display='none'; state[key]=false; const _wk2=key.startsWith('show')?key.charAt(4).toLowerCase()+key.slice(5):key; const sw2=document.getElementById('sw-'+_wk2)||document.getElementById('sw-'+key); if(sw2) sw2.classList.remove('active'); return; } }
+        if (!show || el.dataset.iosDisabled) { if(el.dataset.iosDisabled) { el.style.opacity='0'; el.style.display='none'; state['show' + key.charAt(0).toUpperCase() + key.slice(1)]=false; const sw2=document.getElementById('sw-show' + key.charAt(0).toUpperCase() + key.slice(1)); if(sw2) sw2.classList.remove('active'); return; } }
         // Entrance animation when toggling on
         if (show && wasHidden) {
             el.classList.remove('entering');
@@ -3959,6 +3978,7 @@ function initAllDrag() {
 // ─────────────────────────────────────────────────
 function startBurnShield() {
     setInterval(() => {
+        if (!state.burnShield) return; // stop drifting when disabled
         WIDGET_KEYS.forEach(key => {
             const el = document.getElementById(key + '-widget');
             if (!el || !state.burnShield) return;
@@ -4097,7 +4117,7 @@ function toggleAlwaysOn() {
     document.body.classList.toggle('glass-mode',      !!state.glassMode);
     document.body.classList.toggle('transparent-bg',  !!state.transparentBg);
     if (state.alwaysOn) {
-        requestWakeLock().catch(() => {});
+        requestWakeLock();
         startWakeLockKeepAlive();
         const _wlGesture = () => {
             if (state.alwaysOn && _wakeLock === null) requestWakeLock();
@@ -4203,7 +4223,7 @@ function wakeDisplay() {
     document.body.classList.toggle('transparent-bg',  !!state.transparentBg);
     if (state.alwaysOn) {
         // Try immediately — works on Chrome/Edge desktop
-        requestWakeLock().catch(() => {});
+        requestWakeLock();
         startWakeLockKeepAlive();
         // Also request on first click — ensures it activates after user gesture
         // (required by Safari and some Chromium versions)
@@ -4254,9 +4274,12 @@ function sleepDisplay() {
 }
 
 // Tap to temporarily wake during sleep hours (30s preview)
+let _tempWakeTimer = null;
 function _tempWakeHandler() {
     wakeDisplay();
-    setTimeout(() => {
+    clearTimeout(_tempWakeTimer);
+    _tempWakeTimer = setTimeout(() => {
+        _tempWakeTimer = null;
         if (state.sleepEnabled && _sleepWakeInterval) checkSleepWake();
     }, 30000);
 }
@@ -4275,6 +4298,9 @@ function optimizeScale() {
 
     // Reset all per-widget scales first so we optimize from a clean baseline
     state.widgetScales = {};
+
+    // Disable CSS transitions during binary search to avoid layout thrashing
+    document.body.classList.add('no-transitions');
 
     // Binary search for the largest global scale where all widgets fit
     let lo = 0.3, hi = 2.5, best = state.scale;
@@ -4301,6 +4327,7 @@ function optimizeScale() {
     state.scale = parseFloat(best.toFixed(2));
     applyAll();
     save();
+    document.body.classList.remove('no-transitions');
     document.getElementById('range-scale').value = state.scale;
     setTimeout(clampAllWidgetPositions, 100);
     showToast('Scale optimized to ' + Math.round(state.scale * 100) + '%');
@@ -4332,10 +4359,25 @@ function toggle(key) {
         const show = !!state[key];
         if (el) {
             const wasHidden = el.style.opacity === '0' || el.style.display === 'none';
-            el.style.opacity = show ? '' : '0';
-            el.style.pointerEvents = show ? 'all' : 'none';
-            if (show && !el.dataset.iosDisabled) el.style.display = 'flex';
-        if (!show || el.dataset.iosDisabled) { if(el.dataset.iosDisabled) { el.style.opacity='0'; el.style.display='none'; state[key]=false; const _wk2=key.startsWith('show')?key.charAt(4).toLowerCase()+key.slice(5):key; const sw2=document.getElementById('sw-'+_wk2)||document.getElementById('sw-'+key); if(sw2) sw2.classList.remove('active'); return; } }
+            if (show && !el.dataset.iosDisabled) {
+                el.style.display = 'flex';
+                // Force reflow before removing opacity so transition works
+                void el.offsetWidth;
+                el.style.opacity = '';
+                el.style.pointerEvents = 'all';
+            } else if (el.dataset.iosDisabled) {
+                el.style.opacity = '0'; el.style.display = 'none';
+                state[key] = false;
+                const _wk2 = key.startsWith('show') ? key.charAt(4).toLowerCase() + key.slice(5) : key;
+                const sw2 = document.getElementById('sw-' + _wk2) || document.getElementById('sw-' + key);
+                if (sw2) sw2.classList.remove('active');
+                return;
+            } else {
+                el.style.opacity = '0';
+                el.style.pointerEvents = 'none';
+                // Remove from render tree after fade so GPU layer is freed
+                setTimeout(() => { if (el.style.opacity === '0') el.style.display = 'none'; }, 350);
+            }
             // Entrance animation
             if (show && wasHidden) {
                 el.classList.remove('entering');
@@ -4358,6 +4400,7 @@ function toggle(key) {
     }
 
     if (key === 'burnShield') { /* handled by startBurnShield interval */ }
+    if (key === 'alwaysOn' && !state.alwaysOn) { _noSleepStarted = false; } // allow NoSleep restart if re-enabled
     if (key === 'mirrored' || key === 'posLocked') applyAll();
     if (key === 'batteryDynamic') { const _bw = document.getElementById('battery-widget'); if (!_bw || !_bw.dataset.iosDisabled) updateBattery(); }
     if (key === 'showSeconds' || key === 'is24h') updateClock();
@@ -4382,13 +4425,12 @@ function toggle(key) {
         }
     }
     if (key === 'weatherTint') {
-        // Re-apply or clear the tint immediately
         const tintEl = document.getElementById('weather-tint');
         if (tintEl && !state.weatherTint) tintEl.style.opacity = '0';
         else if (_lastWeatherCode !== null) applyWeatherTint(_lastWeatherCode);
         else fetchWeather();
     }
-    save();
+    // save() already called at the top of this function — no need to call again
 }
 
 // ─────────────────────────────────────────────────
@@ -4403,6 +4445,42 @@ function performFactoryReset() { localStorage.clear(); location.reload(); }
 // ─────────────────────────────────────────────────
 function toggleGroup(header) {
     header.closest('.control-group').classList.toggle('collapsed');
+}
+
+// Open settings panel to the Stocks section and focus the ticker input
+function openStocksSettings() {
+    const panel = document.getElementById('side-panel');
+    if (!panel.classList.contains('open')) {
+        panel.classList.add('open');
+        const ov = document.getElementById('overlay'); if (ov) ov.style.display = 'block';
+        const nt = document.getElementById('nav-trigger'); if (nt) nt.classList.add('active-ui');
+    }
+    const tickerInput = document.getElementById('ticker-input');
+    if (!tickerInput) return;
+    const group = tickerInput.closest('.control-group');
+    if (group && group.classList.contains('collapsed')) group.classList.remove('collapsed');
+    setTimeout(() => {
+        tickerInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        tickerInput.focus();
+    }, 400);
+}
+
+// Open settings panel to the Countdown section and focus the event name input
+function openCountdownSettings() {
+    const panel = document.getElementById('side-panel');
+    if (!panel.classList.contains('open')) {
+        panel.classList.add('open');
+        const ov2 = document.getElementById('overlay'); if (ov2) ov2.style.display = 'block';
+        const nt2 = document.getElementById('nav-trigger'); if (nt2) nt2.classList.add('active-ui');
+    }
+    const nameInput = document.getElementById('cd-name-input');
+    if (!nameInput) return;
+    const group = nameInput.closest('.control-group');
+    if (group && group.classList.contains('collapsed')) group.classList.remove('collapsed');
+    setTimeout(() => {
+        nameInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        nameInput.focus();
+    }, 400);
 }
 
 // ─────────────────────────────────────────────────
@@ -4467,10 +4545,12 @@ function initInteractions() {
 
     // ── DISMISS CONTEXT MENU ON OUTSIDE CLICK ──
     document.addEventListener('mousedown', (e) => {
-        if (e.button === 2) return; // right-click: contextmenu event handles it
+        if (e.button === 2) return;
+        if (!document.getElementById('widget-ctx-menu').classList.contains('visible')) return;
         if (!e.target.closest('#widget-ctx-menu')) setTimeout(() => hideCtxMenu(), 0);
     });
     document.addEventListener('touchstart', (e) => {
+        if (!document.getElementById('widget-ctx-menu').classList.contains('visible')) return;
         if (!e.target.closest('#widget-ctx-menu')) setTimeout(() => hideCtxMenu(), 0);
     }, { passive: true });
 }
@@ -4582,7 +4662,7 @@ const CTX_WIDGET_ACTIONS = {
             ${state.batteryDynamic ? 'Disable' : 'Enable'} Dynamic Colour
         </button>`,
     stocks: () => `
-        <button class="ctx-item" onclick="document.getElementById('ticker-input').focus();toggleNav();hideCtxMenu();">
+        <button class="ctx-item" onclick="openStocksSettings();hideCtxMenu();">
             <span class="ctx-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span>
             Manage Tickers
         </button>`,
@@ -4590,7 +4670,7 @@ const CTX_WIDGET_ACTIONS = {
     worldclock: () => '',
     moon: () => '',
     countdown: () => `
-        <button class="ctx-item" onclick="document.getElementById('cd-name-input').focus();toggleNav();hideCtxMenu();">
+        <button class="ctx-item" onclick="openCountdownSettings();hideCtxMenu();">
             <span class="ctx-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
             Set Event
         </button>`
@@ -4622,9 +4702,12 @@ function showCtxMenu(key, x, y) {
     }
 
     const menu = document.getElementById('widget-ctx-menu');
-    const mw = 230;
-    menu.style.left = Math.min(x - mw / 2, window.innerWidth - mw - 10) + 'px';
-    menu.style.top  = Math.max(y, 10) + 'px';
+    const mw  = 230;
+    const mh  = 300; // conservative estimated menu height
+    const clampedLeft = Math.max(10, Math.min(x - mw / 2, window.innerWidth  - mw - 10));
+    const clampedTop  = Math.max(10, Math.min(y,           window.innerHeight - mh - 10));
+    menu.style.left = clampedLeft + 'px';
+    menu.style.top  = clampedTop  + 'px';
     menu.classList.add('visible');
 }
 
@@ -4646,6 +4729,7 @@ function ctxHide() {
             const showKey = 'show' + _ctxKey.charAt(0).toUpperCase() + _ctxKey.slice(1);
             state[showKey] = false;
             el.style.pointerEvents = 'none';
+            el.style.display = 'none';
             const st = document.getElementById('st-' + _ctxKey);
             if (st) { st.innerText = 'HIDDEN'; st.className = 'status-tag off'; }
             const sw = document.getElementById('sw-show' + _ctxKey.charAt(0).toUpperCase() + _ctxKey.slice(1));
@@ -4801,6 +4885,12 @@ document.addEventListener('click', (e) => {
         !panel.contains(e.target) && !trigger.contains(e.target)) {
         toggleNav();
     }
+}, { passive: true });
+
+// Resume AudioContext on first touch (iOS requires user gesture before audio)
+document.addEventListener('touchstart', function _resumeAudio() {
+    if (ambient.ctx && ambient.ctx.state === 'suspended') ambient.ctx.resume();
+    document.removeEventListener('touchstart', _resumeAudio);
 }, { passive: true });
 
 // ─────────────────────────────────────────────────
