@@ -292,7 +292,7 @@
                 drop-shadow(0 0 calc(18px * var(--glow-intensity)) var(--accent))
                 drop-shadow(0 0 calc(40px * var(--glow-intensity)) var(--accent));
             /* Italic glyphs lean right — small left inset so glyphs read as centred */
-            padding-left: 0em;
+            padding-left: 0.25em;
         }
         /* ── CLOCK GLOW TOGGLE ── */
         #clock.no-glow {
@@ -347,7 +347,7 @@
         #temp { line-height: 1; display: flex; align-items: center; font-size: 1.5em; }
         #battery-widget { font-size: 1.15rem; font-weight: 500; letter-spacing: 3px; display: flex; align-items: center; gap: 10px; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
         #battery-icon { display: flex; align-items: center; justify-content: center; line-height: 1; font-size: 1.7em; }
-        #battery-widget .widget-pill { padding: 6px 14px !important; }
+        #battery-widget .widget-pill { padding: 4px 10px !important; }
         #battery-icon svg { display: block; vertical-align: middle; }
         #battery { line-height: 1; display: flex; align-items: center; }
         .charging-pulse { animation: batteryPulse 2s infinite ease-in-out; }
@@ -2018,12 +2018,8 @@ async function updateBattery() {
             }
             let svg = `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" style="filter:drop-shadow(0 0 2px rgba(0,0,0,0.5))" color="${fillColor}">`;
             svg += batIcons.frame;
-            if (!isCharging) {
-                svg += `<rect x="3.5" y="8.5" width="${fillWidth}" height="7" rx="1.5" fill="${fillColor}"/>`;
-            } else {
-                // Charging: no fill bar — bolt sits in the empty battery, like the reference icon
-                svg += batIcons.boltOverlay;
-            }
+            svg += `<rect x="3.5" y="8.5" width="${fillWidth}" height="7" rx="1.5" fill="${fillColor}"/>`;
+            if (isCharging) svg += batIcons.boltOverlay;
             svg += `</svg>`;
             document.getElementById('battery-icon').innerHTML = svg;
             const bt = document.getElementById('battery');
@@ -3403,8 +3399,9 @@ function applyAll() {
     // Only skip background when artAsBg is ON and we actually have art loaded
     if (!(state.artAsBg && _lastArtUrl)) {
         if (state.activeGradient && !state.isStatic && !state.bg) {
+            const g = GRADIENTS.find(x => x.label === state.activeGradient);
             document.body.style.backgroundColor = 'transparent';
-            bgl.style.backgroundImage = state.activeGradient;
+            bgl.style.backgroundImage = g ? g.css : 'none';
         } else if (state.isStatic) {
             document.body.style.backgroundColor = state.staticColor;
             document.getElementById('static-bg-preview').style.backgroundColor = state.staticColor;
@@ -4218,8 +4215,9 @@ function toggle(key) {
         } else if (!state.artAsBg) {
             // Restore user background immediately
             if (state.activeGradient && !state.isStatic && !state.bg) {
+                const g = GRADIENTS.find(x => x.label === state.activeGradient);
                 document.body.style.backgroundColor = 'transparent';
-                bgl.style.backgroundImage = state.activeGradient;
+                bgl.style.backgroundImage = g ? g.css : 'none';
             } else if (state.isStatic) {
                 document.body.style.backgroundColor = state.staticColor;
                 bgl.style.backgroundImage = 'none';
