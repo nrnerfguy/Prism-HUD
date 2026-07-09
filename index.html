@@ -1781,57 +1781,57 @@ function updateClock() {
 
     document.getElementById('date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
     updateAnalogClock(now);
-    equalizeClockPadding();
 }
 
-// Measure the leftmost and rightmost visual edges of the clock text inside its pill
-// and adjust the pill's padding so the text appears visually centred regardless of
-// italic glyph slant (e.g. the "7" leaning further right than the "1").
-function equalizeClockPadding() {
+// Recompute the italic left-margin offset for the clock and apply it as a fixed margin-left on #clock.
+// Called only when the clock style, per-widget scale, or showSeconds flag changes — NOT every tick.
+// Caches the last inputs so we don't redo the measurement when nothing relevant changed.
+let _clockMarginInputs = null;
+function recomputeClockLeftMargin() {
+    if (state.clockStyle === 'analog') return;
     const clockEl = document.getElementById('clock');
     if (!clockEl || !clockEl.children.length) return;
-    if (state.clockStyle === 'analog') return;
-    const pill = clockEl.closest('.widget-pill');
-    if (!pill) return;
-    // Use a temporary measurement span so we get the text bbox without the bold filter/transform
-    // interfering with the range API
+    const widget = document.getElementById('clock-widget');
+    if (!widget) return;
+    const inputs = state.clockStyle + '|' + (state.widgetScales?.clock ?? 1) + '|' + state.showSeconds + '|' + (state.is24h ? 1 : 0);
+    if (inputs === _clockMarginInputs) return;
+    _clockMarginInputs = inputs;
+    // Build a temp span with a known string to measure italic slant offset.
+    // We compare bbox of a regular digit vs an italic-leaning digit at the same font-size.
     const measure = document.createElement('span');
     measure.style.visibility = 'hidden';
     measure.style.position = 'absolute';
-    measure.style.whiteSpace = 'nowrap';
-    measure.style.font = getComputedStyle(clockEl).font;
-    measure.style.fontStyle = getComputedStyle(clockEl).fontStyle;
-    measure.style.fontWeight = getComputedStyle(clockEl).fontWeight;
-    measure.style.letterSpacing = getComputedStyle(clockEl).letterSpacing;
-    measure.style.fontSize = getComputedStyle(clockEl).fontSize;
+    measure.style.whiteSpace = 'pre';
+    const cs = getComputedStyle(clockEl);
+    measure.style.fontFamily    = cs.fontFamily;
+    measure.style.fontWeight    = cs.fontWeight;
+    measure.style.fontSize      = cs.fontSize;
+    measure.style.letterSpacing = cs.letterSpacing;
+    measure.style.lineHeight    = '1';
     document.body.appendChild(measure);
-    // For each digit, measure the advance and use the bbox of the actual digit chars
-    let leftMost = Infinity, rightMost = -Infinity;
-    for (const child of clockEl.children) {
-        measure.textContent = child.textContent;
+    // Test characters that span the typical italic-lean range
+    const samples = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0'];
+    let minLeft = Infinity;
+    for (const ch of samples) {
+        measure.style.fontStyle = 'italic';
+        measure.textContent = ch;
         const r = measure.getBoundingClientRect();
-        // Bbox of glyph in the measurement context
-        const left = r.left, right = r.right;
-        // Find that digit's slot in the clock element by its position
-        const childRect = child.getBoundingClientRect();
-        // The italic digit leans right, so the visual left edge is shifted right
-        // by the slant amount. Approximate slant as 12% of glyph height for italics.
-        const slant = (getComputedStyle(clockEl).fontStyle === 'italic') ? childRect.height * 0.12 : 0;
-        const visualLeft = childRect.left + slant;
-        const visualRight = childRect.right; // right edge of an italic glyph already extends to its actual bbox right
-        if (visualLeft < leftMost) leftMost = visualLeft;
-        if (visualRight > rightMost) rightMost = visualRight;
+        if (r.left < minLeft) minLeft = r.left;
     }
+    measure.style.fontStyle = 'normal';
+    measure.textContent = '8';
+    const rNormal = measure.getBoundingClientRect();
     document.body.removeChild(measure);
-    if (!isFinite(leftMost) || rightMost < 0) return;
-    const pillRect = pill.getBoundingClientRect();
-    const leftPad = leftMost - pillRect.left;
-    const rightPad = pillRect.right - rightMost;
-    const diff = (rightPad - leftPad) / 2;
-    if (Math.abs(diff) > 0.5) {
-        pill.style.paddingLeft  = (parseFloat(getComputedStyle(pill).paddingLeft)  + diff) + 'px';
-        pill.style.paddingRight = (parseFloat(getComputedStyle(pill).paddingRight) - diff) + 'px';
-    }
+    // Offset = how much further right the italic glyph's visual left edge is compared to a normal glyph
+    // Convert to em units so it scales with the font
+    const fontSizePx = parseFloat(cs.fontSize);
+    const italicLeanPx = rNormal.left - minLeft;
+    const italicLeanEm = italicLeanPx / fontSizePx;
+    // Apply as margin-left on the clock element itself (in em so it scales with font)
+    // Sign is positive because the italic glyph's visual left is to the right of the normal one
+    // — we want to push the whole text to the right by this much so the *visual* left aligns
+    // with where a non-italic would be.
+    clockEl.style.marginLeft = italicLeanEm + 'em';
 }
 // Align clock tick to actual second boundary to prevent drift
 (function scheduleClock() {
@@ -1868,6 +1868,7 @@ function applyClockStyle(style) {
     // Show/hide intensity slider based on glow state
     const glowRow = document.getElementById('glow-intensity-row');
     if (glowRow) glowRow.style.display = (state.clockGlow === false) ? 'none' : 'block';
+    if (!isAnalog) requestAnimationFrame(recomputeClockLeftMargin);
 }
 
 // Public setter called from UI buttons — saves state then applies
@@ -3544,6 +3545,8 @@ function applyAll() {
     renderTickerTags();
     updateCountdownDisplay();
     renderTzTags();
+    // Recompute clock's italic left margin once per applyAll — cached, not per-tick
+    requestAnimationFrame(recomputeClockLeftMargin);
 
     document.getElementById('city-input').value  = state.city;
 
@@ -4269,7 +4272,7 @@ function toggle(key) {
     if (key === 'burnShield') { /* handled by startBurnShield interval */ }
     if (key === 'mirrored' || key === 'posLocked') applyAll();
     if (key === 'batteryDynamic') { const _bw = document.getElementById('battery-widget'); if (!_bw || !_bw.dataset.iosDisabled) updateBattery(); }
-    if (key === 'showSeconds' || key === 'is24h') updateClock();
+    if (key === 'showSeconds' || key === 'is24h') { updateClock(); requestAnimationFrame(recomputeClockLeftMargin); }
     if (key === 'artAsBg') {
         const bgl = document.getElementById('bg-layer');
         if (state.artAsBg && _lastArtUrl) {
@@ -4597,6 +4600,7 @@ function _applyWidgetScaleDirect(key, perWidgetScale) {
     el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scaleX(${mirror}) scale(${widgetScale})`;
     const pill = el.querySelector('.widget-pill');
     if (pill) pill.style.transform = '';
+    if (key === 'clock') requestAnimationFrame(recomputeClockLeftMargin);
 }
 
 // ─────────────────────────────────────────────────
