@@ -292,7 +292,7 @@
                 drop-shadow(0 0 calc(18px * var(--glow-intensity)) var(--accent))
                 drop-shadow(0 0 calc(40px * var(--glow-intensity)) var(--accent));
             /* Italic glyphs lean right — small left inset so glyphs read as centred */
-            padding-left: 0.25em;
+            padding-left: -0.25em;
         }
         /* ── CLOCK GLOW TOGGLE ── */
         #clock.no-glow {
@@ -1994,9 +1994,9 @@ function setWeatherUnit(unit) {
 // BATTERY
 // ─────────────────────────────────────────────────
 const batIcons = {
-    frame: `<rect x="2" y="7" width="16" height="10" rx="2.5" stroke="currentColor" fill="none" stroke-width="1.5" opacity="0.6"/><path d="M19 10.5c1.2 0 1.2 3 0 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.6"/>`,
+    frame: `<rect x="2.5" y="7" width="16" height="10" rx="2.5" stroke="currentColor" fill="none" stroke-width="2" opacity="0.85"/><path d="M19.2 10.5c1.4 0 1.4 3 0 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.85"/>`,
     // Bolt uses a separate centred SVG overlay so it stays centred regardless of fill width
-    boltOverlay: `<g transform="translate(10,12)"><path d="M1.5,-4.5 L-2,0 L0.5,0 L-0.5,4.5 L3,0 L0.5,0 Z" fill="white" stroke="rgba(0,0,0,0.55)" stroke-width="0.6" stroke-linejoin="round" opacity="0.95"/></g>`
+    boltOverlay: `<g transform="translate(10.5,12)"><path d="M2.2,-6 L-2.8,1 L0.2,1 L-1.2,6 L3.8,0 L0.8,0 Z" fill="white" stroke="rgba(0,0,0,0.7)" stroke-width="0.9" stroke-linejoin="round"/></g>`
 };
 
 async function updateBattery() {
