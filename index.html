@@ -340,7 +340,7 @@
         .a-center-hi { fill: rgba(255,255,255,0.75); }
 
         #date { font-size: 1.35rem; text-transform: uppercase; letter-spacing: 7px; font-weight: 300; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); margin-right: -7px; }
-        #weather-widget { gap: 16px; font-size: 2.1rem; font-weight: 200; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
+        #weather-widget { gap: 16px; font-size: 2.1rem; font-weight: 200; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); will-change: transform; }
         #weather-widget .widget-pill { align-items: center; }
         #icon-container { display: flex; align-items: center; justify-content: center; line-height: 1; font-size: 2.4rem; }
         #icon-container svg { display: block; vertical-align: middle; overflow: visible; shape-rendering: geometricPrecision; }
@@ -3808,8 +3808,8 @@ function startBurnShield() {
         WIDGET_KEYS.forEach(key => {
             const el = document.getElementById(key + '-widget');
             if (!el || !state.burnShield) return;
-            const dx = (Math.random() * 3 - 1.5).toFixed(1);
-            const dy = (Math.random() * 3 - 1.5).toFixed(1);
+            const dx = Math.round(Math.random() * 3 - 1.5);
+            const dy = Math.round(Math.random() * 3 - 1.5);
             el.style.setProperty('--bsx', dx + 'px');
             el.style.setProperty('--bsy', dy + 'px');
             positionWidget(key); // re-apply transform with new drift
