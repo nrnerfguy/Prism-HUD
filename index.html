@@ -344,9 +344,10 @@
         #weather-widget .widget-pill { align-items: center; }
         #icon-container { display: flex; align-items: center; justify-content: center; line-height: 1; font-size: 1.6rem; }
         #icon-container svg { display: block; vertical-align: middle; overflow: visible; shape-rendering: geometricPrecision; }
-        #temp { line-height: 1; display: flex; align-items: center; }
+        #temp { line-height: 1; display: flex; align-items: center; font-size: 1.5em; }
         #battery-widget { font-size: 1.15rem; font-weight: 500; letter-spacing: 3px; display: flex; align-items: center; gap: 10px; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
-        #battery-icon { display: flex; align-items: center; justify-content: center; line-height: 1; }
+        #battery-icon { display: flex; align-items: center; justify-content: center; line-height: 1; font-size: 1.7em; }
+        #battery-widget .widget-pill { padding: 6px 14px !important; }
         #battery-icon svg { display: block; vertical-align: middle; }
         #battery { line-height: 1; display: flex; align-items: center; }
         .charging-pulse { animation: batteryPulse 2s infinite ease-in-out; }
@@ -798,8 +799,8 @@
 <div id="weather-tint"></div>
 <div id="vignette"></div>
 <div id="ticker-results"></div>
-<div id="center-h" style="display:none;position:fixed;left:0;right:0;top:50%;height:1px;z-index:800;pointer-events:none;transform:translateY(-0.5px);mix-blend-mode:difference;background:rgba(255,255,255,0.6);box-shadow:0 0 8px rgba(255,255,255,0.4);transition:box-shadow 0.15s,background 0.15s;"></div>
-<div id="center-v" style="display:none;position:fixed;top:0;bottom:0;left:50%;width:1px;z-index:800;pointer-events:none;transform:translateX(-0.5px);mix-blend-mode:difference;background:rgba(255,255,255,0.6);box-shadow:0 0 8px rgba(255,255,255,0.4);transition:box-shadow 0.15s,background 0.15s;"></div>
+<div id="center-h" style="display:none;position:fixed;left:0;right:0;top:50%;height:1px;z-index:800;pointer-events:none;transform:translateY(-0.5px);background:rgba(255,255,255,0.7);"></div>
+<div id="center-v" style="display:none;position:fixed;top:0;bottom:0;left:50%;width:1px;z-index:800;pointer-events:none;transform:translateX(-0.5px);background:rgba(255,255,255,0.7);"></div>
 <div id="overlay" onclick="toggleNav()"></div>
 <div id="dim-overlay"></div>
 <canvas id="art-canvas" style="display:none;" width="1" height="1"></canvas>
@@ -2017,14 +2018,11 @@ async function updateBattery() {
             }
             let svg = `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" style="filter:drop-shadow(0 0 2px rgba(0,0,0,0.5))" color="${fillColor}">`;
             svg += batIcons.frame;
-            if (isCharging) {
-                // Charging: show a slimmer fill bar (left-justified to the actual level) + bolt cutting through
-                const chargeBarX = 3.5;
-                const chargeBarW = (level / 100) * 13;
-                svg += `<rect x="${chargeBarX}" y="8.5" width="${chargeBarW}" height="7" rx="1.5" fill="${fillColor}"/>`;
-                svg += batIcons.boltOverlay;
-            } else {
+            if (!isCharging) {
                 svg += `<rect x="3.5" y="8.5" width="${fillWidth}" height="7" rx="1.5" fill="${fillColor}"/>`;
+            } else {
+                // Charging: no fill bar — bolt sits in the empty battery, like the reference icon
+                svg += batIcons.boltOverlay;
             }
             svg += `</svg>`;
             document.getElementById('battery-icon').innerHTML = svg;
@@ -3704,10 +3702,8 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
 
             lineH.style.opacity    = snapH ? '1' : '0.5';
             lineV.style.opacity    = snapV ? '1' : '0.5';
-            lineH.style.background = snapH ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.6)';
-            lineV.style.background = snapV ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.6)';
-            lineH.style.boxShadow  = snapH ? '0 0 16px rgba(255,255,255,0.8)' : '0 0 8px rgba(255,255,255,0.4)';
-            lineV.style.boxShadow  = snapV ? '0 0 16px rgba(255,255,255,0.8)' : '0 0 8px rgba(255,255,255,0.4)';
+            lineH.style.background = snapH ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.7)';
+            lineV.style.background = snapV ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.7)';
 
             const offsetX = curPxX - anchorX;
             const offsetY = curPxY - anchorY;
@@ -3736,8 +3732,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         hideGhosts();
         lineH.style.display = lineV.style.display = 'none';
         lineH.style.opacity = lineV.style.opacity = '0.6';
-        lineH.style.background = lineV.style.background = 'rgba(255,255,255,0.6)';
-        lineH.style.boxShadow  = lineV.style.boxShadow  = '0 0 8px rgba(255,255,255,0.4)';
+        lineH.style.background = lineV.style.background = 'rgba(255,255,255,0.7)';
 
         if (!moved) return;
 
