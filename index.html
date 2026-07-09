@@ -340,7 +340,7 @@
         .a-center-hi { fill: rgba(255,255,255,0.75); }
 
         #date { font-size: 1.35rem; text-transform: uppercase; letter-spacing: 7px; font-weight: 300; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); margin-right: -7px; }
-        #weather-widget { gap: 16px; font-size: 2.1rem; font-weight: 200; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); will-change: transform; }
+        #weather-widget { gap: 16px; font-size: 2.1rem; font-weight: 200; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
         #weather-widget .widget-pill { align-items: center; }
         #icon-container { display: flex; align-items: center; justify-content: center; line-height: 1; font-size: 2.4rem; }
         #icon-container svg { display: block; vertical-align: middle; overflow: visible; shape-rendering: geometricPrecision; }
@@ -3704,7 +3704,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
 
             const offsetX = curPxX - anchorX;
             const offsetY = curPxY - anchorY;
-            el.style.transform = `translate(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px)) scaleX(${state.mirrored ? -1 : 1})`;
+            el.style.transform = `translate3d(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px), 0) scaleX(${state.mirrored ? -1 : 1}) scale(${_ws})`;
             highlightGhost(curPxX, curPxY);
         });
     };
@@ -3749,7 +3749,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         el.style.top  = zone.y + '%';
         const compensateX = curPxX - snapPxX;
         const compensateY = curPxY - snapPxY;
-        el.style.transform = `translate(calc(-50% + ${compensateX}px), calc(-50% + ${compensateY}px)) scaleX(${state.mirrored ? -1 : 1})`;
+        el.style.transform = `translate3d(calc(-50% + ${compensateX}px), calc(-50% + ${compensateY}px), 0) scaleX(${state.mirrored ? -1 : 1}) scale(${_ws})`;
 
         // Step 2: Force the browser to commit left/top + compensation transform
         // before we apply the spring animation
@@ -3760,7 +3760,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         // The pill scale stays constant throughout — no jump
         el.style.transition = '';
         el.classList.add('snapping');
-        el.style.transform = `translate(-50%, -50%) scaleX(${state.mirrored ? -1 : 1})`;
+        el.style.transform = `translate3d(-50%, -50%, 0) scaleX(${state.mirrored ? -1 : 1}) scale(${_ws})`;
 
         // Step 4: After spring finishes, lock everything in place
         const cleanup = () => {
@@ -3808,8 +3808,8 @@ function startBurnShield() {
         WIDGET_KEYS.forEach(key => {
             const el = document.getElementById(key + '-widget');
             if (!el || !state.burnShield) return;
-            const dx = Math.round(Math.random() * 3 - 1.5);
-            const dy = Math.round(Math.random() * 3 - 1.5);
+            const dx = (Math.random() * 3 - 1.5).toFixed(1);
+            const dy = (Math.random() * 3 - 1.5).toFixed(1);
             el.style.setProperty('--bsx', dx + 'px');
             el.style.setProperty('--bsy', dy + 'px');
             positionWidget(key); // re-apply transform with new drift
