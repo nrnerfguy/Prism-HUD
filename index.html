@@ -1781,6 +1781,57 @@ function updateClock() {
 
     document.getElementById('date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
     updateAnalogClock(now);
+    equalizeClockPadding();
+}
+
+// Measure the leftmost and rightmost visual edges of the clock text inside its pill
+// and adjust the pill's padding so the text appears visually centred regardless of
+// italic glyph slant (e.g. the "7" leaning further right than the "1").
+function equalizeClockPadding() {
+    const clockEl = document.getElementById('clock');
+    if (!clockEl || !clockEl.children.length) return;
+    if (state.clockStyle === 'analog') return;
+    const pill = clockEl.closest('.widget-pill');
+    if (!pill) return;
+    // Use a temporary measurement span so we get the text bbox without the bold filter/transform
+    // interfering with the range API
+    const measure = document.createElement('span');
+    measure.style.visibility = 'hidden';
+    measure.style.position = 'absolute';
+    measure.style.whiteSpace = 'nowrap';
+    measure.style.font = getComputedStyle(clockEl).font;
+    measure.style.fontStyle = getComputedStyle(clockEl).fontStyle;
+    measure.style.fontWeight = getComputedStyle(clockEl).fontWeight;
+    measure.style.letterSpacing = getComputedStyle(clockEl).letterSpacing;
+    measure.style.fontSize = getComputedStyle(clockEl).fontSize;
+    document.body.appendChild(measure);
+    // For each digit, measure the advance and use the bbox of the actual digit chars
+    let leftMost = Infinity, rightMost = -Infinity;
+    for (const child of clockEl.children) {
+        measure.textContent = child.textContent;
+        const r = measure.getBoundingClientRect();
+        // Bbox of glyph in the measurement context
+        const left = r.left, right = r.right;
+        // Find that digit's slot in the clock element by its position
+        const childRect = child.getBoundingClientRect();
+        // The italic digit leans right, so the visual left edge is shifted right
+        // by the slant amount. Approximate slant as 12% of glyph height for italics.
+        const slant = (getComputedStyle(clockEl).fontStyle === 'italic') ? childRect.height * 0.12 : 0;
+        const visualLeft = childRect.left + slant;
+        const visualRight = childRect.right; // right edge of an italic glyph already extends to its actual bbox right
+        if (visualLeft < leftMost) leftMost = visualLeft;
+        if (visualRight > rightMost) rightMost = visualRight;
+    }
+    document.body.removeChild(measure);
+    if (!isFinite(leftMost) || rightMost < 0) return;
+    const pillRect = pill.getBoundingClientRect();
+    const leftPad = leftMost - pillRect.left;
+    const rightPad = pillRect.right - rightMost;
+    const diff = (rightPad - leftPad) / 2;
+    if (Math.abs(diff) > 0.5) {
+        pill.style.paddingLeft  = (parseFloat(getComputedStyle(pill).paddingLeft)  + diff) + 'px';
+        pill.style.paddingRight = (parseFloat(getComputedStyle(pill).paddingRight) - diff) + 'px';
+    }
 }
 // Align clock tick to actual second boundary to prevent drift
 (function scheduleClock() {
@@ -1994,7 +2045,12 @@ function setWeatherUnit(unit) {
 // BATTERY
 // ─────────────────────────────────────────────────
 const batIcons = {
-    frame: `<rect x="2.5" y="7" width="16" height="10" rx="2.5" stroke="currentColor" fill="none" stroke-width="2" opacity="0.85"/><path d="M19.2 10.5c1.4 0 1.4 3 0 3" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.85"/>`,
+    // Background rect renders a complete outline when not charging; frame segments only show the gap
+    // around the bolt when charging
+    frame: `<rect id="bat-frame-bg" x="2.5" y="7" width="16" height="10" rx="2.5" stroke="currentColor" fill="none" stroke-width="1.5" opacity="0.85"/>
+            <path class="bat-break" d="M8 7 L4.5 7 Q2.5 7 2.5 9 L2.5 15 Q2.5 17 4.5 17 L8 17" stroke="currentColor" fill="none" stroke-width="1.5" opacity="0.85" stroke-linecap="round" stroke-linejoin="round"/>
+            <path class="bat-break" d="M13 7 L16.5 7 Q18.5 7 18.5 9 L18.5 15 Q18.5 17 16.5 17 L13 17" stroke="currentColor" fill="none" stroke-width="1.5" opacity="0.85" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M19 10.5c1.2 0 1.2 3 0 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.85"/>`,
     // Bolt uses a separate centred SVG overlay so it stays centred regardless of fill width
     boltOverlay: `<g transform="translate(10.5,12)"><path d="M2.2,-6 L-2.8,1 L0.2,1 L-1.2,6 L3.8,0 L0.8,0 Z" fill="white" stroke="rgba(0,0,0,0.7)" stroke-width="0.9" stroke-linejoin="round"/></g>`
 };
@@ -2021,6 +2077,14 @@ async function updateBattery() {
             svg += `<rect x="3.5" y="8.5" width="${fillWidth}" height="7" rx="1.5" fill="${fillColor}"/>`;
             if (isCharging) svg += batIcons.boltOverlay;
             svg += `</svg>`;
+            // When not charging, show the complete outline (hide the break segments)
+            if (!isCharging) {
+                const el = document.getElementById('battery-icon');
+                el.querySelectorAll('.bat-break').forEach(p => p.style.display = 'none');
+            } else {
+                const el = document.getElementById('battery-icon');
+                el.querySelectorAll('.bat-break').forEach(p => p.style.display = '');
+            }
             document.getElementById('battery-icon').innerHTML = svg;
             const bt = document.getElementById('battery');
             bt.innerText = level + '%';
@@ -4715,15 +4779,12 @@ function _updateCtxScaleBar(val) {
         ctxSetWidgetScale(val);
     }
 
-    function promoteWidget() {
-        if (!_ctxKey) return;
-        const el = document.getElementById(_ctxKey + '-widget');
-        if (el) el.style.willChange = 'font-size';
-    }
-    function demoteWidget() {
-        if (!_ctxKey) return;
-        const el = document.getElementById(_ctxKey + '-widget');
-        if (el) el.style.willChange = 'auto';
+    function flushSave() {
+        if (_ctxScaleSaveTimer) {
+            clearTimeout(_ctxScaleSaveTimer);
+            _ctxScaleSaveTimer = null;
+            saveNow();
+        }
     }
 
     // Mouse
@@ -4731,28 +4792,32 @@ function _updateCtxScaleBar(val) {
     track.addEventListener('mousedown', (e) => {
         e.stopPropagation();
         _draggingBar = true;
-        promoteWidget();
         applyVal(scaleFromEvent(e.clientX));
     });
     window.addEventListener('mousemove', (e) => {
         if (!_draggingBar) return;
         applyVal(scaleFromEvent(e.clientX));
     });
-    window.addEventListener('mouseup', () => { _draggingBar = false; demoteWidget(); });
+    window.addEventListener('mouseup', () => { if (_draggingBar) { _draggingBar = false; flushSave(); } });
 
     // Touch — passive:false so we can prevent page scroll while dragging bar
     track.addEventListener('touchstart', (e) => {
         e.stopPropagation();
-        promoteWidget();
-        applyVal(scaleFromEvent(e.touches[0].clientX));
+        const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
+        if (t) applyVal(scaleFromEvent(t.clientX));
     }, { passive: true });
 
     track.addEventListener('touchmove', (e) => {
         e.stopPropagation();
-        applyVal(scaleFromEvent(e.touches[0].clientX));
+        const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
+        if (t) applyVal(scaleFromEvent(t.clientX));
     }, { passive: true });
 
-    track.addEventListener('touchend', () => { demoteWidget(); }, { passive: true });
+    const endTouch = (e) => {
+        flushSave();
+    };
+    track.addEventListener('touchend',    endTouch, { passive: true });
+    track.addEventListener('touchcancel', endTouch, { passive: true });
 })();
 
 // ─────────────────────────────────────────────────
