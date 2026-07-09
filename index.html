@@ -291,8 +291,8 @@
                 drop-shadow(0 calc(12px * var(--clock-shadow)) calc(24px * var(--clock-shadow)) rgba(0,0,0,0.85))
                 drop-shadow(0 0 calc(18px * var(--glow-intensity)) var(--accent))
                 drop-shadow(0 0 calc(40px * var(--glow-intensity)) var(--accent));
-            /* Italic glyphs lean right — push them in from the left so they sit centred in the pill */
-            padding-left: 0.15em;
+            /* Italic glyphs lean right — small left inset so glyphs read as centred */
+            padding-left: 0em;
         }
         /* ── CLOCK GLOW TOGGLE ── */
         #clock.no-glow {
@@ -340,7 +340,7 @@
         .a-center-hi { fill: rgba(255,255,255,0.75); }
 
         #date { font-size: 1.35rem; text-transform: uppercase; letter-spacing: 7px; font-weight: 300; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); margin-right: -7px; }
-        #weather-widget { gap: 16px; font-size: 2.1rem; font-weight: 200; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
+        #weather-widget { gap: 8px; font-size: 2.4rem; font-weight: 200; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
         #weather-widget .widget-pill { align-items: center; }
         #icon-container { display: flex; align-items: center; justify-content: center; line-height: 1; font-size: 1.6rem; }
         #icon-container svg { display: block; vertical-align: middle; overflow: visible; shape-rendering: geometricPrecision; }
@@ -2017,8 +2017,15 @@ async function updateBattery() {
             }
             let svg = `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" style="filter:drop-shadow(0 0 2px rgba(0,0,0,0.5))" color="${fillColor}">`;
             svg += batIcons.frame;
-            svg += `<rect x="3.5" y="8.5" width="${fillWidth}" height="7" rx="1.5" fill="${fillColor}"/>`;
-            if (isCharging) svg += batIcons.boltOverlay;
+            if (isCharging) {
+                // Charging: show a slimmer fill bar (left-justified to the actual level) + bolt cutting through
+                const chargeBarX = 3.5;
+                const chargeBarW = (level / 100) * 13;
+                svg += `<rect x="${chargeBarX}" y="8.5" width="${chargeBarW}" height="7" rx="1.5" fill="${fillColor}"/>`;
+                svg += batIcons.boltOverlay;
+            } else {
+                svg += `<rect x="3.5" y="8.5" width="${fillWidth}" height="7" rx="1.5" fill="${fillColor}"/>`;
+            }
             svg += `</svg>`;
             document.getElementById('battery-icon').innerHTML = svg;
             const bt = document.getElementById('battery');
