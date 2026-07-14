@@ -200,7 +200,18 @@
             /* Ensure sub-pixel text rendering within compositing layer */
             -webkit-font-smoothing: antialiased;
             text-rendering: optimizeLegibility;
-            /* No will-change here — only set during active drag to avoid permanent GPU layer overhead */
+            /* backface-visibility:hidden + a 3D transform in the JS-applied
+               transform is what triggers a per-transform re-rasterization
+               in iOS WebKit. Without this combination, transform: scale() on
+               iOS stretches a pre-rasterized low-resolution bitmap and the
+               widget stays blurry until the layer is destroyed. The
+               translate3d + scale3d() applied via _applyWidgetScaleDirect
+               and positionWidget is the active half of this fix. */
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            -webkit-transform-origin: center center;
+            transform-origin: center center;
+            /* No will-change here — only set during active drag/scale to avoid permanent GPU layer overhead */
         }
         .widget.dragging {
             will-change: transform;
@@ -3659,7 +3670,16 @@ function positionWidget(key) {
     el.style.setProperty('--wmx', mirror);
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
     const bsy = el.style.getPropertyValue('--bsy') || '0px';
-    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scaleX(${mirror}) scale(${widgetScale})`;
+    // 3D transform (translate3d) is required so iOS WebKit re-rasterizes
+    // the widget at the new scale size. Using a plain 2D `translate(2D)`
+    // makes iOS stretch a pre-rasterized low-res bitmap and look blurry.
+    // scale3d() (3D) instead of scale() — on iOS WebKit, plain 2D scale()
+    // stretches a pre-rasterized low-res bitmap and the widget stays blurry
+    // during scaling. scale3d() forces the GPU to re-rasterize the layer at
+    // the new size, matching the crisp quality the desktop browser achieves
+    // on a static frame. The Z-component (1) is required to keep this a
+    // proper 3D transform that iOS WebKit honours.
+    el.style.transform = `translate3d(calc(-50% + ${bsx}), calc(-50% + ${bsy}), 0) scale3d(${mirror * widgetScale}, ${widgetScale}, 1)`;
     // Clear any pill transform left from previous approach
     const pill = el.querySelector('.widget-pill');
     if (pill) pill.style.transform = '';
@@ -3771,7 +3791,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
 
             const offsetX = curPxX - anchorX;
             const offsetY = curPxY - anchorY;
-            el.style.transform = `translate3d(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px), 0) scaleX(${state.mirrored ? -1 : 1}) scale(${_ws})`;
+            el.style.transform = `translate3d(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px), 0) scale3d(${state.mirrored ? -_ws : _ws}, ${_ws}, 1)`;
             highlightGhost(curPxX, curPxY);
         });
     };
@@ -3815,7 +3835,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         el.style.top  = zone.y + '%';
         const compensateX = curPxX - snapPxX;
         const compensateY = curPxY - snapPxY;
-        el.style.transform = `translate3d(calc(-50% + ${compensateX}px), calc(-50% + ${compensateY}px), 0) scaleX(${state.mirrored ? -1 : 1}) scale(${_ws})`;
+        el.style.transform = `translate3d(calc(-50% + ${compensateX}px), calc(-50% + ${compensateY}px), 0) scale3d(${state.mirrored ? -_ws : _ws}, ${_ws}, 1)`;
 
         // Step 2: Force the browser to commit left/top + compensation transform
         // before we apply the spring animation
@@ -3826,7 +3846,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         // The pill scale stays constant throughout — no jump
         el.style.transition = '';
         el.classList.add('snapping');
-        el.style.transform = `translate3d(-50%, -50%, 0) scaleX(${state.mirrored ? -1 : 1}) scale(${_ws})`;
+        el.style.transform = `translate3d(-50%, -50%, 0) scale3d(${state.mirrored ? -_ws : _ws}, ${_ws}, 1)`;
 
         // Step 4: After spring finishes, lock everything in place
         const cleanup = () => {
@@ -4574,6 +4594,22 @@ function ctxReset() {
 }
 
 let _ctxScaleSaveTimer = null;
+// Track whether we've already kicked the layer for the current drag — we
+// only need to do it once per scale operation, otherwise the per-frame
+// kick would itself cause stutter.
+let _ctxLayerKicked = false;
+function _kickIosWidgetLayer(el) {
+    if (_ctxLayerKicked) return;
+    _ctxLayerKicked = true;
+    if (!el) return;
+    // iOS WebKit caches the GPU layer at the pre-scale size when scale
+    // changes mid-drag. Force a layer reallocation by removing will-change,
+    // forcing a reflow, then re-adding it. This makes iOS commit a sharp
+    // high-resolution layer at the new scale.
+    el.style.willChange = '';
+    void el.offsetWidth; // force reflow
+    el.style.willChange = 'transform';
+}
 function ctxSetWidgetScale(val) {
     if (!_ctxKey) return;
     if (!state.widgetScales) state.widgetScales = {};
@@ -4585,6 +4621,11 @@ function ctxSetWidgetScale(val) {
     // dramatically reduces the chance of dropped frames during fast drags.
     const _sw = document.getElementById(_ctxKey + '-widget');
     if (_sw) _sw.style.willChange = 'transform';
+    // Kick the iOS layer on the first scale event of a new drag, so the
+    // layer is re-rasterized at the new (scaled) size rather than stretched
+    // from the small pre-scale bitmap. This is what makes scaled widgets
+    // look crisp on iOS during the drag, not just on release.
+    _kickIosWidgetLayer(_sw);
     // Update the visible percentage in the bar — uses cached ref set in initCtxScaleBar
     if (_ctxScaleLabelEl) _ctxScaleLabelEl.textContent = Math.round(v * 100) + '%';
     // Apply transform directly — much faster than going through positionWidget
@@ -4623,7 +4664,13 @@ function _applyWidgetScaleDirect(key, perWidgetScale) {
     // for stocks (no inline bsx/bsy → falls through to '0px' cheaply).
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
     const bsy = el.style.getPropertyValue('--bsy') || '0px';
-    el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scaleX(${mirror}) scale(${widgetScale})`;
+    // scale3d() (3D) instead of scale() — on iOS WebKit, plain 2D scale()
+    // stretches a pre-rasterized low-res bitmap and the widget stays blurry
+    // during scaling. scale3d() forces the GPU to re-rasterize the layer at
+    // the new size, matching the crisp quality the desktop browser achieves
+    // on a static frame. The Z-component (1) is required to keep this a
+    // proper 3D transform that iOS WebKit honours.
+    el.style.transform = `translate3d(calc(-50% + ${bsx}), calc(-50% + ${bsy}), 0) scale3d(${mirror * widgetScale}, ${widgetScale}, 1)`;
     // Only touch the pill transform if it might be set. Avoid the querySelector
     // when the pill is already in its baseline state — flagged via _pillToggled
     // by the drag engine when it leaves a non-empty transform.
@@ -4856,6 +4903,7 @@ function _updateCtxScaleBar(val) {
         e.stopPropagation();
         _draggingBar = true;
         _trackRect = null; // recompute on a new drag in case of resize
+        _ctxLayerKicked = false; // next scale event will kick the iOS layer
         // First event: apply immediately so the thumb jumps to the cursor
         _scalePendingX = null;
         _updateCtxScaleBar(scaleFromEvent(e.clientX));
@@ -4875,6 +4923,7 @@ function _updateCtxScaleBar(val) {
         if (!t) return;
         _trackRect = null;
         _scalePendingX = null;
+        _ctxLayerKicked = false; // next scale event will kick the iOS layer
         _updateCtxScaleBar(scaleFromEvent(t.clientX));
         ctxSetWidgetScale(scaleFromEvent(t.clientX));
     }, { passive: true });
