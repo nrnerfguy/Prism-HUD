@@ -4579,12 +4579,35 @@ function ctxSetWidgetScale(val) {
     if (!state.widgetScales) state.widgetScales = {};
     const v = parseFloat(val);
     state.widgetScales[_ctxKey] = v;
-    document.getElementById('ctx-scale-val').textContent = Math.round(v * 100) + '%';
+    // Promote the widget to its own compositing layer while scaling.
+    // Stocks has many text-shadowed rows — isolating the layer keeps the
+    // re-rasterization from spilling into the rest of the HUD and
+    // dramatically reduces the chance of dropped frames during fast drags.
+    const _sw = document.getElementById(_ctxKey + '-widget');
+    if (_sw) _sw.style.willChange = 'transform';
+    // Update the visible percentage in the bar — uses cached ref set in initCtxScaleBar
+    if (_ctxScaleLabelEl) _ctxScaleLabelEl.textContent = Math.round(v * 100) + '%';
     // Apply transform directly — much faster than going through positionWidget
     _applyWidgetScaleDirect(_ctxKey, v);
     // Debounce save so we don't write localStorage 60x/sec while dragging
     clearTimeout(_ctxScaleSaveTimer);
-    _ctxScaleSaveTimer = setTimeout(save, 400);
+    _ctxScaleSaveTimer = setTimeout(() => {
+        if (_sw) _sw.style.willChange = ''; // release the layer once idle
+        save();
+    }, 400);
+}
+
+// rAF coalescing for the clock margin — many scale events fire between
+// animation frames, but recomputeClockLeftMargin only needs to run once per
+// frame. The function's own _clockMarginInputs cache then dedupes further.
+let _clockMarginRafPending = false;
+function _scheduleClockMarginRecompute() {
+    if (_clockMarginRafPending) return;
+    _clockMarginRafPending = true;
+    requestAnimationFrame(() => {
+        _clockMarginRafPending = false;
+        recomputeClockLeftMargin();
+    });
 }
 
 function _applyWidgetScaleDirect(key, perWidgetScale) {
@@ -4595,12 +4618,20 @@ function _applyWidgetScaleDirect(key, perWidgetScale) {
     el.style.fontSize = '16px'; // Prevent double scaling since we are now using transform: scale()
     const mirror = state.mirrored ? -1 : 1;
     el.style.setProperty('--wmx', mirror);
+    // --bsx / --bsy are only set on drag-end (the drag engine writes them).
+    // They don't change during scale-bar dragging, so this is a no-op cost
+    // for stocks (no inline bsx/bsy → falls through to '0px' cheaply).
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
     const bsy = el.style.getPropertyValue('--bsy') || '0px';
     el.style.transform = `translate(calc(-50% + ${bsx}), calc(-50% + ${bsy})) scaleX(${mirror}) scale(${widgetScale})`;
-    const pill = el.querySelector('.widget-pill');
-    if (pill) pill.style.transform = '';
-    if (key === 'clock') requestAnimationFrame(recomputeClockLeftMargin);
+    // Only touch the pill transform if it might be set. Avoid the querySelector
+    // when the pill is already in its baseline state — flagged via _pillToggled
+    // by the drag engine when it leaves a non-empty transform.
+    if (el._pillToggled) {
+        const pill = el.querySelector('.widget-pill');
+        if (pill) pill.style.transform = '';
+    }
+    if (key === 'clock') _scheduleClockMarginRecompute();
 }
 
 // ─────────────────────────────────────────────────
@@ -4758,35 +4789,63 @@ function applyWeatherTint(code) {
 const CTX_SCALE_MIN = 0.3;
 const CTX_SCALE_MAX = 2.5;
 
+// Cached DOM refs for the scale bar — looked up once, reused per event
+let _ctxScaleFillEl  = null;
+let _ctxScaleThumbEl = null;
+let _ctxScaleLabelEl = null;
+
 function _updateCtxScaleBar(val) {
     const pct = (val - CTX_SCALE_MIN) / (CTX_SCALE_MAX - CTX_SCALE_MIN) * 100;
-    const fill  = document.getElementById('ctx-scale-fill');
-    const thumb = document.getElementById('ctx-scale-thumb');
-    const label = document.getElementById('ctx-scale-val');
-    if (fill)  fill.style.width  = pct + '%';
-    if (thumb) thumb.style.left  = pct + '%';
-    if (label) label.textContent = Math.round(val * 100) + '%';
+    if (_ctxScaleFillEl)  _ctxScaleFillEl.style.width  = pct + '%';
+    if (_ctxScaleThumbEl) _ctxScaleThumbEl.style.left  = pct + '%';
+    if (_ctxScaleLabelEl) _ctxScaleLabelEl.textContent = Math.round(val * 100) + '%';
 }
 
 (function initCtxScaleBar() {
     const track = document.getElementById('ctx-scale-track');
     if (!track) return;
+    // Populate the cached refs here (DOM is now ready)
+    _ctxScaleFillEl  = document.getElementById('ctx-scale-fill');
+    _ctxScaleThumbEl = document.getElementById('ctx-scale-thumb');
+    _ctxScaleLabelEl = document.getElementById('ctx-scale-val');
+
+    // Cache the track rect during the active drag — avoids forcing a layout
+    // for every pointer event (60–240Hz) just to read the same width.
+    let _trackRect = null;
 
     function scaleFromEvent(clientX) {
-        const rect = track.getBoundingClientRect();
-        const pct  = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+        if (!_trackRect) _trackRect = track.getBoundingClientRect();
+        const pct  = Math.max(0, Math.min(1, (clientX - _trackRect.left) / _trackRect.width));
         return parseFloat((CTX_SCALE_MIN + pct * (CTX_SCALE_MAX - CTX_SCALE_MIN)).toFixed(2));
     }
 
-    function applyVal(val) {
-        _updateCtxScaleBar(val);
-        ctxSetWidgetScale(val);
+    // rAF-throttle the heavy work. Browsers deliver pointer events faster
+    // than the screen refreshes (especially iOS at 120Hz) — running the
+    // full apply per-event produces zero extra visible work, just lag.
+    let _scaleRafPending = false;
+    let _scalePendingX   = null;
+    function scheduleApply() {
+        if (_scaleRafPending) return;
+        _scaleRafPending = true;
+        requestAnimationFrame(() => {
+            _scaleRafPending = false;
+            if (_scalePendingX === null) return;
+            const val = scaleFromEvent(_scalePendingX);
+            _scalePendingX = null;
+            _updateCtxScaleBar(val);
+            ctxSetWidgetScale(val);
+        });
     }
 
     function flushSave() {
         if (_ctxScaleSaveTimer) {
             clearTimeout(_ctxScaleSaveTimer);
             _ctxScaleSaveTimer = null;
+            // Release the compositing-layer hint and persist now.
+            if (_ctxKey) {
+                const _sw = document.getElementById(_ctxKey + '-widget');
+                if (_sw) _sw.style.willChange = '';
+            }
             saveNow();
         }
     }
@@ -4796,32 +4855,40 @@ function _updateCtxScaleBar(val) {
     track.addEventListener('mousedown', (e) => {
         e.stopPropagation();
         _draggingBar = true;
-        applyVal(scaleFromEvent(e.clientX));
+        _trackRect = null; // recompute on a new drag in case of resize
+        // First event: apply immediately so the thumb jumps to the cursor
+        _scalePendingX = null;
+        _updateCtxScaleBar(scaleFromEvent(e.clientX));
+        ctxSetWidgetScale(scaleFromEvent(e.clientX));
     });
     window.addEventListener('mousemove', (e) => {
         if (!_draggingBar) return;
-        applyVal(scaleFromEvent(e.clientX));
+        _scalePendingX = e.clientX;
+        scheduleApply();
     });
     window.addEventListener('mouseup', () => { if (_draggingBar) { _draggingBar = false; flushSave(); } });
 
-    // Touch — passive:false so we can prevent page scroll while dragging bar
+    // Touch — passive so we don't block scroll on adjacent gestures
     track.addEventListener('touchstart', (e) => {
         e.stopPropagation();
         const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
-        if (t) applyVal(scaleFromEvent(t.clientX));
+        if (!t) return;
+        _trackRect = null;
+        _scalePendingX = null;
+        _updateCtxScaleBar(scaleFromEvent(t.clientX));
+        ctxSetWidgetScale(scaleFromEvent(t.clientX));
     }, { passive: true });
 
     track.addEventListener('touchmove', (e) => {
         e.stopPropagation();
         const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
-        if (t) applyVal(scaleFromEvent(t.clientX));
+        if (!t) return;
+        _scalePendingX = t.clientX;
+        scheduleApply();
     }, { passive: true });
 
-    const endTouch = (e) => {
-        flushSave();
-    };
-    track.addEventListener('touchend',    endTouch, { passive: true });
-    track.addEventListener('touchcancel', endTouch, { passive: true });
+    track.addEventListener('touchend',    () => flushSave(), { passive: true });
+    track.addEventListener('touchcancel', () => flushSave(), { passive: true });
 })();
 
 // ─────────────────────────────────────────────────
@@ -4846,7 +4913,7 @@ function initPinchScale(key) {
         );
         if (!state.widgetScales) state.widgetScales = {};
         _pinchStartScale = state.widgetScales[key] !== undefined ? state.widgetScales[key] : 1;
-        el.style.willChange = 'font-size';
+        el.style.willChange = 'transform';
     }, { passive: false });
 
     let _pinchRaf = false;
