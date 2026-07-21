@@ -915,13 +915,13 @@
 
 <!-- ── NAV BUTTON ── -->
 <div id="nav-ghost-zone" onmousemove="wakeNav()" onclick="wakeNav()"></div>
-<div id="nav-trigger" onclick="toggleNav()">
+<div id="nav-trigger" onclick="toggleNav(event)">
     <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="3"></circle>
         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
     </svg>
 </div>
-<div id="fullscreen-btn" onclick="toggleFullscreen()" title="Fullscreen (F)">
+<div id="fullscreen-btn" onclick="toggleFullscreen();event.stopPropagation();" title="Fullscreen (F)">
     <svg id="fs-enter-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/></svg>
     <svg id="fs-exit-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="display:none"><path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/></svg>
 </div>
@@ -1309,7 +1309,7 @@
             <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importSettings(this)">
         </div>
 
-        <button onclick="toggleNav()" class="save-close-btn">Done <span id="esc-hint" style="font-size:0.6rem;opacity:0.3;letter-spacing:1px;font-weight:400;margin-left:6px;">ESC</span></button>
+        <button onclick="toggleNav(event)" class="save-close-btn">Done <span id="esc-hint" style="font-size:0.6rem;opacity:0.3;letter-spacing:1px;font-weight:400;margin-left:6px;">ESC</span></button>
         <button onclick="openModal()" class="factory-reset-btn">Reset All Settings</button>
     </div>
 </div>
@@ -1357,11 +1357,31 @@ let state = {
 // PERSIST
 // ─────────────────────────────────────────────────
 let _saveTimer = null;
+let _pendingSave = null; // holds the JSON string when a debounced save is queued
 function save() {
     clearTimeout(_saveTimer);
-    _saveTimer = setTimeout(() => localStorage.setItem('prism_ultra_v3', JSON.stringify(state)), 300);
+    _pendingSave = JSON.stringify(state);
+    _saveTimer = setTimeout(() => {
+        if (_pendingSave !== null) {
+            localStorage.setItem('prism_ultra_v3', _pendingSave);
+            _pendingSave = null;
+        }
+    }, 300);
 }
-function saveNow() { clearTimeout(_saveTimer); localStorage.setItem('prism_ultra_v3', JSON.stringify(state)); }
+function saveNow() {
+    clearTimeout(_saveTimer);
+    localStorage.setItem('prism_ultra_v3', JSON.stringify(state));
+    _pendingSave = null;
+}
+// Flush any pending debounced save immediately. Used on visibilitychange / pagehide
+// so we don't lose the last 300ms of changes if the user closes the tab.
+function flushPendingSave() {
+    if (_pendingSave !== null) {
+        clearTimeout(_saveTimer);
+        try { localStorage.setItem('prism_ultra_v3', _pendingSave); } catch (_) {}
+        _pendingSave = null;
+    }
+}
 
 function load() {
     // Set the correct icon path depending on environment
@@ -1509,7 +1529,6 @@ function toggleNav(e) {
         document.getElementById('nav-trigger').classList.add('active-ui');
     } else { wakeNav(); }
 }
-
 // ─────────────────────────────────────────────────
 // FULLSCREEN
 // ─────────────────────────────────────────────────
@@ -2430,6 +2449,7 @@ function _doTickerSearch(query) {
 
 function tickerInputKey(e) {
     const box = document.getElementById('ticker-results');
+    if (!box) return;
     const items = box.querySelectorAll('.ticker-item');
     if (e.key === 'ArrowDown') {
         e.preventDefault();
@@ -2444,8 +2464,11 @@ function tickerInputKey(e) {
         const active = box.querySelector('.ticker-item.active') || items[0];
         if (active) { selectTicker(active.dataset.sym); }
         else {
-            const val = document.getElementById('ticker-input').value.trim().toUpperCase();
-            if (val) selectTicker(val);
+            const valEl = document.getElementById('ticker-input');
+            if (valEl) {
+                const val = valEl.value.trim().toUpperCase();
+                if (val) selectTicker(val);
+            }
         }
     } else if (e.key === 'Escape') {
         box.style.display = 'none'; _tickerHighlight = -1;
@@ -2628,21 +2651,23 @@ function getMoonPhaseName(phase) {
 function drawMoon(phase) {
     const svg = document.getElementById('moon-svg');
     if (!svg) return;
+    const labelEl = document.getElementById('moon-label');
     const R = 22, cx = 26, cy = 26;
     const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#fff';
+    const phaseName = getMoonPhaseName(phase);
 
     // Full/new moon edge cases
     const norm = (phase % 29.53 + 29.53) % 29.53;
     if (norm < 0.5 || norm > 29.0) {
         // New moon — just dim disk
         svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.2)" stroke-width="1"/>`;
-        document.getElementById('moon-label').textContent = getMoonPhaseName(phase);
+        if (labelEl) labelEl.textContent = phaseName;
         return;
     }
     if (norm > 14.2 && norm < 15.3) {
         // Full moon
         svg.innerHTML = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="${accent}" opacity="0.9"/>`;
-        document.getElementById('moon-label').textContent = getMoonPhaseName(phase);
+        if (labelEl) labelEl.textContent = phaseName;
         return;
     }
 
@@ -2662,7 +2687,7 @@ function drawMoon(phase) {
         <circle cx="${cx}" cy="${cy}" r="${R}" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.12)" stroke-width="1"/>
         <path d="${path}" fill="${accent}" opacity="0.9"/>
     `;
-    document.getElementById('moon-label').textContent = getMoonPhaseName(phase);
+    if (labelEl) labelEl.textContent = phaseName;
 }
 
 function updateMoon() {
@@ -2679,19 +2704,22 @@ function updateCountdownDisplay() {
     if (!state.showCountdown) return;
     const el = document.getElementById('cd-days');
     const evEl = document.getElementById('cd-event');
+    const unitEl = document.getElementById('cd-unit');
     if (!el) return;
-    evEl.innerText = state.countdownName || 'Event';
-    if (!state.countdownDate) { el.innerText = '?'; document.getElementById('cd-event').innerText = 'Set a date'; return; }
+    if (evEl) evEl.innerText = state.countdownName || 'Event';
+    if (!state.countdownDate) { el.innerText = '?'; if (evEl) evEl.innerText = 'Set a date'; return; }
     const target = new Date(state.countdownDate + 'T00:00:00');
     const now    = new Date(); now.setHours(0,0,0,0);
     const days   = Math.round((target - now) / (1000 * 60 * 60 * 24));
     el.innerText = days >= 0 ? days : Math.abs(days);
-    document.getElementById('cd-unit').textContent = days >= 0 ? 'days until' : 'days since';
+    if (unitEl) unitEl.textContent = days >= 0 ? 'days until' : 'days since';
 }
 
 function updateCountdownSettings() {
-    state.countdownName = document.getElementById('cd-name-input').value || 'Event';
-    state.countdownDate = document.getElementById('cd-date-input').value;
+    const nameEl = document.getElementById('cd-name-input');
+    const dateEl = document.getElementById('cd-date-input');
+    if (nameEl) state.countdownName = nameEl.value || 'Event';
+    if (dateEl) state.countdownDate = dateEl.value;
     updateCountdownDisplay();
     save();
 }
@@ -2720,6 +2748,10 @@ function importSettings(input) {
             const imported = JSON.parse(e.target.result);
             // Merge carefully — don't overwrite keys that don't exist in new format
             state = Object.assign(state, imported);
+            // Reset transient Spotify art state so the imported accent applies cleanly
+            accentFromArt = false;
+            _lastArtUrl = null;
+            _lastTrackId = null;
             save();
             applyAll();
             renderHistory();
@@ -3089,7 +3121,8 @@ function applySpotifyTokens(data) {
     localStorage.setItem('spotify_tokens', JSON.stringify(
         { a: data.access_token, r: data.refresh_token, e: spotify.expiresAt }
     ));
-    document.getElementById('nowplaying-widget').style.display = 'flex';
+    const npw = document.getElementById('nowplaying-widget');
+    if (npw) npw.style.display = 'flex';
     updateSpotifyUI();
     pollSpotify();
     showToast('✓ Spotify connected!');
@@ -3396,9 +3429,16 @@ function loadProjectorTheme() {
 }
 
 function loadTheme(name) {
+    if (!state.presets || !state.presets[name]) return;
     const presets = state.presets;
     state = JSON.parse(JSON.stringify(state.presets[name]));
     state.presets = presets;
+    // Reset art-derived accent state so the loaded theme's accent actually applies.
+    // Without this, an old art-derived color would persist even when the new theme
+    // expects the user's saved accent.
+    accentFromArt = false;
+    _lastArtUrl = null;
+    _lastTrackId = null;
     applyAll(); renderHistory(); save();
 }
 
@@ -3889,11 +3929,16 @@ function initAllDrag() {
 // ─────────────────────────────────────────────────
 // BURN SHIELD — tiny random drift via CSS var
 // ─────────────────────────────────────────────────
+let _burnShieldTimer = null;
 function startBurnShield() {
-    setInterval(() => {
+    stopBurnShield(); // ensure no duplicate intervals
+    if (!state.burnShield) return;
+    _burnShieldTimer = setInterval(() => {
         WIDGET_KEYS.forEach(key => {
             const el = document.getElementById(key + '-widget');
             if (!el || !state.burnShield) return;
+            // Skip widgets that are hidden — no point drifting invisible elements
+            if (el.style.display === 'none' || el.style.opacity === '0') return;
             const dx = (Math.random() * 3 - 1.5).toFixed(1);
             const dy = (Math.random() * 3 - 1.5).toFixed(1);
             el.style.setProperty('--bsx', dx + 'px');
@@ -3902,12 +3947,16 @@ function startBurnShield() {
         });
     }, 60000);
 }
+function stopBurnShield() {
+    if (_burnShieldTimer) { clearInterval(_burnShieldTimer); _burnShieldTimer = null; }
+}
 
 // ─────────────────────────────────────────────────
 // ALWAYS ON — Wake Lock API
 // ─────────────────────────────────────────────────
 let _wakeLock = null;
 let _wakeLockInterval = null;
+let _wakeLockReacquireTimer = null; // pending re-acquire after release — can be cancelled when alwaysOn is disabled
 
 // ── NoSleep: tiny silent video loop prevents iOS Auto-Lock ──
 function _initNoSleepVideo() {
@@ -3946,7 +3995,12 @@ async function requestWakeLock() {
         _wakeLock.addEventListener('release', () => {
             _wakeLock = null;
             if (state.alwaysOn && !_isSleeping && document.visibilityState === 'visible') {
-                setTimeout(requestWakeLock, 500);
+                // Cancel any previously-pending reacquire before scheduling a new one
+                if (_wakeLockReacquireTimer) clearTimeout(_wakeLockReacquireTimer);
+                _wakeLockReacquireTimer = setTimeout(() => {
+                    _wakeLockReacquireTimer = null;
+                    requestWakeLock();
+                }, 500);
             }
         });
     } catch(e) {
@@ -3957,6 +4011,8 @@ async function requestWakeLock() {
 }
 
 function releaseWakeLock() {
+    // Cancel any pending re-acquire so disabling alwaysOn doesn't get overridden
+    if (_wakeLockReacquireTimer) { clearTimeout(_wakeLockReacquireTimer); _wakeLockReacquireTimer = null; }
     if (_wakeLock) {
         _wakeLock.release();
         _wakeLock = null;
@@ -3974,11 +4030,6 @@ function startWakeLockKeepAlive() {
         if (!state.alwaysOn || _isSleeping || document.visibilityState !== 'visible') return;
         // Re-acquire wake lock if it was released
         requestWakeLock();
-        // Also signal activity to prevent browser energy-saver dimming
-        // by dispatching a synthetic mousemove (zero movement — no visible effect)
-        try {
-            window.dispatchEvent(new MouseEvent('mousemove', { bubbles: false, cancelable: false, movementX: 0, movementY: 0 }));
-        } catch(_) {}
     }, 15000); // every 15 seconds
 }
 
@@ -4055,10 +4106,14 @@ document.addEventListener('touchstart', () => {
 }, { once: false, passive: true });
 
 document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') flushPendingSave();
     if (document.visibilityState === 'visible' && state.alwaysOn && !_isSleeping) {
         requestWakeLock();
     }
 });
+// pagehide fires more reliably than beforeunload on mobile Safari when the
+// user closes the tab or switches apps. Flush here so we never lose a save.
+window.addEventListener('pagehide', flushPendingSave);
 
 // ─────────────────────────────────────────────────
 // SLEEP / WAKE SCHEDULE
@@ -4208,32 +4263,51 @@ function optimizeScale() {
     // Reset all per-widget scales first so we optimize from a clean baseline
     state.widgetScales = {};
 
+    // Cache base bounding rects at scale=1, then for each binary-search candidate
+    // we just set state.scale and call positionWidget (cheap) — NOT applyAll (heavy).
+    // This avoids 18 full re-renders of the entire settings panel + every widget.
+    const baseRects = {};
+    for (const key of WIDGET_KEYS_VIS) {
+        const el = document.getElementById(key + '-widget');
+        if (!el) continue;
+        // Measure at scale=1; positions/scales will scale linearly with state.scale
+        // for the bounding-rect test (other state.scale-dependent measurements
+        // like the global widgetScale would invalidate this, but the rect
+        // grows with the *effective* scale, so we can test using width/height
+        // proportional to the candidate).
+        baseRects[key] = el.getBoundingClientRect();
+    }
+    const baseStateScale = parseFloat(state.scale) || 1;
+
+    function fits(scale) {
+        for (const key of WIDGET_KEYS_VIS) {
+            const base = baseRects[key];
+            if (!base) continue;
+            // Bounding rect at the candidate scale = base rect scaled by ratio
+            const ratio = scale / baseStateScale;
+            const cx = (base.left + base.right) / 2;
+            const cy = (base.top + base.bottom) / 2;
+            const w  = base.width  * ratio;
+            const h  = base.height * ratio;
+            if (cx - w / 2 < 0 || cy - h / 2 < 0 || cx + w / 2 > vw || cy + h / 2 > vh) return false;
+        }
+        return true;
+    }
+
     // Binary search for the largest global scale where all widgets fit
-    let lo = 0.3, hi = 2.5, best = state.scale;
+    let lo = 0.3, hi = 2.5, best = baseStateScale;
     for (let iter = 0; iter < 18; iter++) {
         const mid = (lo + hi) / 2;
-        state.scale = mid;
-        applyAll();
-
-        let allFit = true;
-        for (const key of WIDGET_KEYS_VIS) {
-            const el = document.getElementById(key + '-widget');
-            if (!el) continue;
-            const r = el.getBoundingClientRect();
-            if (r.left < 0 || r.top < 0 || r.right > vw || r.bottom > vh) {
-                allFit = false;
-                break;
-            }
-        }
-
-        if (allFit) { best = mid; lo = mid; }
+        if (fits(mid)) { best = mid; lo = mid; }
         else hi = mid;
     }
 
     state.scale = parseFloat(best.toFixed(2));
+    // Single applyAll now that we've settled on the final scale
     applyAll();
     save();
-    document.getElementById('range-scale').value = state.scale;
+    const rangeScale = document.getElementById('range-scale');
+    if (rangeScale) rangeScale.value = state.scale;
     setTimeout(clampAllWidgetPositions, 100);
     showToast('Scale optimized to ' + Math.round(state.scale * 100) + '%');
 }
@@ -4289,12 +4363,19 @@ function toggle(key) {
         return; // done — no need to fall through
     }
 
-    if (key === 'burnShield') { /* handled by startBurnShield interval */ }
+    if (key === 'burnShield') {
+        // The previous version left the interval running forever. Now we
+        // actually start/stop it when the toggle flips.
+        if (state.burnShield) startBurnShield();
+        else stopBurnShield();
+        return;
+    }
     if (key === 'mirrored' || key === 'posLocked') applyAll();
     if (key === 'batteryDynamic') { const _bw = document.getElementById('battery-widget'); if (!_bw || !_bw.dataset.iosDisabled) updateBattery(); }
     if (key === 'showSeconds' || key === 'is24h') { updateClock(); requestAnimationFrame(recomputeClockLeftMargin); }
     if (key === 'artAsBg') {
         const bgl = document.getElementById('bg-layer');
+        if (!bgl) return;
         if (state.artAsBg && _lastArtUrl) {
             // Instantly apply cached art — no waiting for next Spotify poll
             bgl.style.backgroundImage = `url(${_lastArtUrl})`;
@@ -4313,12 +4394,14 @@ function toggle(key) {
                 bgl.style.backgroundImage = state.bg ? `url(${state.bg})` : 'none';
             }
         }
+        return;
     }
     if (key === 'weatherTint') {
         // Re-apply or clear the tint immediately
         const tintEl = document.getElementById('weather-tint');
         if (tintEl && !state.weatherTint) tintEl.style.opacity = '0';
         else fetchWeather(); // re-fetch to trigger applyWeatherTint with current code
+        return;
     }
     save();
 }
@@ -4415,6 +4498,11 @@ function initInteractions() {
 function initWidgetDrag(key) {
     const el = document.getElementById(key + '-widget');
     if (!el) return;
+
+    // Disable browser's default touch gestures (zoom, scroll) on every draggable
+    // widget. Without this, iOS 300ms-delays single taps and pinch-to-zoom on
+    // the page fights with our custom pinch-to-scale.
+    el.style.touchAction = 'none';
 
     // ── MOUSE: instant drag, hold 500ms still = context menu, right-click = context menu ──
     let _mouseTimer = null, _mouseMoved = false;
@@ -4781,13 +4869,17 @@ function clampAllWidgetPositions() {
 }
 
 // Close settings panel when clicking outside it
+// NOTE: the nav-trigger onclick stops propagation, so document.click only fires
+// for genuine outside clicks — this prevents the double-toggle that would
+// otherwise re-close the panel the moment it opens.
 document.addEventListener('click', (e) => {
     const panel = document.getElementById('side-panel');
+    if (!panel || !panel.classList.contains('open')) return;
+    if (panel.contains(e.target)) return;
+    // Defensive: trigger might not exist if the markup is changed
     const trigger = document.getElementById('nav-trigger');
-    if (panel && panel.classList.contains('open') &&
-        !panel.contains(e.target) && !trigger.contains(e.target)) {
-        toggleNav();
-    }
+    if (trigger && trigger.contains(e.target)) return;
+    toggleNav();
 }, { passive: true });
 
 // ─────────────────────────────────────────────────
