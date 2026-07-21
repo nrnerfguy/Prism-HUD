@@ -192,6 +192,10 @@
         .widget {
             position: fixed;
             display: flex; justify-content: center; align-items: center;
+            /* shrink-wrap to the inner .widget-pill so the drag hitbox matches
+               the visible background (otherwise the fixed container stretches
+               to the full viewport and any pointer-down near the widget drags it) */
+            width: max-content; max-width: 100vw; height: max-content;
             color: var(--accent);
             opacity: var(--widget-opacity, 0.9);
             pointer-events: all;
@@ -357,7 +361,7 @@
         #icon-container svg { display: block; vertical-align: middle; overflow: visible; shape-rendering: geometricPrecision; }
         #temp { line-height: 1; display: flex; align-items: center; font-size: 1.5em; }
         #battery-widget { font-size: 1.15rem; font-weight: 500; letter-spacing: 3px; display: flex; align-items: center; gap: 10px; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
-        #battery-icon { display: flex; align-items: center; justify-content: center; line-height: 1; font-size: 1.7em; }
+        #battery-icon { display: flex; align-items: center; justify-content: center; line-height: 1; }
         #battery-widget .widget-pill { padding: 4px 10px !important; }
         #battery-icon svg { display: block; vertical-align: middle; }
         #battery { line-height: 1; display: flex; align-items: center; }
@@ -2081,8 +2085,9 @@ const batIcons = {
     // Frame: pill body (rx=3 for rounded ends) + terminal nub on the right
     frame: `<rect x="2" y="9" width="18" height="10" rx="3" stroke="currentColor" fill="none" stroke-width="1.4" opacity="0.9"/>
             <rect x="20.5" y="12" width="1.6" height="4" rx="0.6" fill="currentColor" opacity="0.9"/>`,
-    // Bolt overlay: lightning bolt inside the battery body, sits above the fill
-    boltOverlay: `<path d="M11.2,11.2 L9.4,14.3 L11,14.3 L10.4,16.8 L12.8,13.6 L11.2,13.6 Z" fill="white" stroke="rgba(0,0,0,0.6)" stroke-width="0.6" stroke-linejoin="round"/>`
+    // Bolt overlay: lightning bolt inside the battery body, sits above the fill.
+    // Body interior is x=2..20, y=9..19 — bolt drawn around the geometric centre (x=11, y=14).
+    boltOverlay: `<path d="M11.6,10.0 L8.6,14.4 L10.8,14.4 L9.8,18.0 L13.4,13.6 L11.2,13.6 Z" fill="white" stroke="rgba(0,0,0,0.6)" stroke-width="0.7" stroke-linejoin="round"/>`
 };
 
 async function updateBattery() {
@@ -2103,7 +2108,7 @@ async function updateBattery() {
                 else if (level === 100) fillColor = '#34C759';
                 else fillColor = state.accent;
             }
-            let svg = `<svg width="34" height="34" viewBox="0 0 24 24" fill="none" style="filter:drop-shadow(0 0 2px rgba(0,0,0,0.5))" color="${fillColor}">`;
+            let svg = `<svg width="38" height="22" viewBox="1 8 21 12" fill="none" preserveAspectRatio="xMidYMid meet" style="filter:drop-shadow(0 0 2px rgba(0,0,0,0.5));display:block;" color="${fillColor}">`;
             svg += batIcons.frame;
             svg += `<rect x="3.4" y="10.4" width="${fillWidth}" height="7.2" rx="2" fill="${fillColor}"/>`;
             if (isCharging) svg += batIcons.boltOverlay;
