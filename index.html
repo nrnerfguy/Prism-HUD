@@ -1170,7 +1170,7 @@
                 <button onclick="disconnectSpotify()" class="update-btn" style="background:rgba(255,255,255,0.08);color:#fff;margin-top:6px;" id="spotify-disconnect-btn">Disconnect</button>
                 <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.06);">
                     <div class="row"><label style="font-size:0.5rem;">Album Art Wallpaper</label><div id="sw-artAsBg" class="ios-switch" onclick="toggle('artAsBg')"></div></div>
-                    <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Match Accent to Album Art</label><div id="sw-accentAuto" class="ios-switch active" onclick="state.accentAuto=!state.accentAuto;if(!state.accentAuto)restoreUserAccent();document.getElementById('sw-accentAuto').classList.toggle('active',state.accentAuto);save();"></div></div>
+                    <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Match Accent to Album Art</label><div id="sw-accentAuto" class="ios-switch active" onclick="toggleAccentAuto()"></div></div>
                     <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Show Upcoming Track</label><div id="sw-showNextUp" class="ios-switch active" onclick="state.showNextUp=!state.showNextUp;document.getElementById('sw-showNextUp').classList.toggle('active',state.showNextUp);save();"></div></div>
                     <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Visible</label><div style="display:flex;align-items:center;"><span id="st-nowplaying" class="status-tag">SHOWN</span><div id="sw-showNowplaying" class="ios-switch active" onclick="toggle('showNowplaying')"></div></div></div>
                     <div style="margin-top:12px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);">
@@ -1671,11 +1671,25 @@ let _lastTrackId = null; // prevent album art reload on same track
 
 function extractAccentFromArt(imgUrl) {
     if (!imgUrl) { restoreUserAccent(); return; }
-    if (!state.accentAuto) return; // user has manually locked their accent colour
-    _lastArtUrl = imgUrl; // cache for instant artAsBg toggle
+    // Always cache the URL — needed for the artAsBg toggle to apply instantly
+    // even if the user turns it on later, after this track has already started.
+    _lastArtUrl = imgUrl;
+    // Apply album art as wallpaper IMMEDIATELY — independent of the canvas-extract path,
+    // which can fail under CORS. bg-layer uses background-image, no pixel access needed.
+    if (state.artAsBg) {
+        const bgl = document.getElementById('bg-layer');
+        if (bgl) {
+            bgl.style.backgroundImage = `url(${imgUrl})`;
+            document.body.style.backgroundColor = 'transparent';
+        }
+    }
+    if (!state.accentAuto) return; // wallpaper-only mode — skip pixel extraction
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
+        // Re-check the toggle: the user may have turned accentAuto off while this image
+        // was loading. If so, leave their accent alone.
+        if (!state.accentAuto) return;
         try {
             const canvas = document.getElementById('art-canvas');
             const ctx    = canvas.getContext('2d');
@@ -1716,22 +1730,19 @@ function extractAccentFromArt(imgUrl) {
             }
 
             const hex = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+            // Re-check again right before committing — covers a toggle between weight calc and now.
+            if (!state.accentAuto) return;
             accentFromArt = true;
-            // Smooth accent transition via CSS custom property animation trick
-            document.documentElement.style.setProperty('--accent-old', document.documentElement.style.getPropertyValue('--accent') || state.accent);
             document.documentElement.style.setProperty('--accent', hex);
             // Recompute fg contrast for the new art-derived accent
             const lum2 = (0.299*r + 0.587*g + 0.114*b) / 255;
             document.documentElement.style.setProperty('--accent-fg', lum2 > 0.65 ? '#111' : '#fff');
-            // Album art as background
-            if (state.artAsBg && imgUrl) {
-                const bgl = document.getElementById('bg-layer');
-                bgl.style.backgroundImage = `url(${imgUrl})`;
-                document.body.style.backgroundColor = 'transparent';
-            }
-        } catch (err) { if (!state.artAsBg) { /* CORS block — leave accent as-is */ } else { restoreUserAccent(); } }
+        } catch (err) {
+            // CORS block or canvas error — leave the previous accent in place.
+            if (state.artAsBg && !state.accentAuto) restoreUserAccent();
+        }
     };
-    img.onerror = () => { if (!state.artAsBg) { /* silent fail */ } else { restoreUserAccent(); } };
+    img.onerror = () => { /* silent fail */ };
     img.src = imgUrl;
 }
 
@@ -1750,12 +1761,26 @@ function restoreUserAccent() {
     document.documentElement.style.setProperty('--accent-fg', lum > 0.65 ? '#111' : '#fff');
     // Only restore background if artAsBg is off — don't wipe album art wallpaper
     if (!(state.artAsBg && _lastArtUrl)) {
-        applyBackground();
+        if (typeof applyAll === 'function') applyAll();
     } else if (_lastArtUrl) {
         // artAsBg is on and we have cached art — keep it showing
         const bgl = document.getElementById('bg-layer');
         if (bgl) bgl.style.backgroundImage = `url(${_lastArtUrl})`;
     }
+}
+
+function toggleAccentAuto() {
+    state.accentAuto = !state.accentAuto;
+    // When turning OFF, immediately drop the art-derived accent and flag so any
+    // in-flight extractAccentFromArt callback (which may have fired the image's
+    // onload AFTER the user toggled) can't re-apply it.
+    if (!state.accentAuto) {
+        accentFromArt = false;
+        restoreUserAccent();
+    }
+    const sw = document.getElementById('sw-accentAuto');
+    if (sw) sw.classList.toggle('active', state.accentAuto);
+    save();
 }
 
 // ─────────────────────────────────────────────────
@@ -3202,10 +3227,11 @@ async function fetchNowPlaying() {
             return;
         }
         const data = await npRes.json();
-        let nextTrack = null;
+        let nextTrack = spotify._lastNextTrack ?? null; // preserve last-known if queue fetch fails
         if (queueRes.ok) {
             const queueData = await queueRes.json();
             nextTrack = queueData?.queue?.[0] ?? null;
+            spotify._lastNextTrack = nextTrack;
         }
         updateNowPlayingUI(data, nextTrack);
     } catch (e) {
@@ -3337,6 +3363,8 @@ function disconnectSpotify() {
     spotify.accessToken  = null;
     spotify.refreshToken = null;
     spotify.expiresAt    = 0;
+    spotify._lastData = null;
+    spotify._lastNextTrack = null;
     if (spotify.pollInterval) { clearInterval(spotify.pollInterval); spotify.pollInterval = null; }
     if (spotify._progressTick) { clearInterval(spotify._progressTick); spotify._progressTick = null; }
     localStorage.removeItem('spotify_tokens');
