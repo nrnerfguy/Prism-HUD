@@ -204,18 +204,41 @@
             /* Ensure sub-pixel text rendering within compositing layer */
             -webkit-font-smoothing: antialiased;
             text-rendering: optimizeLegibility;
-            /* backface-visibility:hidden + a 3D transform in the JS-applied
-               transform is what triggers a per-transform re-rasterization
-               in iOS WebKit. Without this combination, transform: scale() on
-               iOS stretches a pre-rasterized low-resolution bitmap and the
-               widget stays blurry until the layer is destroyed. The
-               translate3d + scale3d() applied via _applyWidgetScaleDirect
-               and positionWidget is the active half of this fix. */
+            /* iOS WebKit quality fix.
+               Plash and the iOS webview cache the widget's compositing layer at
+               its initial pixel size, then stretch that bitmap when the
+               transform: scale() changes — producing a permanently blurry
+               result on iPhone even after the user drags the widget into place
+               (where the desktop browser renders crisp).
+
+               The reliable combination for forcing iOS WebKit to re-rasterize
+               on every transform change is:
+                 1) contain: layout style     — scope layout/style to the widget
+                                               (NOT contain: paint — that would
+                                               clip the digit-flip animation
+                                               which translates children outside
+                                               the widget box)
+                 2) backface-visibility:hidden — already here
+                 3) a 3D transform on the element (translateZ(0) counts) — already
+                    present via translate3d/scale3d from positionWidget / drag
+                 4) transform-style: preserve-3d — keeps the layer promotion sticky
+               The JS half of the fix is in forceWidgetRepaint() which nudges
+               iOS to throw away the cached rasterization after every settle. */
+            contain: layout style;
             -webkit-backface-visibility: hidden;
             backface-visibility: hidden;
             -webkit-transform-origin: center center;
             transform-origin: center center;
-            /* No will-change here — only set during active drag/scale to avoid permanent GPU layer overhead */
+            -webkit-transform-style: preserve-3d;
+            transform-style: preserve-3d;
+            -webkit-transform: translateZ(0);
+            /* iOS WebKit quality fix (continued).
+               will-change: transform keeps the layer in a state where iOS will
+               re-rasterise it whenever the transform changes (settle included)
+               instead of stretching the cached bitmap. The GPU-memory cost is
+               bounded — there are at most ~9 widgets visible. */
+            will-change: transform;
+            -webkit-will-change: transform;
         }
         .widget.dragging {
             will-change: transform;
@@ -1063,7 +1086,7 @@
 
         <div class="control-group">
             <div class="row"><label>Widget Size</label></div>
-            <input type="range" id="range-scale" min="0.3" max="2.5" step="0.01" value="1" oninput="state.scale=parseFloat(this.value);applyAll();save();">
+            <input type="range" id="range-scale" min="0.3" max="2.5" step="0.01" value="1" oninput="state.scale=parseFloat(this.value);applyAll();save();" onchange="repaintAllWidgetsForIOS()">
             <button onclick="optimizeScale()" class="update-btn" style="margin-top:10px;background:rgba(255,255,255,0.08);color:#fff;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:-2px;margin-right:6px;"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>Auto-Fit Scale</button>
             <div class="row" style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);"><label style="font-size:0.5rem;">Widget Opacity</label></div>
             <input type="range" id="range-widget-opacity" min="0.3" max="1.0" step="0.01" value="0.9"
@@ -3783,8 +3806,52 @@ function showGhosts() {}
 function hideGhosts() {}
 function highlightGhost() {}
 
-// Find nearest zone in pixel space
-function nearestZoneIdx(pxX, pxY) {
+// ── iOS QUALITY FIX ──────────────────────────────────────────────────────────
+// On iOS WebKit (Plash, Add to Home Screen, Mobile Safari) the compositing layer
+// backing each widget gets rasterised ONCE at its initial pixel size. When
+// transform: scale() changes the on-screen size, iOS stretches the cached
+// bitmap instead of re-rasterising — leaving the widget permanently blurry.
+//
+// The CSS half of the fix (contain: paint + translateZ(0) + backface-visibility
+// + transform-style: preserve-3d + permanent will-change: transform) keeps the
+// layer promoted and tells iOS to re-rasterise on transform changes. After the
+// transform SETTLES (drag end, pinch end, scale-slider release, optimizeScale,
+// initial load) we still need a nudge — iOS sometimes caches the pre-settle
+// bitmap even with will-change.
+//
+// The reliable nudge is to briefly toggle visibility:hidden + back. That
+// destroys the layer and forces WebKit to re-create it at the current visible
+// size on the next paint. The forced reflow before/after guarantees the
+// browser commits the swap before we restore, so there is no visible flicker
+// — the browser only paints after the restore lands.
+//
+// We skip this on non-iOS to avoid the (small) layout cost on desktop.
+function forceWidgetRepaint(el) {
+    if (!el) return;
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (!isIOS) return;
+    void el.offsetWidth;
+    el.style.visibility = 'hidden';
+    void el.offsetWidth;
+    el.style.visibility = '';
+}
+
+// Re-rasterise every visible widget — used after a global scale change settles
+// (slider release, optimizeScale, initial load). On iOS, the scale-slider drag
+// keeps the layer cached at the pre-drag size; this restores crispness.
+function repaintAllWidgetsForIOS() {
+    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    if (!isIOS) return;
+    WIDGET_KEYS.forEach(key => {
+        if (!state['show' + key.charAt(0).toUpperCase() + key.slice(1)]) return;
+        const el = document.getElementById(key + '-widget');
+        if (el) forceWidgetRepaint(el);
+    });
+}
+
+
     const vw = window.innerWidth, vh = window.innerHeight;
     let best = 0, bestDist = Infinity;
     for (let i = 0; i < ZONES.length; i++) {
@@ -3953,6 +4020,8 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
             const _cp = el.querySelector('.widget-pill');
             if (_cp) _cp.style.transition = '';
             positionWidget(key);
+            // iOS quality: nudge the layer to re-rasterise at the settled scale.
+            forceWidgetRepaint(el);
         };
         const onTransEnd = (e) => {
             if (e.propertyName !== 'transform') return;
@@ -4360,6 +4429,7 @@ function optimizeScale() {
     const rangeScale = document.getElementById('range-scale');
     if (rangeScale) rangeScale.value = state.scale;
     setTimeout(clampAllWidgetPositions, 100);
+    repaintAllWidgetsForIOS(); // iOS: re-rasterise after a large scale settle
     showToast('Scale optimized to ' + Math.round(state.scale * 100) + '%');
 }
 
@@ -5034,7 +5104,13 @@ function _updateCtxScaleBar(val) {
             // Release the compositing-layer hint and persist now.
             if (_ctxKey) {
                 const _sw = document.getElementById(_ctxKey + '-widget');
-                if (_sw) _sw.style.willChange = '';
+                if (_sw) {
+                    _sw.style.willChange = '';
+                    // iOS quality: nudge the layer to re-rasterise at the settled scale
+                    // (slider drag keeps _kickIosWidgetLayer at the start scale; this
+                    // is what fixes the final on-screen size on Plash/iPhone).
+                    forceWidgetRepaint(_sw);
+                }
             }
             saveNow();
         }
@@ -5140,6 +5216,7 @@ function initPinchScale(key) {
                 _isPinching = false;
                 el.style.willChange = 'auto';
                 positionWidget(key); // sync CSS vars and position fully
+                forceWidgetRepaint(el); // iOS: re-rasterise layer at settled scale
                 save();
                 const finalScale = state.widgetScales[key] || 1;
                 showToast('Scale: ' + Math.round(finalScale * 100) + '%');
@@ -5187,6 +5264,10 @@ setTimeout(clampAllWidgetPositions, 300);
         });
     }
 })();
+// iOS quality: after the entrance reveal finishes, every widget has settled at
+// its final transform. Force one re-rasterisation pass so the first frame the
+// user actually sees on Plash/iPhone is sharp rather than cached-low-res.
+setTimeout(repaintAllWidgetsForIOS, 1100);
 </script>
 </body>
 </html>
