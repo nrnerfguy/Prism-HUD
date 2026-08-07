@@ -211,20 +211,23 @@
                result on iPhone even after the user drags the widget into place
                (where the desktop browser renders crisp).
 
+               CRITICAL: do NOT add `contain: layout` here. The widget sizing
+               is `width: max-content; height: max-content` so the box hugs
+               the pill. `contain: layout` makes the element ignore its
+               descendants when computing intrinsic size — collapsing the
+               widget to 0×0. `contain: style` alone is safe (style scoping,
+               no layout isolation).
+
                The reliable combination for forcing iOS WebKit to re-rasterize
                on every transform change is:
-                 1) contain: layout style     — scope layout/style to the widget
-                                               (NOT contain: paint — that would
-                                               clip the digit-flip animation
-                                               which translates children outside
-                                               the widget box)
+                 1) contain: style             — scope style leakage (no layout)
                  2) backface-visibility:hidden — already here
                  3) a 3D transform on the element (translateZ(0) counts) — already
                     present via translate3d/scale3d from positionWidget / drag
                  4) transform-style: preserve-3d — keeps the layer promotion sticky
                The JS half of the fix is in forceWidgetRepaint() which nudges
                iOS to throw away the cached rasterization after every settle. */
-            contain: layout style;
+            contain: style;
             -webkit-backface-visibility: hidden;
             backface-visibility: hidden;
             -webkit-transform-origin: center center;
