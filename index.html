@@ -171,7 +171,9 @@
         }
 
         #bg-layer {
-            position: fixed; inset: -50px; z-index: -1;
+            position: fixed; top: -50px; left: -50px; right: -50px;
+            bottom: calc(-50px - env(safe-area-inset-bottom, 0px));
+            z-index: -1;
             background-size: cover; background-position: center; background-repeat: no-repeat;
             background-color: #000;
             transition: opacity 0.3s, filter 0.3s; pointer-events: none;
@@ -180,13 +182,16 @@
 
         /* #hud-master is now a transparent passthrough — widgets position themselves */
         #hud-master { position: fixed; inset: 0; pointer-events: none; z-index: 10; transform: translateZ(0); -webkit-transform: translateZ(0); }
-        /* Cover the home indicator area with black so it's invisible on black bg */
+        /* Covers the iOS home-indicator strip; background is set dynamically in JS
+           so it always matches the active theme/gradient/image instead of showing
+           as a static black bar on non-black backgrounds. */
         #home-indicator-cover {
             position: fixed; bottom: 0; left: 0; right: 0;
             height: env(safe-area-inset-bottom, 0px);
-            background: #000;
+            background: #000; /* fallback; overridden in applyAll() */
             z-index: 9999;
             pointer-events: none;
+            transition: background 0.4s ease, background-color 0.4s ease;
         }
 
         .widget {
@@ -204,44 +209,18 @@
             /* Ensure sub-pixel text rendering within compositing layer */
             -webkit-font-smoothing: antialiased;
             text-rendering: optimizeLegibility;
-            /* iOS WebKit quality fix.
-               Plash and the iOS webview cache the widget's compositing layer at
-               its initial pixel size, then stretch that bitmap when the
-               transform: scale() changes — producing a permanently blurry
-               result on iPhone even after the user drags the widget into place
-               (where the desktop browser renders crisp).
-
-               CRITICAL: do NOT add `contain: layout` here. The widget sizing
-               is `width: max-content; height: max-content` so the box hugs
-               the pill. `contain: layout` makes the element ignore its
-               descendants when computing intrinsic size — collapsing the
-               widget to 0×0. `contain: style` alone is safe (style scoping,
-               no layout isolation).
-
-               The reliable combination for forcing iOS WebKit to re-rasterize
-               on every transform change is:
-                 1) contain: style             — scope style leakage (no layout)
-                 2) backface-visibility:hidden — already here
-                 3) a 3D transform on the element (translateZ(0) counts) — already
-                    present via translate3d/scale3d from positionWidget / drag
-                 4) transform-style: preserve-3d — keeps the layer promotion sticky
-               The JS half of the fix is in forceWidgetRepaint() which nudges
-               iOS to throw away the cached rasterization after every settle. */
-            contain: style;
+            /* backface-visibility:hidden + a 3D transform in the JS-applied
+               transform is what triggers a per-transform re-rasterization
+               in iOS WebKit. Without this combination, transform: scale() on
+               iOS stretches a pre-rasterized low-resolution bitmap and the
+               widget stays blurry until the layer is destroyed. The
+               translate3d + scale3d() applied via _applyWidgetScaleDirect
+               and positionWidget is the active half of this fix. */
             -webkit-backface-visibility: hidden;
             backface-visibility: hidden;
             -webkit-transform-origin: center center;
             transform-origin: center center;
-            -webkit-transform-style: preserve-3d;
-            transform-style: preserve-3d;
-            -webkit-transform: translateZ(0);
-            /* iOS WebKit quality fix (continued).
-               will-change: transform keeps the layer in a state where iOS will
-               re-rasterise it whenever the transform changes (settle included)
-               instead of stretching the cached bitmap. The GPU-memory cost is
-               bounded — there are at most ~9 widgets visible. */
-            will-change: transform;
-            -webkit-will-change: transform;
+            /* No will-change here — only set during active drag/scale to avoid permanent GPU layer overhead */
         }
         .widget.dragging {
             will-change: transform;
@@ -811,6 +790,60 @@
             -moz-osx-font-smoothing: grayscale;
             text-rendering: optimizeLegibility;
         }
+
+        /* -- BOOT LOADING OVERLAY -- */
+        #boot-overlay {
+            position: fixed; inset: 0; z-index: 9999;
+            background: #07070a;
+            display: flex; flex-direction: column;
+            justify-content: center; align-items: center;
+            gap: 1.2rem;
+            opacity: 1;
+            transition: opacity 0.55s ease;
+            pointer-events: all;
+        }
+        #boot-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #boot-overlay .logo-wrap {
+            position: relative;
+            width: 96px; height: 96px;
+            display: flex; justify-content: center; align-items: center;
+        }
+        #boot-overlay .logo-wrap img {
+            width: 64px; height: 64px;
+            border-radius: 18px;
+            box-shadow: 0 4px 24px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
+            /* iOS WebKit crisp rendering, consistent with the iOS quality fix */
+            -webkit-backface-visibility: hidden;
+            backface-visibility: hidden;
+            transform: translateZ(0);
+        }
+        #boot-overlay .ring {
+            position: absolute; inset: 0;
+            border-radius: 50%;
+            background: conic-gradient(from 0deg,
+                rgba(255,255,255,0.85) 0deg,
+                rgba(255,255,255,0.10) 80deg,
+                rgba(255,255,255,0.0) 360deg);
+            -webkit-mask: radial-gradient(circle, transparent 56%, #000 58%);
+                    mask: radial-gradient(circle, transparent 56%, #000 58%);
+            animation: boot-spin 1.4s linear infinite;
+            filter: drop-shadow(0 0 6px rgba(255,255,255,0.18));
+        }
+        @keyframes boot-spin {
+            to { transform: rotate(360deg); }
+        }
+        #boot-overlay .brand {
+            color: rgba(255,255,255,0.55);
+            font: 500 0.7rem/1 -apple-system, system-ui, sans-serif;
+            letter-spacing: 0.32em;
+            text-transform: uppercase;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            #boot-overlay .ring { animation-duration: 3s; }
+        }
 </style>
 
     <script>
@@ -830,6 +863,14 @@
     </script>
 </head>
 <body>
+
+<div id="boot-overlay" aria-hidden="true">
+    <div class="logo-wrap">
+        <div class="ring"></div>
+        <img src="logo.png" alt="" draggable="false">
+    </div>
+    <div class="brand">Prism</div>
+</div>
 
 <div id="bg-layer"></div>
 <!-- Tiny silent video to prevent screen dimming on iOS (NoSleep technique) -->
@@ -1089,7 +1130,7 @@
 
         <div class="control-group">
             <div class="row"><label>Widget Size</label></div>
-            <input type="range" id="range-scale" min="0.3" max="2.5" step="0.01" value="1" oninput="state.scale=parseFloat(this.value);applyAll();save();" onchange="repaintAllWidgetsForIOS()">
+            <input type="range" id="range-scale" min="0.3" max="2.5" step="0.01" value="1" oninput="state.scale=parseFloat(this.value);applyAll();save();">
             <button onclick="optimizeScale()" class="update-btn" style="margin-top:10px;background:rgba(255,255,255,0.08);color:#fff;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:-2px;margin-right:6px;"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>Auto-Fit Scale</button>
             <div class="row" style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);"><label style="font-size:0.5rem;">Widget Opacity</label></div>
             <input type="range" id="range-widget-opacity" min="0.3" max="1.0" step="0.01" value="0.9"
@@ -1196,7 +1237,7 @@
                 <button onclick="disconnectSpotify()" class="update-btn" style="background:rgba(255,255,255,0.08);color:#fff;margin-top:6px;" id="spotify-disconnect-btn">Disconnect</button>
                 <div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,0.06);">
                     <div class="row"><label style="font-size:0.5rem;">Album Art Wallpaper</label><div id="sw-artAsBg" class="ios-switch" onclick="toggle('artAsBg')"></div></div>
-                    <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Match Accent to Album Art</label><div id="sw-accentAuto" class="ios-switch active" onclick="toggleAccentAuto()"></div></div>
+                    <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Match Accent to Album Art</label><div id="sw-accentAuto" class="ios-switch active" onclick="state.accentAuto=!state.accentAuto;if(!state.accentAuto)restoreUserAccent();document.getElementById('sw-accentAuto').classList.toggle('active',state.accentAuto);save();"></div></div>
                     <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Show Upcoming Track</label><div id="sw-showNextUp" class="ios-switch active" onclick="state.showNextUp=!state.showNextUp;document.getElementById('sw-showNextUp').classList.toggle('active',state.showNextUp);save();"></div></div>
                     <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Visible</label><div style="display:flex;align-items:center;"><span id="st-nowplaying" class="status-tag">SHOWN</span><div id="sw-showNowplaying" class="ios-switch active" onclick="toggle('showNowplaying')"></div></div></div>
                     <div style="margin-top:12px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);">
@@ -1697,25 +1738,11 @@ let _lastTrackId = null; // prevent album art reload on same track
 
 function extractAccentFromArt(imgUrl) {
     if (!imgUrl) { restoreUserAccent(); return; }
-    // Always cache the URL — needed for the artAsBg toggle to apply instantly
-    // even if the user turns it on later, after this track has already started.
-    _lastArtUrl = imgUrl;
-    // Apply album art as wallpaper IMMEDIATELY — independent of the canvas-extract path,
-    // which can fail under CORS. bg-layer uses background-image, no pixel access needed.
-    if (state.artAsBg) {
-        const bgl = document.getElementById('bg-layer');
-        if (bgl) {
-            bgl.style.backgroundImage = `url(${imgUrl})`;
-            document.body.style.backgroundColor = 'transparent';
-        }
-    }
-    if (!state.accentAuto) return; // wallpaper-only mode — skip pixel extraction
+    if (!state.accentAuto) return; // user has manually locked their accent colour
+    _lastArtUrl = imgUrl; // cache for instant artAsBg toggle
     const img = new Image();
     img.crossOrigin = 'anonymous';
     img.onload = () => {
-        // Re-check the toggle: the user may have turned accentAuto off while this image
-        // was loading. If so, leave their accent alone.
-        if (!state.accentAuto) return;
         try {
             const canvas = document.getElementById('art-canvas');
             const ctx    = canvas.getContext('2d');
@@ -1756,19 +1783,24 @@ function extractAccentFromArt(imgUrl) {
             }
 
             const hex = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
-            // Re-check again right before committing — covers a toggle between weight calc and now.
-            if (!state.accentAuto) return;
             accentFromArt = true;
+            // Smooth accent transition via CSS custom property animation trick
+            document.documentElement.style.setProperty('--accent-old', document.documentElement.style.getPropertyValue('--accent') || state.accent);
             document.documentElement.style.setProperty('--accent', hex);
             // Recompute fg contrast for the new art-derived accent
             const lum2 = (0.299*r + 0.587*g + 0.114*b) / 255;
             document.documentElement.style.setProperty('--accent-fg', lum2 > 0.65 ? '#111' : '#fff');
-        } catch (err) {
-            // CORS block or canvas error — leave the previous accent in place.
-            if (state.artAsBg && !state.accentAuto) restoreUserAccent();
-        }
+            // Album art as background
+            if (state.artAsBg && imgUrl) {
+                const bgl = document.getElementById('bg-layer');
+                bgl.style.backgroundImage = `url(${imgUrl})`;
+                document.body.style.backgroundColor = 'transparent';
+                const hic2 = document.getElementById('home-indicator-cover');
+                if (hic2) { hic2.style.backgroundImage = `url(${imgUrl})`; hic2.style.backgroundColor = 'transparent'; }
+            }
+        } catch (err) { if (!state.artAsBg) { /* CORS block — leave accent as-is */ } else { restoreUserAccent(); } }
     };
-    img.onerror = () => { /* silent fail */ };
+    img.onerror = () => { if (!state.artAsBg) { /* silent fail */ } else { restoreUserAccent(); } };
     img.src = imgUrl;
 }
 
@@ -1787,26 +1819,14 @@ function restoreUserAccent() {
     document.documentElement.style.setProperty('--accent-fg', lum > 0.65 ? '#111' : '#fff');
     // Only restore background if artAsBg is off — don't wipe album art wallpaper
     if (!(state.artAsBg && _lastArtUrl)) {
-        if (typeof applyAll === 'function') applyAll();
+        applyBackground();
     } else if (_lastArtUrl) {
         // artAsBg is on and we have cached art — keep it showing
         const bgl = document.getElementById('bg-layer');
         if (bgl) bgl.style.backgroundImage = `url(${_lastArtUrl})`;
+        const hic3 = document.getElementById('home-indicator-cover');
+        if (hic3) { hic3.style.backgroundImage = `url(${_lastArtUrl})`; hic3.style.backgroundColor = 'transparent'; }
     }
-}
-
-function toggleAccentAuto() {
-    state.accentAuto = !state.accentAuto;
-    // When turning OFF, immediately drop the art-derived accent and flag so any
-    // in-flight extractAccentFromArt callback (which may have fired the image's
-    // onload AFTER the user toggled) can't re-apply it.
-    if (!state.accentAuto) {
-        accentFromArt = false;
-        restoreUserAccent();
-    }
-    const sw = document.getElementById('sw-accentAuto');
-    if (sw) sw.classList.toggle('active', state.accentAuto);
-    save();
 }
 
 // ─────────────────────────────────────────────────
@@ -2722,13 +2742,16 @@ function drawMoon(phase) {
     const isWaxing = norm < 14.765;
     // rx: how wide the inner ellipse is (0=full crescent, R=full)
     const rx = Math.abs(Math.cos(Math.PI * norm / 14.765)) * R;
-    // Lit side is always the right semicircle (outer arc)
-    // Inner arc is ellipse: concave on waxing, convex on waning
+    // Northern Hemisphere convention:
+    //   waxing (new → full): lit side on RIGHT  → outer arc = right semicircle (sweep=1)
+    //   waning (full → new): lit side on LEFT   → outer arc = left  semicircle (sweep=0)
+    // Inner ellipse mirrors the lit side so the boundary curves the right way.
+    const outerSweep = isWaxing ? 1 : 0;
     const innerSweep = isWaxing ? 0 : 1; // 0=concave, 1=convex
     const path = [
         `M ${cx} ${cy - R}`,
-        `A ${R} ${R} 0 0 1 ${cx} ${cy + R}`,          // outer right semicircle
-        `A ${rx.toFixed(2)} ${R} 0 0 ${innerSweep} ${cx} ${cy - R}` // inner ellipse
+        `A ${R} ${R} 0 0 ${outerSweep} ${cx} ${cy + R}`,                // outer semicircle on the lit side
+        `A ${rx.toFixed(2)} ${R} 0 0 ${innerSweep} ${cx} ${cy - R}`     // inner ellipse
     ].join(' ');
 
     svg.innerHTML = `
@@ -3253,11 +3276,10 @@ async function fetchNowPlaying() {
             return;
         }
         const data = await npRes.json();
-        let nextTrack = spotify._lastNextTrack ?? null; // preserve last-known if queue fetch fails
+        let nextTrack = null;
         if (queueRes.ok) {
             const queueData = await queueRes.json();
             nextTrack = queueData?.queue?.[0] ?? null;
-            spotify._lastNextTrack = nextTrack;
         }
         updateNowPlayingUI(data, nextTrack);
     } catch (e) {
@@ -3389,8 +3411,6 @@ function disconnectSpotify() {
     spotify.accessToken  = null;
     spotify.refreshToken = null;
     spotify.expiresAt    = 0;
-    spotify._lastData = null;
-    spotify._lastNextTrack = null;
     if (spotify.pollInterval) { clearInterval(spotify.pollInterval); spotify.pollInterval = null; }
     if (spotify._progressTick) { clearInterval(spotify._progressTick); spotify._progressTick = null; }
     localStorage.removeItem('spotify_tokens');
@@ -3604,6 +3624,22 @@ function applyAll() {
             bgl.style.backgroundImage = state.bg ? `url(${state.bg})` : 'none';
         }
     }
+    // Mirror the active background onto the iOS home-indicator strip so it
+    // never reads as a static black bar on non-black backgrounds. Solid color
+    // for static-color mode; gradient/image otherwise.
+    const hic = document.getElementById('home-indicator-cover');
+    if (hic && bgl) {
+        if (state.isStatic && state.staticColor) {
+            hic.style.backgroundColor = state.staticColor;
+            hic.style.backgroundImage = 'none';
+        } else if (bgl.style.backgroundImage && bgl.style.backgroundImage !== 'none') {
+            hic.style.backgroundImage = bgl.style.backgroundImage;
+            hic.style.backgroundColor = 'transparent';
+        } else {
+            hic.style.backgroundImage = 'none';
+            hic.style.backgroundColor = state.bgOpacity < 0.05 ? 'transparent' : '#000';
+        }
+    }
     document.getElementById('static-bg-preview').classList.toggle('active', state.isStatic);
     bgl.style.filter  = `blur(${state.blur}px)`;
     bgl.style.opacity = state.bgOpacity;
@@ -3809,52 +3845,8 @@ function showGhosts() {}
 function hideGhosts() {}
 function highlightGhost() {}
 
-// ── iOS QUALITY FIX ──────────────────────────────────────────────────────────
-// On iOS WebKit (Plash, Add to Home Screen, Mobile Safari) the compositing layer
-// backing each widget gets rasterised ONCE at its initial pixel size. When
-// transform: scale() changes the on-screen size, iOS stretches the cached
-// bitmap instead of re-rasterising — leaving the widget permanently blurry.
-//
-// The CSS half of the fix (contain: paint + translateZ(0) + backface-visibility
-// + transform-style: preserve-3d + permanent will-change: transform) keeps the
-// layer promoted and tells iOS to re-rasterise on transform changes. After the
-// transform SETTLES (drag end, pinch end, scale-slider release, optimizeScale,
-// initial load) we still need a nudge — iOS sometimes caches the pre-settle
-// bitmap even with will-change.
-//
-// The reliable nudge is to briefly toggle visibility:hidden + back. That
-// destroys the layer and forces WebKit to re-create it at the current visible
-// size on the next paint. The forced reflow before/after guarantees the
-// browser commits the swap before we restore, so there is no visible flicker
-// — the browser only paints after the restore lands.
-//
-// We skip this on non-iOS to avoid the (small) layout cost on desktop.
-function forceWidgetRepaint(el) {
-    if (!el) return;
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    if (!isIOS) return;
-    void el.offsetWidth;
-    el.style.visibility = 'hidden';
-    void el.offsetWidth;
-    el.style.visibility = '';
-}
-
-// Re-rasterise every visible widget — used after a global scale change settles
-// (slider release, optimizeScale, initial load). On iOS, the scale-slider drag
-// keeps the layer cached at the pre-drag size; this restores crispness.
-function repaintAllWidgetsForIOS() {
-    const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
-                  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-    if (!isIOS) return;
-    WIDGET_KEYS.forEach(key => {
-        if (!state['show' + key.charAt(0).toUpperCase() + key.slice(1)]) return;
-        const el = document.getElementById(key + '-widget');
-        if (el) forceWidgetRepaint(el);
-    });
-}
-
-
+// Find nearest zone in pixel space
+function nearestZoneIdx(pxX, pxY) {
     const vw = window.innerWidth, vh = window.innerHeight;
     let best = 0, bestDist = Infinity;
     for (let i = 0; i < ZONES.length; i++) {
@@ -4023,8 +4015,6 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
             const _cp = el.querySelector('.widget-pill');
             if (_cp) _cp.style.transition = '';
             positionWidget(key);
-            // iOS quality: nudge the layer to re-rasterise at the settled scale.
-            forceWidgetRepaint(el);
         };
         const onTransEnd = (e) => {
             if (e.propertyName !== 'transform') return;
@@ -4432,7 +4422,6 @@ function optimizeScale() {
     const rangeScale = document.getElementById('range-scale');
     if (rangeScale) rangeScale.value = state.scale;
     setTimeout(clampAllWidgetPositions, 100);
-    repaintAllWidgetsForIOS(); // iOS: re-rasterise after a large scale settle
     showToast('Scale optimized to ' + Math.round(state.scale * 100) + '%');
 }
 
@@ -4500,22 +4489,27 @@ function toggle(key) {
     if (key === 'artAsBg') {
         const bgl = document.getElementById('bg-layer');
         if (!bgl) return;
+        const hic = document.getElementById('home-indicator-cover');
         if (state.artAsBg && _lastArtUrl) {
             // Instantly apply cached art — no waiting for next Spotify poll
             bgl.style.backgroundImage = `url(${_lastArtUrl})`;
             document.body.style.backgroundColor = 'transparent';
+            if (hic) { hic.style.backgroundImage = `url(${_lastArtUrl})`; hic.style.backgroundColor = 'transparent'; }
         } else if (!state.artAsBg) {
             // Restore user background immediately
             if (state.activeGradient && !state.isStatic && !state.bg) {
                 const g = GRADIENTS.find(x => x.label === state.activeGradient);
                 document.body.style.backgroundColor = 'transparent';
                 bgl.style.backgroundImage = g ? g.css : 'none';
+                if (hic) { hic.style.backgroundImage = g ? g.css : 'none'; hic.style.backgroundColor = 'transparent'; }
             } else if (state.isStatic) {
                 document.body.style.backgroundColor = state.staticColor;
                 bgl.style.backgroundImage = 'none';
+                if (hic) { hic.style.backgroundImage = 'none'; hic.style.backgroundColor = state.staticColor || '#000'; }
             } else {
                 document.body.style.backgroundColor = 'transparent';
                 bgl.style.backgroundImage = state.bg ? `url(${state.bg})` : 'none';
+                if (hic) { hic.style.backgroundImage = state.bg ? `url(${state.bg})` : 'none'; hic.style.backgroundColor = '#000'; }
             }
         }
         return;
@@ -4949,6 +4943,8 @@ function applyGradient(g) {
     const bgl = document.getElementById('bg-layer');
     bgl.style.backgroundImage = g.css;
     document.body.style.backgroundColor = 'transparent';
+    const hic = document.getElementById('home-indicator-cover');
+    if (hic) { hic.style.backgroundImage = g.css; hic.style.backgroundColor = 'transparent'; }
     bgl.style.filter  = `blur(${state.blur}px)`;
     bgl.style.opacity = state.bgOpacity;
     save();
@@ -5107,13 +5103,7 @@ function _updateCtxScaleBar(val) {
             // Release the compositing-layer hint and persist now.
             if (_ctxKey) {
                 const _sw = document.getElementById(_ctxKey + '-widget');
-                if (_sw) {
-                    _sw.style.willChange = '';
-                    // iOS quality: nudge the layer to re-rasterise at the settled scale
-                    // (slider drag keeps _kickIosWidgetLayer at the start scale; this
-                    // is what fixes the final on-screen size on Plash/iPhone).
-                    forceWidgetRepaint(_sw);
-                }
+                if (_sw) _sw.style.willChange = '';
             }
             saveNow();
         }
@@ -5219,7 +5209,6 @@ function initPinchScale(key) {
                 _isPinching = false;
                 el.style.willChange = 'auto';
                 positionWidget(key); // sync CSS vars and position fully
-                forceWidgetRepaint(el); // iOS: re-rasterise layer at settled scale
                 save();
                 const finalScale = state.widgetScales[key] || 1;
                 showToast('Scale: ' + Math.round(finalScale * 100) + '%');
@@ -5267,10 +5256,30 @@ setTimeout(clampAllWidgetPositions, 300);
         });
     }
 })();
-// iOS quality: after the entrance reveal finishes, every widget has settled at
-// its final transform. Force one re-rasterisation pass so the first frame the
-// user actually sees on Plash/iPhone is sharp rather than cached-low-res.
-setTimeout(repaintAllWidgetsForIOS, 1100);
+
+// ─────────────────────────────────────────────────
+// BOOT OVERLAY DISMISSAL
+// Tied to the HUD reveal so splash + HUD fade in lockstep.
+// The error listener is a safety net so a thrown exception can't leave the
+// overlay stuck on a black screen.
+// ─────────────────────────────────────────────────
+(function dismissBootOverlay() {
+    const o = document.getElementById('boot-overlay');
+    if (!o) return;
+    // Wait one frame after the HUD starts revealing so the user sees the
+    // HUD appear before the splash dissolves — feels intentional, not abrupt.
+    requestAnimationFrame(() => {
+        setTimeout(() => {
+            o.classList.add('hidden');
+            // Remove from DOM after the fade so it stops eating hit-testing
+            setTimeout(() => o.remove(), 700);
+        }, 250);
+    });
+})();
+window.addEventListener('error', () => {
+    const o = document.getElementById('boot-overlay');
+    if (o) { o.classList.add('hidden'); setTimeout(() => o.remove(), 700); }
+});
 </script>
 </body>
 </html>
