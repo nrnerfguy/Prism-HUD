@@ -50,7 +50,7 @@
             -webkit-text-fill-color: transparent;
             filter: none !important;
         }
-        body.glass-mode #clock { filter: none !important; }
+        body.glass-mode #clock { filter: none !important; text-shadow: none !important; }
         /* Glass mode — pill gets subtle frosted treatment when pills are on */
         body.glass-mode.show-pills .widget-pill {
             background: rgba(255,255,255,0.04) !important;
@@ -101,7 +101,7 @@
         body.low-power .widget-pill { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
         body.low-power #clock.style-bold,
         body.low-power #clock.style-thin,
-        body.low-power #clock.style-retro { filter: none !important; } /* no glow or shadow in low power */
+        body.low-power #clock.style-retro { text-shadow: none !important; } /* no glow or shadow in low power */
 
         @keyframes hudReveal {
             from { opacity: 0; transform: scale(0.97); }
@@ -214,25 +214,14 @@
                when the widget is scaled up via transform: scale3d(); */
             -webkit-font-smoothing: antialiased;
             text-rendering: geometricPrecision;
-            /* backface-visibility:hidden + a 3D transform in the JS-applied
-               transform is what triggers a per-transform re-rasterization
-               in iOS WebKit. Without this combination, transform: scale() on
-               iOS stretches a pre-rasterized low-resolution bitmap and the
-               widget stays blurry until the layer is destroyed. The
-               translate3d + scale3d() applied via _applyWidgetScaleDirect
-               and positionWidget is the active half of this fix. */
-            -webkit-backface-visibility: hidden;
-            backface-visibility: hidden;
+            /* Scaling uses translate3d + scale3d() so the widget stays on its own
+               compositor layer, but WITHOUT a rasterization-pinning filter or
+               will-change. Un-pinned layers are re-rasterized at the current
+               scale, which keeps text/SVG crisp even at large scales on iOS.
+               (filter: contrast(1) was pinning a stale low-res bitmap and
+               stretching it — the cause of the pixelation when scaled up.) */
             -webkit-transform-origin: center center;
             transform-origin: center center;
-            /* ── iOS sharpness trick ──
-               filter: contrast(1) is visually a no-op, but it forces iOS WebKit
-               to commit the widget to its own compositor layer AND re-rasterize
-               that layer each time the transform changes — without it, scale3d()
-               was stretching a pre-rasterized low-res bitmap and scaled-up
-               widgets looked pixelated on iPhone. */
-            -webkit-filter: contrast(1);
-            filter: contrast(1);
         }
         .widget.dragging {
             /* No will-change here: the widget already has a transform, so it's
@@ -274,7 +263,7 @@
         .widget.entering { animation: widgetIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
 
         /* ── CLOCK DIGIT FLIP ── */
-        #clock { overflow: visible; white-space: nowrap; display: block; transform: translateZ(0); -webkit-transform: translateZ(0); }
+        #clock { overflow: visible; white-space: nowrap; display: block; }
         #clock-widget .widget-pill { white-space: nowrap; min-width: max-content; overflow: visible; }
         /* Force clock into its own compositing layer at native res — prevents scale pixelation */
         #clock-widget { isolation: isolate; }
@@ -318,24 +307,26 @@
 
         /* ── CLOCK STYLES ── */
         #clock {
-            line-height: 1; transition: opacity 0.2s ease, filter 0.6s ease; touch-action: manipulation;
+            line-height: 1; transition: opacity 0.2s ease, text-shadow 0.6s ease; touch-action: manipulation;
             text-rendering: geometricPrecision;
         }
         #clock.style-bold {
             font-size: clamp(5rem, 25vw, 12rem); font-weight: 900; font-style: italic;
             letter-spacing: -4px; font-family: -apple-system, system-ui, sans-serif;
-            /* Use filter drop-shadow instead of text-shadow — GPU composited, no pixelation */
-            filter:
-                drop-shadow(0 calc(12px * var(--clock-shadow)) calc(24px * var(--clock-shadow)) rgba(0,0,0,0.85))
-                drop-shadow(0 0 calc(18px * var(--glow-intensity)) var(--accent))
-                drop-shadow(0 0 calc(40px * var(--glow-intensity)) var(--accent));
+            /* text-shadow (not filter:drop-shadow): drop-shadow forces a rasterized
+               layer pinned at the pre-scale size, which pixelates when the widget is
+               scaled up. text-shadow re-paints crisply at any transform scale. */
+            text-shadow:
+                0 calc(12px * var(--clock-shadow)) calc(24px * var(--clock-shadow)) rgba(0,0,0,0.85),
+                0 0 calc(18px * var(--glow-intensity)) var(--accent),
+                0 0 calc(40px * var(--glow-intensity)) var(--accent);
             /* Italic glyphs lean right — small left inset so glyphs read as centred */
             padding-left: -0.25em;
         }
         /* ── CLOCK GLOW TOGGLE ── */
         #clock.no-glow {
             /* Keep shadow even with glow off — only remove the accent glow */
-            filter: drop-shadow(0 calc(12px * var(--clock-shadow)) calc(24px * var(--clock-shadow)) rgba(0,0,0,0.85)) !important;
+            text-shadow: 0 calc(12px * var(--clock-shadow)) calc(24px * var(--clock-shadow)) rgba(0,0,0,0.85) !important;
         }
 
         /* Give italic overhang room to breathe on the right without clipping */
@@ -346,26 +337,25 @@
             font-size: clamp(4rem, 22vw, 11rem); font-weight: 100; font-style: normal;
             font-family: 'Outfit', sans-serif; letter-spacing: 20px;
             margin-right: -20px;
-            filter:
-                drop-shadow(0 calc(10px * var(--clock-shadow)) calc(20px * var(--clock-shadow)) rgba(0,0,0,0.8))
-                drop-shadow(0 0 calc(14px * var(--glow-intensity)) var(--accent))
-                drop-shadow(0 0 calc(30px * var(--glow-intensity)) var(--accent));
+            text-shadow:
+                0 calc(10px * var(--clock-shadow)) calc(20px * var(--clock-shadow)) rgba(0,0,0,0.8),
+                0 0 calc(14px * var(--glow-intensity)) var(--accent),
+                0 0 calc(30px * var(--glow-intensity)) var(--accent);
         }
         #clock.style-retro {
             font-size: clamp(3.5rem, 18vw, 9rem); font-family: 'Share Tech Mono', monospace;
-            font-weight: normal; font-style: normal; letter-spacing: 10px;
-            filter:
-                drop-shadow(0 calc(8px * var(--clock-shadow)) calc(18px * var(--clock-shadow)) rgba(0,0,0,0.9))
-                drop-shadow(0 0 calc(6px * var(--glow-intensity)) currentColor)
-                drop-shadow(0 0 calc(18px * var(--glow-intensity)) currentColor)
-                drop-shadow(0 0 calc(36px * var(--glow-intensity)) currentColor);
+            font-weight: normal; font-style: normal;            letter-spacing: 10px;
+            text-shadow:
+                0 calc(8px * var(--clock-shadow)) calc(18px * var(--clock-shadow)) rgba(0,0,0,0.9),
+                0 0 calc(6px * var(--glow-intensity)) currentColor,
+                0 0 calc(18px * var(--glow-intensity)) currentColor,
+                0 0 calc(36px * var(--glow-intensity)) currentColor;
             margin-right: -10px;
         }
 
         /* Analog clock */
         #analog-clock {
             display: none; width: clamp(180px, 40vw, 320px); height: clamp(180px, 40vw, 320px);
-            filter: drop-shadow(0 calc(10px * var(--clock-shadow)) calc(22px * var(--clock-shadow)) rgba(0,0,0,0.85)) drop-shadow(0 0 12px rgba(0,0,0,0.8));
             overflow: visible;
             shape-rendering: geometricPrecision;
             image-rendering: -webkit-optimize-contrast;
@@ -374,9 +364,15 @@
         .a-face { fill: none; stroke: var(--accent); stroke-width: 1; opacity: 0.15; }
         .a-tick { stroke: var(--accent); stroke-width: 1.5; opacity: 0.35; stroke-linecap: round; }
         .a-tick-major { stroke: var(--accent); stroke-width: 2.5; opacity: 0.65; stroke-linecap: round; }
-        .a-hour { stroke: var(--accent); stroke-width: 5; stroke-linecap: round; filter: drop-shadow(0 0 4px var(--accent)); }
-        .a-min  { stroke: var(--accent); stroke-width: 3; stroke-linecap: round; filter: drop-shadow(0 0 3px var(--accent)); }
-        .a-sec  { stroke: #fff; stroke-width: 1.5; stroke-linecap: round; filter: drop-shadow(0 0 3px rgba(255,255,255,0.8)); }
+        .a-hour { stroke: var(--accent); stroke-width: 5; stroke-linecap: round; }
+        .a-min  { stroke: var(--accent); stroke-width: 3; stroke-linecap: round; }
+        .a-sec  { stroke: #fff; stroke-width: 1.5; stroke-linecap: round; }
+        /* Analog glow via SVG filters (re-rasterized at the current scale) instead of
+           CSS filter:drop-shadow (which pins a pre-scale bitmap and pixelates on zoom).
+           flood-* are set via CSS so they track --accent / --clock-shadow live. */
+        #a-shadow feDropShadow   { flood-color: #000; flood-opacity: calc(var(--clock-shadow) * 0.85); }
+        #a-glow feDropShadow    { flood-color: var(--accent); flood-opacity: 0.9; }
+        #a-glow-sec feDropShadow { flood-color: #fff; flood-opacity: 0.8; }
         .a-center { fill: var(--accent); }
         .a-center-hi { fill: rgba(255,255,255,0.75); }
 
@@ -823,11 +819,14 @@
         /* Make SVGs scale relative to the font-size set by the zoom logic */
         #icon-container svg { width: 1em; height: 1em; }
         #battery-icon svg { width: 1em; height: 1em; }
-        /* Ensure crisp rendering for the whole widget */
+        /* Ensure crisp rendering for the whole widget. text-rendering must stay
+           geometricPrecision (matching the main .widget rule above) — the old
+           optimizeLegibility override here re-enabled ligature hints on
+           transform-scaled text and could make large widgets look soft on iOS. */
         .widget {
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
-            text-rendering: optimizeLegibility;
+            text-rendering: geometricPrecision;
         }
 
         /* -- BOOT LOADING OVERLAY -- */
@@ -946,12 +945,23 @@
     <div id="clock-widget" class="widget">
         <div class="widget-pill" style="display:flex;flex-direction:column;align-items:center;text-align:center;">
             <div id="clock" class="style-bold"></div>
-            <svg id="analog-clock" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" overflow="visible">
+            <svg id="analog-clock" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" overflow="visible" filter="url(#a-shadow)">
+                <defs>
+                    <filter id="a-shadow" x="-60%" y="-60%" width="220%" height="220%">
+                        <feDropShadow dx="0" dy="10" stdDeviation="16"/>
+                    </filter>
+                    <filter id="a-glow" x="-60%" y="-60%" width="220%" height="220%">
+                        <feDropShadow dx="0" dy="0" stdDeviation="4"/>
+                    </filter>
+                    <filter id="a-glow-sec" x="-60%" y="-60%" width="220%" height="220%">
+                        <feDropShadow dx="0" dy="0" stdDeviation="3"/>
+                    </filter>
+                </defs>
                 <circle class="a-face" cx="100" cy="100" r="96"/>
                 <g id="a-ticks"></g>
-                <line id="a-hour" class="a-hour" x1="100" y1="100" x2="100" y2="45"/>
-                <line id="a-min"  class="a-min"  x1="100" y1="100" x2="100" y2="28"/>
-                <line id="a-sec"  class="a-sec"  x1="100" y1="100" x2="100" y2="20"/>
+                <line id="a-hour" class="a-hour" filter="url(#a-glow)" x1="100" y1="100" x2="100" y2="45"/>
+                <line id="a-min"  class="a-min"  filter="url(#a-glow)" x1="100" y1="100" x2="100" y2="28"/>
+                <line id="a-sec"  class="a-sec"  filter="url(#a-glow-sec)" x1="100" y1="100" x2="100" y2="20"/>
                 <circle class="a-center" cx="100" cy="100" r="5"/>
                 <circle class="a-center-hi" cx="100" cy="100" r="2.2"/>
             </svg>
@@ -1278,7 +1288,7 @@
                     <div class="row"><label style="font-size:0.5rem;">Album Art Wallpaper</label><div id="sw-artAsBg" class="ios-switch" onclick="toggle('artAsBg')"></div></div>
                     <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Match Accent to Album Art</label><div id="sw-accentAuto" class="ios-switch active" onclick="state.accentAuto=!state.accentAuto;if(!state.accentAuto)restoreUserAccent();document.getElementById('sw-accentAuto').classList.toggle('active',state.accentAuto);save();"></div></div>
                     <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Show Upcoming Track</label><div id="sw-showNextUp" class="ios-switch active" onclick="state.showNextUp=!state.showNextUp;document.getElementById('sw-showNextUp').classList.toggle('active',state.showNextUp);save();"></div></div>
-                    <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Visible</label><div style="display:flex;align-items:center;"><span id="st-nowplaying" class="status-tag">SHOWN</span><div id="sw-showNowplaying" class="ios-switch active" onclick="toggle('showNowplaying')"></div></div></div>
+                    <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Visible</label><div style="display:flex;align-items:center;"><span id="st-nowplaying" class="status-tag off">HIDDEN</span><div id="sw-showNowplaying" class="ios-switch" onclick="toggle('showNowplaying')"></div></div></div>
                     <div style="margin-top:12px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);">
                         <div style="padding:9px 12px;background:rgba(255,255,255,0.03);">
                             <span style="font-size:0.44rem;opacity:0.35;letter-spacing:1px;text-transform:uppercase;display:block;">Playback controls require Spotify Premium</span>
@@ -1430,7 +1440,7 @@
 // ─────────────────────────────────────────────────
 let state = {
     mirrored: false, is24h: false, burnShield: true,
-    showClock: true, showDate: true, showWeather: true, showBattery: false, showNowplaying: false, showStocks: false,
+    showClock: true, showDate: true, showWeather: true, showBattery: true, showNowplaying: false, showStocks: false,
     showWorldclock: false, showMoon: false, showCountdown: false,
     showSeconds: false, weatherUnit: 'C', artAsBg: false, showPills: false,
     tickers: [],
@@ -1452,7 +1462,7 @@ let state = {
     city: 'Calgary', bg: '', history: [],
     isStatic: true, staticColor: '#000000', blur: 0, bgOpacity: 1,
     presets: {}, posLocked: false, activeGradient: '',
-    clockStyle: 'bold', clockGlow: false, clockGlowIntensity: 60,
+    clockStyle: 'bold', clockGlow: true, clockGlowIntensity: 60,
     widgetOpacity: 0.9,
     ambientSound: null, ambientVolume: 0.3,
     weatherTint: false, batteryDynamic: true,
@@ -2129,14 +2139,17 @@ async function searchCities(query) {
     const box = document.getElementById('weather-results');
     if (query.length < 2) { box.style.display = 'none'; return; }
     try {
-        const res  = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${query}&count=5&language=en&format=json`);
+        const res  = await fetch(`https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(query)}&count=5&language=en&format=json`);
         const data = await res.json();
         if (data.results) {
             box.innerHTML = '';
             data.results.forEach(city => {
                 const div = document.createElement('div');
                 div.className = 'city-item';
-                div.innerHTML = `${city.name} <span>${city.admin1 || ''}, ${city.country_code.toUpperCase()}</span>`;
+                div.textContent = city.name;
+                const sub = document.createElement('span');
+                sub.textContent = `${city.admin1 || ''}, ${city.country_code.toUpperCase()}`;
+                div.appendChild(sub);
                 div.onclick = () => selectCity(city.name);
                 box.appendChild(div);
             });
@@ -2218,7 +2231,7 @@ async function updateBattery() {
                 else if (level === 100) fillColor = '#34C759';
                 else fillColor = state.accent;
             }
-            let svg = `<svg width="38" height="22" viewBox="1 8 21 12" fill="none" preserveAspectRatio="xMidYMid meet" style="filter:drop-shadow(0 0 2px rgba(0,0,0,0.5));display:block;" color="${fillColor}">`;
+            let svg = `<svg width="38" height="22" viewBox="1 8 21 12" fill="none" preserveAspectRatio="xMidYMid meet" style="display:block;" color="${fillColor}">`;
             svg += batIcons.frame;
             svg += `<rect x="3.4" y="10.4" width="${fillWidth}" height="7.2" rx="2" fill="${fillColor}"/>`;
             if (isCharging) svg += batIcons.boltOverlay;
@@ -2231,7 +2244,15 @@ async function updateBattery() {
         updateUI();
         b.onlevelchange = updateUI;
         b.onchargingchange = updateUI;
-    } catch (e) { document.getElementById('battery-widget').style.display = 'none'; }
+    } catch (e) {
+        state.showBattery = false;
+        const bw = document.getElementById('battery-widget');
+        if (bw) bw.style.display = 'none';
+        const sw = document.getElementById('sw-showBattery');
+        if (sw) sw.classList.remove('active');
+        const st = document.getElementById('st-battery');
+        if (st) { st.innerText = 'HIDDEN'; st.className = 'status-tag off'; }
+    }
 }
 
 // ─────────────────────────────────────────────────
@@ -2336,7 +2357,13 @@ function renderTickerTags() {
     state.tickers.forEach(t => {
         const tag = document.createElement('div');
         tag.className = 'ticker-tag';
-        tag.innerHTML = `<span>${t}</span><button onclick="removeTicker('${t}')" title="Remove">✕</button>`;
+        const label = document.createElement('span');
+        label.textContent = t;
+        const btn = document.createElement('button');
+        btn.title = 'Remove';
+        btn.textContent = '✕';
+        btn.addEventListener('click', () => removeTicker(t));
+        tag.append(label, btn);
         container.appendChild(tag);
     });
 }
@@ -2426,6 +2453,7 @@ let _secDB = null;
 let _secLoading = false;
 let _secLoadFailed = false;
 let _tickerSearchTimer = null;
+let _tickerHighlight = -1;
 
 // SEC EDGAR has CORS restrictions — try multiple proxies in order
 const SEC_PROXIES = [
@@ -2535,8 +2563,13 @@ function _doTickerSearch(query) {
         const div = document.createElement('div');
         div.className   = 'ticker-item';
         div.dataset.sym = sym;
-        div.innerHTML   = '<span class="ticker-item-symbol">' + sym + '</span>' +
-                          '<span class="ticker-item-sub">'    + name + '</span>';
+        const symEl = document.createElement('span');
+        symEl.className = 'ticker-item-symbol';
+        symEl.textContent = sym;
+        const subEl = document.createElement('span');
+        subEl.className = 'ticker-item-sub';
+        subEl.textContent = name;
+        div.append(symEl, subEl);
         div.addEventListener('pointerdown', e => { e.preventDefault(); selectTicker(sym); });
         box.appendChild(div);
     });
@@ -2697,7 +2730,13 @@ function renderTzTags() {
         const label = TZ_OPTIONS.find(o => o.tz === tz)?.label ?? tz.split('/').pop().replace('_', ' ');
         const tag = document.createElement('div');
         tag.className = 'ticker-tag';
-        tag.innerHTML = `<span>${label}</span><button onclick="removeTimezone('${tz}')" title="Remove">✕</button>`;
+        const tzLabel = document.createElement('span');
+        tzLabel.textContent = label;
+        const btn = document.createElement('button');
+        btn.title = 'Remove';
+        btn.textContent = '✕';
+        btn.addEventListener('click', () => removeTimezone(tz));
+        tag.append(tzLabel, btn);
         container.appendChild(tag);
     });
 }
@@ -2720,7 +2759,13 @@ function updateWorldClock() {
         });
         const row = document.createElement('div');
         row.className = 'wc-row';
-        row.innerHTML = `<span class="wc-city">${label}</span><span class="wc-time">${timeStr}</span>`;
+        const cityEl = document.createElement('span');
+        cityEl.className = 'wc-city';
+        cityEl.textContent = label;
+        const timeEl = document.createElement('span');
+        timeEl.className = 'wc-time';
+        timeEl.textContent = timeStr;
+        row.append(cityEl, timeEl);
         list.appendChild(row);
         if (i < state.timezones.length - 1) {
             const div = document.createElement('div');
@@ -3408,7 +3453,10 @@ function updateNowPlayingUI(data, nextTrack) {
 // ── Playback controls (requires Spotify Premium) ──
 async function spotifyControl(method, endpoint) {
     if (!spotify.accessToken) return;
-    if (Date.now() > spotify.expiresAt - 60000) await refreshSpotifyToken();
+    if (Date.now() > spotify.expiresAt - 60000) {
+        const ok = await refreshSpotifyToken();
+        if (!ok) return;
+    }
     try {
         await fetch(`https://api.spotify.com/v1/me/player/${endpoint}`, {
             method,
@@ -3421,6 +3469,7 @@ async function spotifyControl(method, endpoint) {
 }
 
 function spotifyPlayPause() {
+    if (!spotify.accessToken) return; // don't toggle UI while disconnected
     const isPaused = document.getElementById('np-play-icon').style.display !== 'none';
     spotifyControl('PUT', isPaused ? 'play' : 'pause');
     // Optimistic UI toggle
@@ -3622,7 +3671,15 @@ function renderThemeList() {
         const actions = document.createElement('div');
         actions.className = 'theme-actions';
         actions.style.flexShrink = '0';
-        actions.innerHTML = `<button onclick="loadTheme('${name}')" style="color:var(--accent);">Load</button><button onclick="deleteTheme('${name}')" style="color:#ff4444;">✕</button>`;
+        const loadBtn = document.createElement('button');
+        loadBtn.textContent = 'Load';
+        loadBtn.style.color = 'var(--accent)';
+        loadBtn.addEventListener('click', () => loadTheme(name));
+        const delBtn = document.createElement('button');
+        delBtn.textContent = '✕';
+        delBtn.style.color = '#ff4444';
+        delBtn.addEventListener('click', () => deleteTheme(name));
+        actions.append(loadBtn, delBtn);
 
         item.appendChild(nameSpan);
         item.appendChild(actions);
@@ -3831,7 +3888,7 @@ const ZONES = (() => {
         }
     }
     return z;
-})(); // 165 zones
+})(); // 23×31 = 713 zones
 
 const WIDGET_KEYS = ['clock', 'date', 'weather', 'battery', 'nowplaying', 'stocks', 'worldclock', 'moon', 'countdown'];
 const DEFAULT_POS = {
@@ -3875,6 +3932,24 @@ function positionWidget(key) {
     // Clear any pill transform left from previous approach
     const pill = el.querySelector('.widget-pill');
     if (pill) pill.style.transform = '';
+    _kickCrispRaster(el);
+}
+
+// Force iOS WebKit to re-rasterize a scaled widget at its current transform
+// scale. A composited layer that is pinned (filter/will-change) keeps a stale
+// low-resolution bitmap and just stretches it when scaled up. Toggling
+// will-change across a frame forces a fresh, crisp rasterization at the final
+// scale.
+function _kickCrispRaster(el) {
+    if (!el || el._rasterKicking) return;
+    el._rasterKicking = true;
+    el.style.willChange = 'transform';
+    void el.offsetWidth; // flush style so the layer is re-committed
+    requestAnimationFrame(() => {
+        el.style.willChange = '';
+        void el.offsetWidth;
+        el._rasterKicking = false;
+    });
 }
 
 // Ghost system is fully removed — grid is invisible
@@ -4417,6 +4492,10 @@ function optimizeScale() {
 
     // Reset all per-widget scales first so we optimize from a clean baseline
     state.widgetScales = {};
+    // Re-apply the cleared per-widget scales to the DOM so the baseline
+    // measurements below reflect scale=1 for every widget (stale per-widget
+    // transforms would otherwise skew the auto-fit result).
+    for (const key of WIDGET_KEYS_VIS) positionWidget(key);
 
     // Cache base bounding rects at scale=1, then for each binary-search candidate
     // we just set state.scale and call positionWidget (cheap) — NOT applyAll (heavy).
@@ -4495,8 +4574,15 @@ function toggle(key) {
             const wasHidden = el.style.opacity === '0' || el.style.display === 'none';
             el.style.opacity = show ? '' : '0';
             el.style.pointerEvents = show ? 'all' : 'none';
-            if (show && !el.dataset.iosDisabled) el.style.display = 'flex';
-        if (!show || el.dataset.iosDisabled) { if(el.dataset.iosDisabled) { el.style.opacity='0'; el.style.display='none'; state[key]=false; const _wk2=key.startsWith('show')?key.charAt(4).toLowerCase()+key.slice(5):key; const sw2=document.getElementById('sw-'+_wk2)||document.getElementById('sw-'+key); if(sw2) sw2.classList.remove('active'); return; } }
+            el.style.display = (show && !el.dataset.iosDisabled) ? 'flex' : 'none';
+            if (el.dataset.iosDisabled) {
+                el.style.opacity = '0';
+                el.style.display = 'none';
+                state[key] = false;
+                const sw2 = document.getElementById('sw-' + key);
+                if (sw2) sw2.classList.remove('active');
+                return;
+            }
             // Entrance animation
             if (show && wasHidden) {
                 el.classList.remove('entering');
@@ -4686,6 +4772,7 @@ function initWidgetDrag(key) {
     el.addEventListener('touchstart', (e) => {
         if (e.target.closest('button, input, a')) return;
         if (document.getElementById('widget-ctx-menu').classList.contains('visible')) return;
+        if (e.touches.length > 1) return; // two-finger pinch is handled by initPinchScale
 
         _hasMoved   = false;
         _dragStarted = false;
@@ -4888,19 +4975,21 @@ function focusCountdownName() {
 // ctxLockToggle removed — lock moved to settings panel only
 
 function ctxHide() {
-    if (!_ctxKey) return;
-    const el = document.getElementById(_ctxKey + '-widget');
+    const key = _ctxKey;
+    if (!key) return;
+    const el = document.getElementById(key + '-widget');
     if (el) {
         el.style.transition = 'opacity 0.3s ease';
         el.style.opacity = '0';
         setTimeout(() => {
             el.style.transition = '';
-            const showKey = 'show' + _ctxKey.charAt(0).toUpperCase() + _ctxKey.slice(1);
+            el.style.display = 'none';
+            const showKey = 'show' + key.charAt(0).toUpperCase() + key.slice(1);
             state[showKey] = false;
             el.style.pointerEvents = 'none';
-            const st = document.getElementById('st-' + _ctxKey);
+            const st = document.getElementById('st-' + key);
             if (st) { st.innerText = 'HIDDEN'; st.className = 'status-tag off'; }
-            const sw = document.getElementById('sw-show' + _ctxKey.charAt(0).toUpperCase() + _ctxKey.slice(1));
+            const sw = document.getElementById('sw-show' + key.charAt(0).toUpperCase() + key.slice(1));
             if (sw) sw.classList.remove('active');
             save();
         }, 300);
@@ -4935,8 +5024,13 @@ function ctxSetWidgetScale(val) {
     _applyWidgetScaleDirect(_ctxKey, v);
     // Debounce save so we don't write localStorage 60x/sec while dragging
     clearTimeout(_ctxScaleSaveTimer);
+    const _k = _ctxKey;
     _ctxScaleSaveTimer = setTimeout(() => {
         save();
+        if (_k) {
+            const _el = document.getElementById(_k + '-widget');
+            if (_el) _kickCrispRaster(_el);
+        }
     }, 400);
 }
 
@@ -4971,9 +5065,9 @@ function _applyWidgetScaleDirect(key, perWidgetScale) {
     // during scaling. scale3d() forces the GPU to re-rasterize the layer at
     // the new size, matching the crisp quality the desktop browser achieves
     // on a static frame. The Z-component (1) is required to keep this a
-    // proper 3D transform that iOS WebKit honours. The .widget CSS rule
-    // also applies filter: contrast(1) which forces iOS WebKit to commit the
-    // widget to its own compositor layer in the first place.
+    // proper 3D transform that iOS WebKit honours. The .widget CSS rule keeps
+    // the widget on its own compositor layer without a rasterization-pinning
+    // filter, so it re-rasterizes crisply at the current scale.
     el.style.transform = `translate3d(calc(-50% + ${bsx}), calc(-50% + ${bsy}), 0) scale3d(${mirror * widgetScale}, ${widgetScale}, 1)`;
     // Only touch the pill transform if it might be set. Avoid the querySelector
     // when the pill is already in its baseline state — flagged via _pillToggled
@@ -5104,13 +5198,13 @@ document.addEventListener('click', (e) => {
 // PREVENT PAGE SCROLL (all devices, especially iOS)
 // ─────────────────────────────────────────────────
 document.addEventListener('touchmove', e => {
-    // Allow scrolling only inside the side panel
-    if (e.target.closest('#side-panel')) return;
+    // Allow scrolling inside the side panel and the fixed ticker dropdown
+    if (e.target.closest('#side-panel') || e.target.closest('#ticker-results')) return;
     e.preventDefault();
 }, { passive: false });
 
 document.addEventListener('wheel', e => {
-    if (!e.target.closest('#side-panel')) e.preventDefault();
+    if (!e.target.closest('#side-panel') && !e.target.closest('#ticker-results')) e.preventDefault();
 }, { passive: false });
 
 // ─────────────────────────────────────────────────
@@ -5121,6 +5215,7 @@ function applyWeatherTint(code) {
     const tint = document.getElementById('weather-tint');
     if (!tint) return;
     if (!state.weatherTint) { tint.style.opacity = '0'; return; }
+    if (typeof code !== 'number' || Number.isNaN(code)) { tint.style.opacity = '0'; return; }
 
     let color;
     if (code === 0) {
@@ -5208,7 +5303,6 @@ function _updateCtxScaleBar(val) {
         e.stopPropagation();
         _draggingBar = true;
         _trackRect = null; // recompute on a new drag in case of resize
-        _ctxLayerKicked = false; // next scale event will kick the iOS layer
         // First event: apply immediately so the thumb jumps to the cursor
         _scalePendingX = null;
         _updateCtxScaleBar(scaleFromEvent(e.clientX));
@@ -5228,7 +5322,6 @@ function _updateCtxScaleBar(val) {
         if (!t) return;
         _trackRect = null;
         _scalePendingX = null;
-        _ctxLayerKicked = false; // next scale event will kick the iOS layer
         _updateCtxScaleBar(scaleFromEvent(t.clientX));
         ctxSetWidgetScale(scaleFromEvent(t.clientX));
     }, { passive: true });
@@ -5260,6 +5353,9 @@ function initPinchScale(key) {
     el.addEventListener('touchstart', (e) => {
         if (e.touches.length !== 2) return;
         e.preventDefault(); // prevent page zoom
+        // A second finger landed while a one-finger drag was in progress —
+        // cancel the drag so the pinch owns the gesture.
+        if (_activeDragCancel) { _activeDragCancel(); _activeDragCancel = null; }
         _isPinching = true;
         _pinchStartDist = Math.hypot(
             e.touches[0].clientX - e.touches[1].clientX,
@@ -5373,5 +5469,6 @@ window.addEventListener('error', () => {
     if (o) { o.classList.add('hidden'); setTimeout(() => o.remove(), 700); }
 });
 </script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"82216019171e452a9aa94300393e69a4","r":1}' crossorigin="anonymous"></script>
 </body>
 </html>
