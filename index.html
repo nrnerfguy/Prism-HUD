@@ -101,7 +101,7 @@
         body.low-power .widget-pill { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
         body.low-power #clock.style-bold,
         body.low-power #clock.style-thin,
-        body.low-power #clock.style-retro { text-shadow: none !important; } /* no glow or shadow in low power */
+        body.low-power #clock.style-retro { text-shadow: none !important; filter: none !important; } /* no glow or shadow in low power */
 
         @keyframes hudReveal {
             from { opacity: 0; transform: scale(0.97); }
@@ -122,7 +122,7 @@
             -webkit-backdrop-filter: blur(32px) saturate(200%);
             padding: 10px 20px;
             border: 1px solid rgba(255,255,255,0.08);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.07);
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
         }
 
         /* ── WHITE ACCENT FIXES ── */
@@ -159,11 +159,10 @@
 
         body {
             background-color: #000; color: #fff; margin: 0; padding: 0;
-            width: 100%; height: 100dvh;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             display: flex; justify-content: center; align-items: center;
             font-family: -apple-system, system-ui, sans-serif;
             overflow: hidden;
-            position: fixed;
             font-feature-settings: "kern" 1, "liga" 1;
             text-rendering: optimizeLegibility;
             -webkit-font-smoothing: antialiased;
@@ -171,8 +170,12 @@
         }
 
         #bg-layer {
-            position: fixed; top: -50px; left: -50px; right: -50px;
-            bottom: calc(-50px - env(safe-area-inset-bottom, 0px));
+            /* Span the full viewport (including the iOS home-indicator safe area)
+               as one continuous layer. The old -50px overscan + background-position
+               center shifted the gradient so the bottom strip no longer matched,
+               and the separate #home-indicator-cover re-started the gradient in a
+               tiny box, creating a visible seam + black bar at the bottom. */
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
             z-index: -1;
             background-size: cover; background-position: center; background-repeat: no-repeat;
             background-color: #000;
@@ -191,6 +194,7 @@
             background: #000; /* fallback; overridden in applyAll() */
             z-index: 9999;
             pointer-events: none;
+            display: none; /* removed — #bg-layer now covers the full viewport, so this separate cover only created a mismatched gradient strip */
             transition: background 0.4s ease, background-color 0.4s ease;
         }
 
@@ -313,16 +317,12 @@
         #clock.style-bold {
             font-size: clamp(5rem, 25vw, 12rem); font-weight: 900; font-style: italic;
             letter-spacing: -4px; font-family: -apple-system, system-ui, sans-serif;
-            /* text-shadow (not filter:drop-shadow): drop-shadow forces a rasterized
-               layer pinned at the pre-scale size, which pixelates when the widget is
-               scaled up. text-shadow re-paints crisply at any transform scale. */
-            text-shadow:
-                0 calc(12px * var(--clock-shadow)) calc(24px * var(--clock-shadow)) rgba(0,0,0,0.85),
-                0 0 calc(5px  * var(--glow-intensity)) var(--accent),
-                0 0 calc(12px * var(--glow-intensity)) var(--accent),
-                0 0 calc(24px * var(--glow-intensity)) var(--accent),
-                0 0 calc(42px * var(--glow-intensity)) var(--accent),
-                0 0 calc(72px * var(--glow-intensity)) var(--accent);
+            /* Glow is an SVG feGaussianBlur filter (#clock-glow) — a true Gaussian
+               falloff that stays smooth at any size. The previous 5-layer
+               text-shadow stack banded/blockified into visible rings on iOS at
+               large scales. Only the soft black drop shadow stays here. */
+            text-shadow: 0 calc(12px * var(--clock-shadow)) calc(24px * var(--clock-shadow)) rgba(0,0,0,0.85);
+            filter: url(#clock-glow);
             /* Italic glyphs lean right — small left inset so glyphs read as centred */
             padding-left: -0.25em;
         }
@@ -330,6 +330,7 @@
         #clock.no-glow {
             /* Keep shadow even with glow off — only remove the accent glow */
             text-shadow: 0 calc(12px * var(--clock-shadow)) calc(24px * var(--clock-shadow)) rgba(0,0,0,0.85) !important;
+            filter: none !important;
         }
 
         /* Give italic overhang room to breathe on the right without clipping */
@@ -340,24 +341,14 @@
             font-size: clamp(4rem, 22vw, 11rem); font-weight: 100; font-style: normal;
             font-family: 'Outfit', sans-serif; letter-spacing: 20px;
             margin-right: -20px;
-            text-shadow:
-                0 calc(10px * var(--clock-shadow)) calc(20px * var(--clock-shadow)) rgba(0,0,0,0.8),
-                0 0 calc(4px  * var(--glow-intensity)) var(--accent),
-                0 0 calc(10px * var(--glow-intensity)) var(--accent),
-                0 0 calc(20px * var(--glow-intensity)) var(--accent),
-                0 0 calc(36px * var(--glow-intensity)) var(--accent),
-                0 0 calc(64px * var(--glow-intensity)) var(--accent);
+            text-shadow: 0 calc(10px * var(--clock-shadow)) calc(20px * var(--clock-shadow)) rgba(0,0,0,0.8);
+            filter: url(#clock-glow);
         }
         #clock.style-retro {
             font-size: clamp(3.5rem, 18vw, 9rem); font-family: 'Share Tech Mono', monospace;
             font-weight: normal; font-style: normal;            letter-spacing: 10px;
-            text-shadow:
-                0 calc(8px * var(--clock-shadow)) calc(18px * var(--clock-shadow)) rgba(0,0,0,0.9),
-                0 0 calc(3px  * var(--glow-intensity)) currentColor,
-                0 0 calc(8px  * var(--glow-intensity)) currentColor,
-                0 0 calc(16px * var(--glow-intensity)) currentColor,
-                0 0 calc(30px * var(--glow-intensity)) currentColor,
-                0 0 calc(56px * var(--glow-intensity)) currentColor;
+            text-shadow: 0 calc(8px * var(--clock-shadow)) calc(18px * var(--clock-shadow)) rgba(0,0,0,0.9);
+            filter: url(#clock-glow);
             margin-right: -10px;
         }
 
@@ -919,6 +910,22 @@
 </div>
 
 <div id="bg-layer"></div>
+<!-- Smooth clock glow via SVG feGaussianBlur (replaces the banding-prone text-shadow stack) -->
+<svg width="0" height="0" style="position:absolute;overflow:hidden;" aria-hidden="true" focusable="false">
+    <defs>
+        <filter id="clock-glow" x="-150%" y="-150%" width="400%" height="400%" color-interpolation-filters="sRGB">
+            <feGaussianBlur id="clock-glow-g1" in="SourceGraphic" stdDeviation="4.3" result="g1"/>
+            <feGaussianBlur id="clock-glow-g2" in="SourceGraphic" stdDeviation="13" result="g2"/>
+            <feGaussianBlur id="clock-glow-g3" in="SourceGraphic" stdDeviation="34.6" result="g3"/>
+            <feMerge>
+                <feMergeNode in="g3"/>
+                <feMergeNode in="g2"/>
+                <feMergeNode in="g1"/>
+                <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+        </filter>
+    </defs>
+</svg>
 <!-- Tiny silent video to prevent screen dimming on iOS (NoSleep technique) -->
 <video id="nosleep-video" muted playsinline loop
     style="position:fixed;top:-1px;left:-1px;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1;">
@@ -1178,7 +1185,7 @@
                 <div style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);">
                     <div class="row" style="margin-bottom:10px;"><label style="font-size:0.5rem;">Transparent Background</label><div id="sw-transparentBg" class="ios-switch" onclick="toggleTransparentBg()"></div></div>
                     <div class="row"><label style="font-size:0.5rem;">Blur</label></div>
-                    <input type="range" min="0" max="40" step="1" value="0" oninput="state.blur=parseFloat(this.value);document.getElementById('bg-layer').style.filter='blur('+state.blur+'px)';save();">
+                    <input type="range" min="0" max="40" step="1" value="0" oninput="state.blur=parseFloat(this.value);applyBgBlur();save();">
                     <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Opacity</label></div>
                     <input type="range" min="0" max="1" step="0.01" value="1" oninput="state.bgOpacity=parseFloat(this.value);document.getElementById('bg-layer').style.opacity=state.bgOpacity;save();">
                 </div>
@@ -2072,11 +2079,30 @@ function applyGlowIntensity() {
     // clockGlowIntensity is 0–100; map to 0.0–1.2 so 100 = extra intense
     const intensity = state.clockGlow === false ? 0 : (state.clockGlowIntensity ?? 60) / 100 * 1.2;
     document.documentElement.style.setProperty('--glow-intensity', intensity.toFixed(3));
+    // The glow is an SVG feGaussianBlur filter (#clock-glow) — a true Gaussian
+    // falloff that doesn't band like text-shadow stacks. Scale each blur radius
+    // with the intensity slider (0 collapses the blur to a no-op).
+    const g1 = document.getElementById('clock-glow-g1');
+    const g2 = document.getElementById('clock-glow-g2');
+    const g3 = document.getElementById('clock-glow-g3');
+    if (g1) g1.setAttribute('stdDeviation', (6  * intensity).toFixed(2));
+    if (g2) g2.setAttribute('stdDeviation', (18 * intensity).toFixed(2));
+    if (g3) g3.setAttribute('stdDeviation', (48 * intensity).toFixed(2));
 }
 
 function applyWidgetOpacity() {
     const op = parseFloat(state.widgetOpacity ?? 0.9);
     document.documentElement.style.setProperty('--widget-opacity', op);
+}
+
+// Applies the background blur to #bg-layer, scaling it up slightly while blurred
+// so the blur bleed doesn't reveal the black page behind the now edge-to-edge layer.
+function applyBgBlur() {
+    const b = document.getElementById('bg-layer');
+    if (!b) return;
+    const blur = parseFloat(state.blur) || 0;
+    b.style.filter = blur > 0 ? `blur(${blur}px)` : 'none';
+    b.style.transform = blur > 0 ? 'scale(1.12)' : 'none';
 }
 
 // ─────────────────────────────────────────────────
@@ -3745,7 +3771,7 @@ function applyAll() {
         }
     }
     document.getElementById('static-bg-preview').classList.toggle('active', state.isStatic);
-    bgl.style.filter  = `blur(${state.blur}px)`;
+    applyBgBlur();
     bgl.style.opacity = state.bgOpacity;
 
     document.getElementById('sw-mirrored').classList.toggle('active', state.mirrored);
@@ -5125,7 +5151,7 @@ function applyGradient(g) {
     document.body.style.backgroundColor = 'transparent';
     const hic = document.getElementById('home-indicator-cover');
     if (hic) { hic.style.backgroundImage = g.css; hic.style.backgroundColor = 'transparent'; }
-    bgl.style.filter  = `blur(${state.blur}px)`;
+    applyBgBlur();
     bgl.style.opacity = state.bgOpacity;
     save();
     renderGradients();
