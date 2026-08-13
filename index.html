@@ -214,12 +214,12 @@
                when the widget is scaled up via transform: scale3d(); */
             -webkit-font-smoothing: antialiased;
             text-rendering: geometricPrecision;
-            /* Scaling uses translate3d + scale3d() so the widget stays on its own
-               compositor layer, but WITHOUT a rasterization-pinning filter or
-               will-change. Un-pinned layers are re-rasterized at the current
-               scale, which keeps text/SVG crisp even at large scales on iOS.
-               (filter: contrast(1) was pinning a stale low-res bitmap and
-               stretching it — the cause of the pixelation when scaled up.) */
+            /* Scale is applied to the inner .widget-pill via the CSS `zoom`
+               property (set from JS). `zoom` reflows the content so text/SVG
+               are re-rendered at the target resolution — unlike transform:
+               scale3d(), which only upscales a pre-rasterized bitmap and made
+               large widgets look pixelated on iOS. The outer .widget transform
+               is used only for centering and horizontal mirroring. */
             -webkit-transform-origin: center center;
             transform-origin: center center;
         }
@@ -3919,19 +3919,11 @@ function positionWidget(key) {
     el.style.setProperty('--wmx', mirror);
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
     const bsy = el.style.getPropertyValue('--bsy') || '0px';
-    // 3D transform (translate3d) is required so iOS WebKit re-rasterizes
-    // the widget at the new scale size. Using a plain 2D `translate(2D)`
-    // makes iOS stretch a pre-rasterized low-res bitmap and look blurry.
-    // scale3d() (3D) instead of scale() — on iOS WebKit, plain 2D scale()
-    // stretches a pre-rasterized low-res bitmap and the widget stays blurry
-    // during scaling. scale3d() forces the GPU to re-rasterize the layer at
-    // the new size, matching the crisp quality the desktop browser achieves
-    // on a static frame. The Z-component (1) is required to keep this a
-    // proper 3D transform that iOS WebKit honours.
-    el.style.transform = `translate3d(calc(-50% + ${bsx}), calc(-50% + ${bsy}), 0) scale3d(${mirror * widgetScale}, ${widgetScale}, 1)`;
-    // Clear any pill transform left from previous approach
+    // Scale is applied to the .widget-pill via CSS `zoom` (reflows text/SVG at
+    // the target resolution); the transform below only centers and mirrors.
     const pill = el.querySelector('.widget-pill');
-    if (pill) pill.style.transform = '';
+    if (pill) pill.style.zoom = widgetScale;
+    el.style.transform = `translate3d(calc(-50% + ${bsx}), calc(-50% + ${bsy}), 0) scaleX(${mirror})`;
     _kickCrispRaster(el);
 }
 
@@ -4062,7 +4054,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
 
             const offsetX = curPxX - anchorX;
             const offsetY = curPxY - anchorY;
-            el.style.transform = `translate3d(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px), 0) scale3d(${state.mirrored ? -_ws : _ws}, ${_ws}, 1)`;
+            el.style.transform = `translate3d(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px), 0) scaleX(${state.mirrored ? -1 : 1})`;
             highlightGhost(curPxX, curPxY);
         });
     };
@@ -4105,7 +4097,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         el.style.top  = zone.y + '%';
         const compensateX = curPxX - snapPxX;
         const compensateY = curPxY - snapPxY;
-        el.style.transform = `translate3d(calc(-50% + ${compensateX}px), calc(-50% + ${compensateY}px), 0) scale3d(${state.mirrored ? -_ws : _ws}, ${_ws}, 1)`;
+        el.style.transform = `translate3d(calc(-50% + ${compensateX}px), calc(-50% + ${compensateY}px), 0) scaleX(${state.mirrored ? -1 : 1})`;
 
         // Step 2: Force the browser to commit left/top + compensation transform
         // before we apply the spring animation
@@ -4116,7 +4108,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         // The pill scale stays constant throughout — no jump
         el.style.transition = '';
         el.classList.add('snapping');
-        el.style.transform = `translate3d(-50%, -50%, 0) scale3d(${state.mirrored ? -_ws : _ws}, ${_ws}, 1)`;
+        el.style.transform = `translate3d(-50%, -50%, 0) scaleX(${state.mirrored ? -1 : 1})`;
 
         // Step 4: After spring finishes, lock everything in place
         const cleanup = () => {
@@ -5060,22 +5052,10 @@ function _applyWidgetScaleDirect(key, perWidgetScale) {
     // for stocks (no inline bsx/bsy → falls through to '0px' cheaply).
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
     const bsy = el.style.getPropertyValue('--bsy') || '0px';
-    // scale3d() (3D) instead of scale() — on iOS WebKit, plain 2D scale()
-    // stretches a pre-rasterized low-res bitmap and the widget stays blurry
-    // during scaling. scale3d() forces the GPU to re-rasterize the layer at
-    // the new size, matching the crisp quality the desktop browser achieves
-    // on a static frame. The Z-component (1) is required to keep this a
-    // proper 3D transform that iOS WebKit honours. The .widget CSS rule keeps
-    // the widget on its own compositor layer without a rasterization-pinning
-    // filter, so it re-rasterizes crisply at the current scale.
-    el.style.transform = `translate3d(calc(-50% + ${bsx}), calc(-50% + ${bsy}), 0) scale3d(${mirror * widgetScale}, ${widgetScale}, 1)`;
-    // Only touch the pill transform if it might be set. Avoid the querySelector
-    // when the pill is already in its baseline state — flagged via _pillToggled
-    // by the drag engine when it leaves a non-empty transform.
-    if (el._pillToggled) {
-        const pill = el.querySelector('.widget-pill');
-        if (pill) pill.style.transform = '';
-    }
+    // Scale via CSS `zoom` on the pill (reflows at target resolution).
+    const pill = el.querySelector('.widget-pill');
+    if (pill) pill.style.zoom = widgetScale;
+    el.style.transform = `translate3d(calc(-50% + ${bsx}), calc(-50% + ${bsy}), 0) scaleX(${mirror})`;
     if (key === 'clock') _scheduleClockMarginRecompute();
 }
 
