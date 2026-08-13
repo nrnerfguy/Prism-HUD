@@ -87,6 +87,14 @@
             animation-duration: 0.001ms !important;
             animation-iteration-count: 1 !important;
             transition-duration: 0.001ms !important;
+            /* Blur is the single most expensive GPU op (re-samples the backdrop
+               every frame). Disable ALL of them, not just the panels/pills. */
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+            /* geometricPrecision does sub-pixel glyph/shape fitting on every
+               repaint — switch to the fast rasterization path to save CPU. */
+            text-rendering: optimizeSpeed !important;
+            shape-rendering: optimizeSpeed !important;
         }
         /* Keep these transitions even in low power — they're functional not decorative */
         body.low-power #side-panel { transition-duration: 0.25s !important; }
@@ -1194,7 +1202,7 @@
 
         <div class="control-group">
             <div class="row"><label>Widget Size</label></div>
-            <input type="range" id="range-scale" min="0.3" max="2.5" step="0.01" value="1" oninput="state.scale=parseFloat(this.value);applyAll();save();">
+            <input type="range" id="range-scale" min="0.3" max="2.5" step="0.01" value="1" oninput="state.scale=parseFloat(this.value);applyGlobalScale();save();">
             <button onclick="optimizeScale()" class="update-btn" style="margin-top:10px;background:rgba(255,255,255,0.08);color:#fff;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" style="vertical-align:-2px;margin-right:6px;"><path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/></svg>Auto-Fit Scale</button>
             <div class="row" style="margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.06);"><label style="font-size:0.5rem;">Widget Opacity</label></div>
             <input type="range" id="range-widget-opacity" min="0.3" max="1.0" step="0.01" value="0.9"
@@ -1898,6 +1906,16 @@ function restoreUserAccent() {
 // ─────────────────────────────────────────────────
 // Clock digit flip — track previous displayed string to only animate changed digits
 let _prevClockStr = '';
+let _prevDateStr = '';
+// Write the date line only when it actually changes (once per midnight), not on
+// every 1s tick — avoids a pointless DOM write + style recalc each second.
+function _updateDate(now) {
+    const str = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
+    if (str !== _prevDateStr) {
+        document.getElementById('date').textContent = str;
+        _prevDateStr = str;
+    }
+}
 function updateClock() {
     const now = new Date();
     let h = now.getHours();
@@ -1909,7 +1927,7 @@ function updateClock() {
     const clockEl = document.getElementById('clock');
     if (state.clockStyle === 'analog') {
         updateAnalogClock(now);
-        document.getElementById('date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
+        _updateDate(now);
         return;
     }
 
@@ -1926,29 +1944,38 @@ function updateClock() {
         }
         _prevClockStr = timeStr;
     } else {
-        // Update only changed characters with flip animation
         const spans = clockEl.children;
-        for (let i = 0; i < timeStr.length; i++) {
-            if (timeStr[i] !== _prevClockStr[i] && spans[i] && spans[i].classList.contains('digit-wrap')) {
-                const span = spans[i];
-                span.classList.remove('flip-in', 'flip-out');
-                void span.offsetWidth;
-                span.classList.add('flip-out');
-                const newChar = timeStr[i];
-                setTimeout(() => {
-                    span.textContent = newChar;
-                    span.classList.remove('flip-out');
-                    span.classList.add('flip-in');
-                    setTimeout(() => span.classList.remove('flip-in'), 200);
-                }, 90);
-            } else if (spans[i]) {
-                spans[i].textContent = timeStr[i];
+        if (state.lowPowerMode) {
+            // Low power: set text directly — skip the flip animation, the forced
+            // reflow, and the per-digit setTimeout chain (real CPU savings when
+            // seconds are visible).
+            for (let i = 0; i < timeStr.length; i++) {
+                if (spans[i] && spans[i].textContent !== timeStr[i]) spans[i].textContent = timeStr[i];
+            }
+        } else {
+            // Update only changed characters with flip animation
+            for (let i = 0; i < timeStr.length; i++) {
+                if (timeStr[i] !== _prevClockStr[i] && spans[i] && spans[i].classList.contains('digit-wrap')) {
+                    const span = spans[i];
+                    span.classList.remove('flip-in', 'flip-out');
+                    void span.offsetWidth;
+                    span.classList.add('flip-out');
+                    const newChar = timeStr[i];
+                    setTimeout(() => {
+                        span.textContent = newChar;
+                        span.classList.remove('flip-out');
+                        span.classList.add('flip-in');
+                        setTimeout(() => span.classList.remove('flip-in'), 200);
+                    }, 90);
+                } else if (spans[i]) {
+                    spans[i].textContent = timeStr[i];
+                }
             }
         }
         _prevClockStr = timeStr;
     }
 
-    document.getElementById('date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
+    _updateDate(now);
     updateAnalogClock(now);
 }
 
@@ -2021,7 +2048,10 @@ function startAnalogRAF() {
     (function rafClock() {
         if (state.clockStyle !== 'analog') { _rafRunning = false; return; }
         updateAnalogClock(new Date());
-        requestAnimationFrame(rafClock);
+        // In low-power mode render the analog hands once per second instead of
+        // every frame — the 60fps sweep is the biggest GPU draw in the app.
+        if (state.lowPowerMode) setTimeout(rafClock, 1000);
+        else requestAnimationFrame(rafClock);
     })();
 }
 
@@ -2104,6 +2134,26 @@ function applyBgBlur() {
     b.style.filter = blur > 0 ? `blur(${blur}px)` : 'none';
     b.style.transform = blur > 0 ? 'scale(1.12)' : 'none';
 }
+// Lightweight global-scale application for the settings Scale slider. Changing
+// state.scale only needs each widget's zoom/position re-applied, so we use the
+// cheap positionWidget loop instead of the full applyAll() (which rebuilds the
+// ticker/countdown/timezone lists and re-syncs every panel control). rAF-throttled
+// so 120Hz touch input doesn't run redundant frames.
+let _globalScaleRaf = false;
+function applyGlobalScale() {
+    if (_globalScaleRaf) return;
+    _globalScaleRaf = true;
+    requestAnimationFrame(() => {
+        _globalScaleRaf = false;
+        document.documentElement.style.setProperty('--widget-scale', state.scale);
+        for (const key of WIDGET_KEYS) {
+            const el = document.getElementById(key + '-widget');
+            if (el && el.style.display !== 'none') positionWidget(key);
+        }
+        requestAnimationFrame(recomputeClockLeftMargin);
+    });
+}
+
 
 // ─────────────────────────────────────────────────
 // ANALOG CLOCK
@@ -5034,20 +5084,24 @@ let _ctxScaleSaveTimer = null;
 // transformed element made iOS WebKit re-rasterize the GPU layer at the
 // pre-scale layout size, snapping the widget back to ~1× until the next
 // transform update repainted it at full scale.)
-function ctxSetWidgetScale(val) {
+let _ctxDragStartScale = 1;
+function ctxSetWidgetScale(val, preview) {
     if (!_ctxKey) return;
     if (!state.widgetScales) state.widgetScales = {};
     const v = parseFloat(val);
     state.widgetScales[_ctxKey] = v;
-    // No will-change here: the widget already has a transform on its own GPU
-    // layer. Re-applying will-change on every scale-bar input would make iOS
-    // re-rasterize the layer at the pre-scale layout size — visibly shrinking
-    // the widget until release.
-    const _sw = document.getElementById(_ctxKey + '-widget');
     // Update the visible percentage in the bar — uses cached ref set in initCtxScaleBar
     if (_ctxScaleLabelEl) _ctxScaleLabelEl.textContent = Math.round(v * 100) + '%';
-    // Apply transform directly — much faster than going through positionWidget
-    _applyWidgetScaleDirect(_ctxKey, v);
+    if (preview) {
+        // Live drag: scale the already-composited layer with a GPU transform
+        // (no reflow / no backdrop re-raster / no SVG-filter re-render), so the
+        // slider stays smooth even on heavy widgets. The crisp zoom re-render is
+        // committed once on release via _applyWidgetScaleDirect.
+        _applyWidgetScalePreview(_ctxKey, v, _ctxDragStartScale);
+    } else {
+        // Apply transform directly — much faster than going through positionWidget
+        _applyWidgetScaleDirect(_ctxKey, v);
+    }
     // Debounce save so we don't write localStorage 60x/sec while dragging
     clearTimeout(_ctxScaleSaveTimer);
     const _k = _ctxKey;
@@ -5091,6 +5145,22 @@ function _applyWidgetScaleDirect(key, perWidgetScale) {
     if (pill) pill.style.zoom = widgetScale;
     el.style.transform = `translate3d(calc(-50% + ${bsx}), calc(-50% + ${bsy}), 0) scaleX(${mirror})`;
     if (key === 'clock') _scheduleClockMarginRecompute();
+}
+
+// Live-preview scale during a slider drag. Instead of reflowing the widget via
+// `zoom` on every frame (which re-renders text, SVG and backdrop-filter and is
+// what made the slider laggy on heavy widgets), we scale the already-composited
+// widget layer with a GPU transform. No layout, no repaint — just a compositor
+// scale. The crisp zoom re-render is committed once on release via
+// _applyWidgetScaleDirect, so quality is unchanged.
+function _applyWidgetScalePreview(key, perWidgetScale, startScale) {
+    const el = document.getElementById(key + '-widget');
+    if (!el) return;
+    const factor = startScale ? perWidgetScale / startScale : 1;
+    const mirror = state.mirrored ? -1 : 1;
+    const bsx = el.style.getPropertyValue('--bsx') || '0px';
+    const bsy = el.style.getPropertyValue('--bsy') || '0px';
+    el.style.transform = `translate3d(calc(-50% + ${bsx}), calc(-50% + ${bsy}), 0) scaleX(${mirror})${factor !== 1 ? ` scale(${factor})` : ''}`;
 }
 
 // ─────────────────────────────────────────────────
@@ -5299,7 +5369,7 @@ function _updateCtxScaleBar(val) {
             const val = scaleFromEvent(_scalePendingX);
             _scalePendingX = null;
             _updateCtxScaleBar(val);
-            ctxSetWidgetScale(val);
+            ctxSetWidgetScale(val, true);
         });
     }
 
@@ -5308,10 +5378,16 @@ function _updateCtxScaleBar(val) {
         const val = scaleFromEvent(_scalePendingX);
         _scalePendingX = null;
         _updateCtxScaleBar(val);
-        ctxSetWidgetScale(val);
+        ctxSetWidgetScale(val, false); // commit final scale (crisp zoom)
     }
     function flushSave() {
-        flushApply();
+        if (_scalePendingX !== null) {
+            flushApply();
+        } else if (_ctxKey) {
+            // rAF already consumed the last move — commit the current value so
+            // the crisp zoom re-render still happens on release.
+            ctxSetWidgetScale(state.widgetScales[_ctxKey] ?? 1, false);
+        }
         if (_ctxScaleSaveTimer) {
             clearTimeout(_ctxScaleSaveTimer);
             _ctxScaleSaveTimer = null;
@@ -5325,10 +5401,11 @@ function _updateCtxScaleBar(val) {
         e.stopPropagation();
         _draggingBar = true;
         _trackRect = null; // recompute on a new drag in case of resize
-        // First event: apply immediately so the thumb jumps to the cursor
+        _ctxDragStartScale = (state.widgetScales && state.widgetScales[_ctxKey] !== undefined) ? state.widgetScales[_ctxKey] : 1;
         _scalePendingX = null;
-        _updateCtxScaleBar(scaleFromEvent(e.clientX));
-        ctxSetWidgetScale(scaleFromEvent(e.clientX));
+        const _v0 = scaleFromEvent(e.clientX);
+        _updateCtxScaleBar(_v0);
+        ctxSetWidgetScale(_v0, true); // preview — no reflow on the first event either
     });
     window.addEventListener('mousemove', (e) => {
         if (!_draggingBar) return;
@@ -5344,8 +5421,10 @@ function _updateCtxScaleBar(val) {
         if (!t) return;
         _trackRect = null;
         _scalePendingX = null;
-        _updateCtxScaleBar(scaleFromEvent(t.clientX));
-        ctxSetWidgetScale(scaleFromEvent(t.clientX));
+        _ctxDragStartScale = (state.widgetScales && state.widgetScales[_ctxKey] !== undefined) ? state.widgetScales[_ctxKey] : 1;
+        const _v0 = scaleFromEvent(t.clientX);
+        _updateCtxScaleBar(_v0);
+        ctxSetWidgetScale(_v0, true); // preview
     }, { passive: true });
 
     track.addEventListener('touchmove', (e) => {
@@ -5409,7 +5488,7 @@ function initPinchScale(key) {
         _pinchRaf = true;
         requestAnimationFrame(() => {
             _pinchRaf = false;
-            _applyWidgetScaleDirect(key, newScale);
+            _applyWidgetScalePreview(key, newScale, _pinchStartScale);
             if (_ctxKey === key) _updateCtxScaleBar(newScale);
         });
     }, { passive: false });
@@ -5423,6 +5502,15 @@ function initPinchScale(key) {
                 const finalScale = state.widgetScales[key] || 1;
                 showToast('Scale: ' + Math.round(finalScale * 100) + '%');
             }
+        }
+    }, { passive: true });
+
+    // Commit the crisp zoom re-render even if the pinch is interrupted.
+    el.addEventListener('touchcancel', () => {
+        if (_isPinching) {
+            _isPinching = false;
+            positionWidget(key);
+            save();
         }
     }, { passive: true });
 }
