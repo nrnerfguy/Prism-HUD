@@ -443,6 +443,42 @@
         #np-artist { font-size: 0.72rem; opacity: 0.55; margin-top: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 400; text-shadow: 0 1px 2px rgba(0,0,0,0.85); }
         #np-label { font-size: 0.48rem; text-transform: uppercase; letter-spacing: 3px; opacity: 0.25; margin-top: 7px; font-weight: 600; }
 
+        /* Card pill (was inline) — content-sized like the original layout. */
+        #np-pill {
+            display: flex; flex-direction: row; gap: 14px; align-items: center;
+            max-width: 380px;
+        }
+
+        /* ── NOW PLAYING LARGE VIEW ──
+           Album art up top, big controls, then title/artist, then next-up. */
+        body.np-large #nowplaying-widget { max-width: 440px; width: 94%; }
+        body.np-large #np-pill {
+            flex-direction: column; align-items: stretch; gap: 12px;
+            max-width: 440px; width: 100%;
+        }
+        body.np-large #np-info { flex: none; width: 100%; display: flex; flex-direction: column; }
+        body.np-large #np-art {
+            width: 100%; height: auto; aspect-ratio: 1 / 1;
+            border-radius: 18px; font-size: 4rem;
+        }
+        body.np-large #np-controls { order: 1; justify-content: center; gap: 30px; margin: 6px 0 4px; }
+        body.np-large #np-track   { order: 2; font-size: 1.35rem; text-align: center; margin-top: 2px; }
+        body.np-large #np-artist  { order: 3; font-size: 1rem; text-align: center; }
+        body.np-large #np-bar     { order: 4; height: 3px; margin-top: 4px; }
+        body.np-large #np-label   { order: 5; text-align: center; margin-top: 2px; }
+        body.np-large #np-next-wrap { order: 6; }
+        body.np-large #np-controls .np-btn svg { width: 34px; height: 34px; }
+        body.np-large #np-controls #np-playpause svg { width: 48px; height: 48px; }
+
+        /* ── NOW PLAYING LAYOUT PICKER (settings) ── */
+        .np-view-btn {
+            padding: 6px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.6);
+            font-size: 0.5rem; font-weight: 700; letter-spacing: 0.5px; cursor: pointer;
+            text-transform: uppercase; transition: background 0.15s, color 0.15s, border-color 0.15s;
+        }
+        .np-view-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(var(--accent-rgb,0,122,255),0.1); }
+
         /* ── NAV ── */
         #nav-trigger {
             position: absolute; bottom: 36px; right: 36px; width: 58px; height: 58px;
@@ -1019,7 +1055,7 @@
         </div>
     </div>
     <div id="nowplaying-widget" class="widget" style="display:none;">
-        <div class="widget-pill" style="display:flex;flex-direction:row;gap:14px;align-items:center;max-width:380px;">
+        <div class="widget-pill" id="np-pill">
             <div id="np-art">♫</div>
             <div id="np-info">
                 <div id="np-track">Nothing playing</div>
@@ -1326,6 +1362,13 @@
                     <div class="row"><label style="font-size:0.5rem;">Album Art Wallpaper</label><div id="sw-artAsBg" class="ios-switch" onclick="toggle('artAsBg')"></div></div>
                     <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Match Accent to Album Art</label><div id="sw-accentAuto" class="ios-switch active" onclick="state.accentAuto=!state.accentAuto;if(!state.accentAuto)restoreUserAccent();document.getElementById('sw-accentAuto').classList.toggle('active',state.accentAuto);save();"></div></div>
                     <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Show Upcoming Track</label><div id="sw-showNextUp" class="ios-switch active" onclick="state.showNextUp=!state.showNextUp;document.getElementById('sw-showNextUp').classList.toggle('active',state.showNextUp);save();"></div></div>
+                    <div class="row" style="margin-top:10px;">
+                        <label style="font-size:0.5rem;">Layout</label>
+                        <div style="display:flex;gap:6px;">
+                            <button type="button" class="np-view-btn active" data-view="card" onclick="setNowplayingView('card')">Card</button>
+                            <button type="button" class="np-view-btn" data-view="large" onclick="setNowplayingView('large')">Large</button>
+                        </div>
+                    </div>
                     <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Visible</label><div style="display:flex;align-items:center;"><span id="st-nowplaying" class="status-tag off">HIDDEN</span><div id="sw-showNowplaying" class="ios-switch" onclick="toggle('showNowplaying')"></div></div></div>
                     <div style="margin-top:12px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.07);">
                         <div style="padding:9px 12px;background:rgba(255,255,255,0.03);">
@@ -1495,7 +1538,7 @@ let state = {
         moon:       { x: 17, y: 25 },
         countdown:  { x: 83, y: 25 }
     },
-    scale: 1, accent: '#ffffff', accentAuto: true, showNextUp: true,
+    scale: 1, accent: '#ffffff', accentAuto: true, showNextUp: true, nowplayingLarge: false,
     widgetScales: {},
     city: 'Calgary', bg: '', history: [],
     isStatic: true, staticColor: '#000000', blur: 0, bgOpacity: 1,
@@ -3963,6 +4006,10 @@ function applyAll() {
     if (state.lowPowerMode)  document.body.classList.add('low-power');
     if (state.glassMode)      document.body.classList.add('glass-mode');
     if (state.transparentBg)  document.body.classList.add('transparent-bg');
+    document.body.classList.toggle('np-large', !!state.nowplayingLarge);
+    document.querySelectorAll('.np-view-btn').forEach(b =>
+        b.classList.toggle('active', (state.nowplayingLarge ? 'large' : 'card') === b.dataset.view)
+    );
     const swLP = document.getElementById('sw-lowPowerMode');
     if (swLP) swLP.classList.toggle('active', !!state.lowPowerMode);
     const swGM = document.getElementById('sw-glassMode');
@@ -4427,6 +4474,16 @@ function toggleLowPower() {
     // The CSS handles the visual changes; just persist
     save();
     showToast(state.lowPowerMode ? 'Low Power Mode On' : 'Low Power Mode Off');
+}
+
+function setNowplayingView(view) {
+    state.nowplayingLarge = (view === 'large');
+    document.body.classList.toggle('np-large', state.nowplayingLarge);
+    document.querySelectorAll('.np-view-btn').forEach(b => {
+        b.classList.toggle('active', b.dataset.view === view);
+    });
+    clampWidgetPosition('nowplaying');
+    save();
 }
 
 function toggleAlwaysOn() {
