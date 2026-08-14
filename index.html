@@ -23,6 +23,7 @@
             --smooth-ease: cubic-bezier(0.4, 0, 0.2, 1);
             --slow-ease: cubic-bezier(0.65, 0, 0.35, 1);
             --glow-intensity: 0.6;
+            --glow-blur: 14px;
             --widget-opacity: 0.9;
             --clock-shadow: 1; /* 0 = off, 1 = on */
         }
@@ -51,6 +52,7 @@
             filter: none !important;
         }
         body.glass-mode #clock { filter: none !important; text-shadow: none !important; }
+        body.glass-mode #clock-glow { display: none !important; }
         /* Glass mode — pill gets subtle frosted treatment when pills are on */
         body.glass-mode.show-pills .widget-pill {
             background: rgba(255,255,255,0.04) !important;
@@ -110,6 +112,7 @@
         body.low-power #clock.style-bold,
         body.low-power #clock.style-thin,
         body.low-power #clock.style-retro { text-shadow: none !important; filter: none !important; } /* no glow or shadow in low power */
+        body.low-power #clock-glow { display: none !important; }
 
         @keyframes hudReveal {
             from { opacity: 0; transform: scale(0.97); }
@@ -276,7 +279,7 @@
 
         /* ── CLOCK DIGIT FLIP ── */
         #clock { overflow: visible; white-space: nowrap; display: block; }
-        #clock-widget .widget-pill { white-space: nowrap; min-width: max-content; overflow: visible; }
+        #clock-widget .widget-pill { white-space: nowrap; min-width: max-content; overflow: visible; position: relative; }
         /* Force clock into its own compositing layer at native res — prevents scale pixelation */
         #clock-widget { isolation: isolate; }
         .digit-wrap {
@@ -321,16 +324,14 @@
         #clock {
             line-height: 1; transition: opacity 0.2s ease, text-shadow 0.6s ease; touch-action: manipulation;
             text-rendering: geometricPrecision;
+            position: relative; isolation: isolate;
         }
         #clock.style-bold {
             font-size: clamp(5rem, 25vw, 12rem); font-weight: 900; font-style: italic;
             letter-spacing: -4px; font-family: -apple-system, system-ui, sans-serif;
-            /* Glow is an SVG feGaussianBlur filter (#clock-glow) — a true Gaussian
-               falloff that stays smooth at any size. The previous 5-layer
-               text-shadow stack banded/blockified into visible rings on iOS at
-               large scales. Only the soft black drop shadow stays here. */
+            /* Only the soft black drop shadow stays here — the accent glow is a
+               separate #clock-glow layer behind the digits. */
             text-shadow: 0 calc(12px * var(--clock-shadow)) calc(24px * var(--clock-shadow)) rgba(0,0,0,0.85);
-            filter: url(#clock-glow);
             /* Italic glyphs lean right — small left inset so glyphs read as centred */
             padding-left: -0.25em;
         }
@@ -338,8 +339,26 @@
         #clock.no-glow {
             /* Keep shadow even with glow off — only remove the accent glow */
             text-shadow: 0 calc(12px * var(--clock-shadow)) calc(24px * var(--clock-shadow)) rgba(0,0,0,0.85) !important;
-            filter: none !important;
         }
+        /* Clock glow — a smooth, static radial-gradient halo in a dedicated
+           sibling layer behind the digits. It's a cheap 2-stop CSS paint that
+           WebKit rasterizes once and reuses; keeping it OUT of #clock means the
+           per-second digit updates never invalidate it. No translateZ() or
+           will-change here: those promoted it to a giant persistent GPU layer
+           that re-rasterized on every zoom change — the real source of the drag
+           lag. */
+        #clock-glow {
+            position: absolute; left: 50%; top: 50%;
+            width: 150%; height: 150%;
+            transform: translate(-50%, -50%);
+            background: radial-gradient(ellipse at center, var(--accent) 0%, transparent 68%);
+            opacity: var(--glow-intensity, 0.6);
+            z-index: 0;
+            pointer-events: none;
+            filter: none;
+        }
+        #clock-glow.off { display: none; }
+        #clock { z-index: 1; }
 
         /* Give italic overhang room to breathe on the right without clipping */
         #clock-widget .widget-pill:has(#clock.style-bold) {
@@ -350,13 +369,11 @@
             font-family: 'Outfit', sans-serif; letter-spacing: 20px;
             margin-right: -20px;
             text-shadow: 0 calc(10px * var(--clock-shadow)) calc(20px * var(--clock-shadow)) rgba(0,0,0,0.8);
-            filter: url(#clock-glow);
         }
         #clock.style-retro {
             font-size: clamp(3.5rem, 18vw, 9rem); font-family: 'Share Tech Mono', monospace;
             font-weight: normal; font-style: normal;            letter-spacing: 10px;
             text-shadow: 0 calc(8px * var(--clock-shadow)) calc(18px * var(--clock-shadow)) rgba(0,0,0,0.9);
-            filter: url(#clock-glow);
             margin-right: -10px;
         }
 
@@ -383,7 +400,9 @@
         .a-center { fill: var(--accent); }
         .a-center-hi { fill: rgba(255,255,255,0.75); }
 
-        #date { font-size: 1.35rem; text-transform: uppercase; letter-spacing: 7px; font-weight: 300; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); margin-right: -7px; }
+        #date { display: inline-block; font-size: 1.35rem; text-transform: uppercase; letter-spacing: 5px; font-weight: 300; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); margin-right: -5px; white-space: nowrap; }
+        #date-widget .widget-pill { white-space: nowrap; }
+        body.show-pills #date-widget .widget-pill { padding-right: 0; }
         #weather-widget { gap: 8px; font-size: 2.4rem; font-weight: 200; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
         #weather-widget .widget-pill { align-items: center; }
         #icon-container { display: flex; align-items: center; justify-content: center; line-height: 1; font-size: 1.6rem; }
@@ -652,11 +671,14 @@
                top of the menu's border — without it the border-radius can
                look slightly cut off at the corners on iOS WebKit. */
             box-shadow: 0 24px 64px rgba(0,0,0,0.85), inset 0 0 0 0.5px rgba(255,255,255,0.04);
-            /* Hidden state — slight scale-down + a touch of vertical shift +
-               a tiny blur so the open animation reads as the menu "settling
-               into focus" rather than abruptly snapping on screen. */
+            /* Hidden state — a touch of vertical shift + a tiny blur so the
+               open animation reads as the menu "settling into focus" rather
+               than abruptly snapping on screen. No scale() here: scaling the
+               menu mid-animation made the slider track's measured width change
+               while the user dragged it, which produced the "slider jumps to a
+               higher size" bug on quick adjustments. */
             opacity: 0;
-            transform: scale(0.92) translateY(8px);
+            transform: translateY(8px);
             filter: blur(6px);
             pointer-events: none;
             transform-origin: 50% 0%;
@@ -668,7 +690,7 @@
         }
         #widget-ctx-menu.visible {
             opacity: 1;
-            transform: scale(1) translateY(0);
+            transform: translateY(0);
             filter: blur(0);
             pointer-events: all;
         }
@@ -918,22 +940,6 @@
 </div>
 
 <div id="bg-layer"></div>
-<!-- Smooth clock glow via SVG feGaussianBlur (replaces the banding-prone text-shadow stack) -->
-<svg width="0" height="0" style="position:absolute;overflow:hidden;" aria-hidden="true" focusable="false">
-    <defs>
-        <filter id="clock-glow" x="-150%" y="-150%" width="400%" height="400%" color-interpolation-filters="sRGB">
-            <feGaussianBlur id="clock-glow-g1" in="SourceGraphic" stdDeviation="4.3" result="g1"/>
-            <feGaussianBlur id="clock-glow-g2" in="SourceGraphic" stdDeviation="13" result="g2"/>
-            <feGaussianBlur id="clock-glow-g3" in="SourceGraphic" stdDeviation="34.6" result="g3"/>
-            <feMerge>
-                <feMergeNode in="g3"/>
-                <feMergeNode in="g2"/>
-                <feMergeNode in="g1"/>
-                <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-        </filter>
-    </defs>
-</svg>
 <!-- Tiny silent video to prevent screen dimming on iOS (NoSleep technique) -->
 <video id="nosleep-video" muted playsinline loop
     style="position:fixed;top:-1px;left:-1px;width:1px;height:1px;opacity:0;pointer-events:none;z-index:-1;">
@@ -968,6 +974,7 @@
     <div id="clock-widget" class="widget">
         <div class="widget-pill" style="display:flex;flex-direction:column;align-items:center;text-align:center;">
             <div id="clock" class="style-bold"></div>
+            <div id="clock-glow" aria-hidden="true"></div>
             <svg id="analog-clock" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" overflow="visible" filter="url(#a-shadow)">
                 <defs>
                     <filter id="a-shadow" x="-60%" y="-60%" width="220%" height="220%">
@@ -1931,6 +1938,14 @@ function updateClock() {
         return;
     }
 
+    // No visible change — skip the DOM writes entirely. Re-writing identical
+    // textContent still marks the node dirty and forces a repaint each tick,
+    // which is wasted work 59 out of 60 ticks when seconds are hidden.
+    if (clockEl.children.length > 0 && timeStr === _prevClockStr) {
+        _updateDate(now);
+        return;
+    }
+
     // Split into digit-wrap spans, animate only changed characters
     if (clockEl.children.length === 0 || timeStr.length !== _prevClockStr.length) {
         // Initial render or length change — build spans
@@ -2060,10 +2075,12 @@ function applyClockStyle(style) {
     document.querySelectorAll('.style-btn').forEach(b => b.classList.toggle('active', b.dataset.style === style));
     const clockEl  = document.getElementById('clock');
     const analogEl = document.getElementById('analog-clock');
+    const glowEl   = document.getElementById('clock-glow');
     const isAnalog = style === 'analog';
     clockEl.style.display  = isAnalog ? 'none' : 'block';
     analogEl.style.display = isAnalog ? 'block' : 'none';
     if (!isAnalog) clockEl.className = `style-${style}${state.clockGlow === false ? ' no-glow' : ''}`;
+    if (glowEl) glowEl.classList.toggle('off', isAnalog || state.clockGlow === false);
     // Show/hide intensity slider based on glow state
     const glowRow = document.getElementById('glow-intensity-row');
     if (glowRow) glowRow.style.display = (state.clockGlow === false) ? 'none' : 'block';
@@ -2109,15 +2126,8 @@ function applyGlowIntensity() {
     // clockGlowIntensity is 0–100; map to 0.0–1.2 so 100 = extra intense
     const intensity = state.clockGlow === false ? 0 : (state.clockGlowIntensity ?? 60) / 100 * 1.2;
     document.documentElement.style.setProperty('--glow-intensity', intensity.toFixed(3));
-    // The glow is an SVG feGaussianBlur filter (#clock-glow) — a true Gaussian
-    // falloff that doesn't band like text-shadow stacks. Scale each blur radius
-    // with the intensity slider (0 collapses the blur to a no-op).
-    const g1 = document.getElementById('clock-glow-g1');
-    const g2 = document.getElementById('clock-glow-g2');
-    const g3 = document.getElementById('clock-glow-g3');
-    if (g1) g1.setAttribute('stdDeviation', (6  * intensity).toFixed(2));
-    if (g2) g2.setAttribute('stdDeviation', (18 * intensity).toFixed(2));
-    if (g3) g3.setAttribute('stdDeviation', (48 * intensity).toFixed(2));
+    // The glow is a static radial-gradient halo behind #clock (see #clock-glow).
+    // Intensity only drives its opacity — there is no per-frame blur to scale.
 }
 
 function applyWidgetOpacity() {
@@ -3844,7 +3854,6 @@ function applyAll() {
     document.body.classList.toggle('show-pills', !!state.showPills);
     const swLock = document.getElementById('sw-posLocked');
     if (swLock) swLock.classList.toggle('active', !!state.posLocked);
-    applyLockIndicator();
 
     const unitC = document.getElementById('unit-c');
     const unitF = document.getElementById('unit-f');
@@ -4836,6 +4845,7 @@ function initWidgetDrag(key) {
             if (!_mouseMoved) showCtxMenu(key, e.clientX, e.clientY);
         }, 380);
         if (!state.posLocked) startDrag(key, el, e, false);
+        else applyLockIndicator();
     });
     el.addEventListener('mousemove', () => { _mouseMoved = true; clearTimeout(_mouseTimer); });
     el.addEventListener('mouseup',   () => clearTimeout(_mouseTimer));
@@ -4859,6 +4869,8 @@ function initWidgetDrag(key) {
         if (!state.posLocked) {
             _dragStarted = true;
             startDrag(key, el, e, true, false);
+        } else {
+            applyLockIndicator();
         }
 
         // Context menu fires only if finger never moved for 380ms.
@@ -5175,9 +5187,19 @@ function toggleLock() {
     save();
 }
 
+let _lockIndicatorTimer = null;
 function applyLockIndicator() {
     const ind = document.getElementById('lock-indicator');
-    if (ind) ind.classList.toggle('visible', !!state.posLocked);
+    if (!ind) return;
+    if (_lockIndicatorTimer) { clearTimeout(_lockIndicatorTimer); _lockIndicatorTimer = null; }
+    if (state.posLocked) {
+        ind.classList.add('visible');
+        // Fade out after 5s instead of staying permanently. A drag attempt while
+        // locked calls applyLockIndicator() again to re-show and restart the timer.
+        _lockIndicatorTimer = setTimeout(() => ind.classList.remove('visible'), 5000);
+    } else {
+        ind.classList.remove('visible');
+    }
 }
 
 const GRADIENTS = [
@@ -5345,12 +5367,22 @@ function _updateCtxScaleBar(val) {
     _ctxScaleThumbEl = document.getElementById('ctx-scale-thumb');
     _ctxScaleLabelEl = document.getElementById('ctx-scale-val');
 
-    // Cache the track rect during the active drag — avoids forcing a layout
-    // for every pointer event (60–240Hz) just to read the same width.
+    // Read the track rect live on every sample. The menu's open animation no
+    // longer scales (scale() was removed because a rect read mid-scale was
+    // ~8% too small, pushing values too high - the "slider jumps up after a
+    // small drag" bug). scaleFromEvent only runs once per rAF plus once on
+    // press/release, so getBoundingClientRect is cheap here.
     let _trackRect = null;
 
+    // After a touch drag ends, iOS fires synthetic mousedown/mousemove/mouseup
+    // "compatibility" events at the touch point. Letting them through re-reads
+    // scaleFromEvent() from a slightly different clientX and can commit a
+    // different (usually higher) value than the touch just set — the "slider
+    // jumps to a bigger size" bug. Ignore mouse input briefly after touch.
+    let _ignoreMouseUntil = 0;
+
     function scaleFromEvent(clientX) {
-        if (!_trackRect) _trackRect = track.getBoundingClientRect();
+        _trackRect = track.getBoundingClientRect();
         const pct  = Math.max(0, Math.min(1, (clientX - _trackRect.left) / _trackRect.width));
         return parseFloat((CTX_SCALE_MIN + pct * (CTX_SCALE_MAX - CTX_SCALE_MIN)).toFixed(2));
     }
@@ -5398,6 +5430,7 @@ function _updateCtxScaleBar(val) {
     // Mouse
     let _draggingBar = false;
     track.addEventListener('mousedown', (e) => {
+        if (Date.now() < _ignoreMouseUntil) return;
         e.stopPropagation();
         _draggingBar = true;
         _trackRect = null; // recompute on a new drag in case of resize
@@ -5408,15 +5441,17 @@ function _updateCtxScaleBar(val) {
         ctxSetWidgetScale(_v0, true); // preview — no reflow on the first event either
     });
     window.addEventListener('mousemove', (e) => {
+        if (Date.now() < _ignoreMouseUntil) { _draggingBar = false; return; }
         if (!_draggingBar) return;
         _scalePendingX = e.clientX;
         scheduleApply();
     });
-    window.addEventListener('mouseup', () => { if (_draggingBar) { _draggingBar = false; flushSave(); } });
+    window.addEventListener('mouseup', () => { if (Date.now() < _ignoreMouseUntil) return; if (_draggingBar) { _draggingBar = false; flushSave(); } });
 
     // Touch — passive so we don't block scroll on adjacent gestures
     track.addEventListener('touchstart', (e) => {
         e.stopPropagation();
+        _ignoreMouseUntil = Date.now() + 700;
         const t = (e.touches && e.touches[0]) || (e.changedTouches && e.changedTouches[0]);
         if (!t) return;
         _trackRect = null;
@@ -5435,8 +5470,8 @@ function _updateCtxScaleBar(val) {
         scheduleApply();
     }, { passive: true });
 
-    track.addEventListener('touchend',    () => flushSave(), { passive: true });
-    track.addEventListener('touchcancel', () => flushSave(), { passive: true });
+    track.addEventListener('touchend',    () => { _ignoreMouseUntil = Date.now() + 700; flushSave(); }, { passive: true });
+    track.addEventListener('touchcancel', () => { _ignoreMouseUntil = Date.now() + 700; flushSave(); }, { passive: true });
 })();
 
 // ─────────────────────────────────────────────────
