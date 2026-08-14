@@ -349,9 +349,13 @@
            lag. */
         #clock-glow {
             position: absolute; left: 50%; top: 50%;
-            width: 150%; height: 150%;
+            /* Wide, shallow ellipse so the halo reads as light behind the digit
+               line rather than a round ball. These percentages are only the
+               pre-JS fallback — syncClockGlow() replaces width/height with the
+               measured digit box once the clock has rendered. */
+            width: 170%; height: 95%;
             transform: translate(-50%, -50%);
-            background: radial-gradient(ellipse at center, var(--accent) 0%, transparent 68%);
+            background: radial-gradient(ellipse 80% 45% at 50% 50%, var(--accent) 0%, transparent 72%);
             opacity: var(--glow-intensity, 0.6);
             z-index: 0;
             pointer-events: none;
@@ -400,9 +404,12 @@
         .a-center { fill: var(--accent); }
         .a-center-hi { fill: rgba(255,255,255,0.75); }
 
-        #date { display: inline-block; font-size: 1.35rem; text-transform: uppercase; letter-spacing: 5px; font-weight: 300; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); margin-right: -5px; white-space: nowrap; }
-        #date-widget .widget-pill { white-space: nowrap; }
-        body.show-pills #date-widget .widget-pill { padding-right: 0; }
+        #date { font-size: 1.35rem; text-transform: uppercase; letter-spacing: 5px; font-weight: 300; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); white-space: nowrap; text-align: center; line-height: 1.25; }
+        #date-widget .widget-pill { text-align: center; }
+        /* The date pill must hug the text so its background lines up with the
+           glyphs and leaves no dead space on the right (which blocked dragging
+           the widget flush against the screen edge). */
+        body.show-pills #date-widget .widget-pill { padding: 8px 14px; }
         #weather-widget { gap: 8px; font-size: 2.4rem; font-weight: 200; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
         #weather-widget .widget-pill { align-items: center; }
         #icon-container { display: flex; align-items: center; justify-content: center; line-height: 1; font-size: 1.6rem; }
@@ -1917,9 +1924,15 @@ let _prevDateStr = '';
 // Write the date line only when it actually changes (once per midnight), not on
 // every 1s tick — avoids a pointless DOM write + style recalc each second.
 function _updateDate(now) {
-    const str = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: '2-digit' }).toUpperCase();
+    const wm = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short' }).toUpperCase();
+    const day = String(now.getDate()).padStart(2, '0');
+    const str = wm + ' ' + day;
     if (str !== _prevDateStr) {
-        document.getElementById('date').textContent = str;
+        const el = document.getElementById('date');
+        el.textContent = '';
+        el.appendChild(document.createTextNode(wm));
+        el.appendChild(document.createElement('br'));
+        el.appendChild(document.createTextNode(day));
         _prevDateStr = str;
     }
 }
@@ -1958,6 +1971,7 @@ function updateClock() {
             clockEl.appendChild(span);
         }
         _prevClockStr = timeStr;
+        syncClockGlow();
     } else {
         const spans = clockEl.children;
         if (state.lowPowerMode) {
@@ -2043,6 +2057,28 @@ function recomputeClockLeftMargin() {
     // — we want to push the whole text to the right by this much so the *visual* left aligns
     // with where a non-italic would be.
     clockEl.style.marginLeft = italicLeanEm + 'em';
+    syncClockGlow();
+}
+
+// Shape the static glow layer to the actual digit bounding box so the halo
+// follows the numbers instead of rendering as a round ball. Measured in
+// #clock's local px space, so it stays correct under pill zoom / global scale.
+// Cheap: only runs on style/scale/width changes, never on the per-second tick.
+function syncClockGlow() {
+    const clock = document.getElementById('clock');
+    const glow  = document.getElementById('clock-glow');
+    if (!clock || !glow) return;
+    if (state.clockStyle === 'analog') return;
+    const w = clock.offsetWidth, h = clock.offsetHeight;
+    if (!w || !h) return;
+    const bw = w * 1.7;   // reach ~35% beyond each side of the digits
+    const bh = h * 1.9;   // reach ~45% above/below the digits
+    glow.style.width  = bw.toFixed(1) + 'px';
+    glow.style.height = bh.toFixed(1) + 'px';
+    glow.style.left   = '50%';
+    glow.style.top    = '50%';
+    glow.style.transform = 'translate(-50%, -50%)';
+    glow.style.background = 'radial-gradient(ellipse 80% 45% at 50% 50%, var(--accent) 0%, transparent 72%)';
 }
 // Align clock tick to actual second boundary to prevent drift
 (function scheduleClock() {
@@ -2081,6 +2117,7 @@ function applyClockStyle(style) {
     analogEl.style.display = isAnalog ? 'block' : 'none';
     if (!isAnalog) clockEl.className = `style-${style}${state.clockGlow === false ? ' no-glow' : ''}`;
     if (glowEl) glowEl.classList.toggle('off', isAnalog || state.clockGlow === false);
+    if (!isAnalog) syncClockGlow();
     // Show/hide intensity slider based on glow state
     const glowRow = document.getElementById('glow-intensity-row');
     if (glowRow) glowRow.style.display = (state.clockGlow === false) ? 'none' : 'block';
@@ -5157,6 +5194,9 @@ function _applyWidgetScaleDirect(key, perWidgetScale) {
     if (pill) pill.style.zoom = widgetScale;
     el.style.transform = `translate3d(calc(-50% + ${bsx}), calc(-50% + ${bsy}), 0) scaleX(${mirror})`;
     if (key === 'clock') _scheduleClockMarginRecompute();
+    // Keep the widget fully on-screen after it grows/shrinks (the date widget
+    // in particular used to get clipped at larger sizes).
+    clampWidgetPosition(key);
 }
 
 // Live-preview scale during a slider drag. Instead of reflowing the widget via
@@ -5255,35 +5295,39 @@ window.addEventListener('resize', () => {
     if (box && box.style.display === 'block') positionTickerDropdown();
     // Re-clamp widget positions to new viewport
     clampAllWidgetPositions();
+    syncClockGlow();
 }, { passive: true });
 
 // Clamp all widget positions so none are off-screen
+function clampWidgetPosition(key) {
+    if (!state.widgetPos) return;
+    const el = document.getElementById(key + '-widget');
+    if (!el || el.style.display === 'none' || el.style.opacity === '0') return;
+    if (!el.offsetParent && el.style.display !== 'flex') return; // not rendered
+    const pos = state.widgetPos[key];
+    if (!pos) return;
+    const vw = window.innerWidth, vh = window.innerHeight;
+    const rect = el.getBoundingClientRect();
+    const hw = rect.width  / 2, hh = rect.height / 2;
+    const margin = 8;
+    const minX = (hw + margin) / vw * 100;
+    const maxX = (vw - hw - margin) / vw * 100;
+    const minY = (hh + margin) / vh * 100;
+    const maxY = (vh - hh - margin) / vh * 100;
+    // If a widget is larger than the viewport it cannot fully fit — center it
+    // on that axis instead of leaving it clipped against one edge.
+    const clampedX = minX > maxX ? 50 : Math.min(maxX, Math.max(minX, pos.x));
+    const clampedY = minY > maxY ? 50 : Math.min(maxY, Math.max(minY, pos.y));
+    if (clampedX !== pos.x || clampedY !== pos.y) {
+        state.widgetPos[key] = { x: clampedX, y: clampedY };
+        positionWidget(key);
+        save();
+    }
+}
+
 function clampAllWidgetPositions() {
     if (!state.widgetPos) return;
-    const vw = window.innerWidth, vh = window.innerHeight;
-    let changed = false;
-    WIDGET_KEYS.forEach(key => {
-        const el = document.getElementById(key + '-widget');
-        if (!el || el.style.display === 'none' || el.style.opacity === '0') return;
-        if (!el.offsetParent && el.style.display !== 'flex') return; // not rendered
-        const pos = state.widgetPos[key];
-        if (!pos) return;
-        const rect = el.getBoundingClientRect();
-        const hw = rect.width  / 2, hh = rect.height / 2;
-        const margin = 8;
-        const minX = (hw + margin) / vw * 100;
-        const maxX = (vw - hw - margin) / vw * 100;
-        const minY = (hh + margin) / vh * 100;
-        const maxY = (vh - hh - margin) / vh * 100;
-        const clampedX = Math.min(maxX, Math.max(minX, pos.x));
-        const clampedY = Math.min(maxY, Math.max(minY, pos.y));
-        if (clampedX !== pos.x || clampedY !== pos.y) {
-            state.widgetPos[key] = { x: clampedX, y: clampedY };
-            positionWidget(key);
-            changed = true;
-        }
-    });
-    if (changed) save();
+    WIDGET_KEYS.forEach(clampWidgetPosition);
 }
 
 // Close settings panel when clicking outside it
@@ -5533,6 +5577,7 @@ function initPinchScale(key) {
             if (_isPinching) {
                 _isPinching = false;
                 positionWidget(key); // sync CSS vars and position fully
+                clampWidgetPosition(key);
                 save();
                 const finalScale = state.widgetScales[key] || 1;
                 showToast('Scale: ' + Math.round(finalScale * 100) + '%');
@@ -5545,6 +5590,7 @@ function initPinchScale(key) {
         if (_isPinching) {
             _isPinching = false;
             positionWidget(key);
+            clampWidgetPosition(key);
             save();
         }
     }, { passive: true });
