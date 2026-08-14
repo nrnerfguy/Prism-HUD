@@ -349,17 +349,18 @@
            lag. */
         #clock-glow {
             position: absolute; left: 50%; top: 50%;
-            /* Wide, shallow ellipse so the halo reads as light behind the digit
-               line rather than a round ball. These percentages are only the
-               pre-JS fallback — syncClockGlow() replaces width/height with the
-               measured digit box once the clock has rendered. */
-            width: 170%; height: 95%;
             transform: translate(-50%, -50%);
-            background: radial-gradient(ellipse 80% 45% at 50% 50%, var(--accent) 0%, transparent 72%);
+            width: max-content; height: max-content;
+            color: var(--accent);
             opacity: var(--glow-intensity, 0.6);
             z-index: 0;
             pointer-events: none;
-            filter: none;
+            white-space: nowrap;
+            line-height: 1;
+            /* Blurred mirror of the real digits — text and font metrics are
+               copied from #clock by syncClockGlow(), so the halo traces the
+               glyph shapes instead of a generic oval. */
+            filter: blur(12px);
         }
         #clock-glow.off { display: none; }
         #clock { z-index: 1; }
@@ -409,7 +410,7 @@
         /* The date pill must hug the text so its background lines up with the
            glyphs and leaves no dead space on the right (which blocked dragging
            the widget flush against the screen edge). */
-        body.show-pills #date-widget .widget-pill { padding: 8px 14px; }
+        body.show-pills #date-widget .widget-pill { padding: 8px 12px; }
         #weather-widget { gap: 8px; font-size: 2.4rem; font-weight: 200; text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7); }
         #weather-widget .widget-pill { align-items: center; }
         #icon-container { display: flex; align-items: center; justify-content: center; line-height: 1; font-size: 1.6rem; }
@@ -1924,15 +1925,16 @@ let _prevDateStr = '';
 // Write the date line only when it actually changes (once per midnight), not on
 // every 1s tick — avoids a pointless DOM write + style recalc each second.
 function _updateDate(now) {
-    const wm = now.toLocaleDateString('en-US', { weekday: 'long', month: 'short' }).toUpperCase();
-    const day = String(now.getDate()).padStart(2, '0');
-    const str = wm + ' ' + day;
+    // Single-line format: "FRIDAY, AUG 14" — weekday, month and day on one
+    // line. The old <br> forced the day onto its own line even when there was
+    // plenty of room. The comma is written explicitly so a locale can't drop it.
+    const weekday = now.toLocaleDateString('en-US', { weekday: 'long' }).toUpperCase();
+    const month   = now.toLocaleDateString('en-US', { month: 'short' }).toUpperCase();
+    const day     = String(now.getDate()).padStart(2, '0');
+    const str     = weekday + ', ' + month + ' ' + day;
     if (str !== _prevDateStr) {
         const el = document.getElementById('date');
-        el.textContent = '';
-        el.appendChild(document.createTextNode(wm));
-        el.appendChild(document.createElement('br'));
-        el.appendChild(document.createTextNode(day));
+        el.textContent = str;
         _prevDateStr = str;
     }
 }
@@ -1971,7 +1973,6 @@ function updateClock() {
             clockEl.appendChild(span);
         }
         _prevClockStr = timeStr;
-        syncClockGlow();
     } else {
         const spans = clockEl.children;
         if (state.lowPowerMode) {
@@ -2004,6 +2005,7 @@ function updateClock() {
         _prevClockStr = timeStr;
     }
 
+    syncClockGlow(timeStr);
     _updateDate(now);
     updateAnalogClock(now);
 }
@@ -2060,25 +2062,33 @@ function recomputeClockLeftMargin() {
     syncClockGlow();
 }
 
-// Shape the static glow layer to the actual digit bounding box so the halo
-// follows the numbers instead of rendering as a round ball. Measured in
-// #clock's local px space, so it stays correct under pill zoom / global scale.
-// Cheap: only runs on style/scale/width changes, never on the per-second tick.
-function syncClockGlow() {
+// The glow is a blurred mirror of the actual clock digits, so it traces the
+// glyph shapes exactly (no more round/oval blob). Font metrics are copied from
+// #clock and the blur scales with the rendered font size, so it stays crisp and
+// proportional at every clock style and widget scale. Text is refreshed here
+// and on each digit change in updateClock().
+function syncClockGlow(optText) {
     const clock = document.getElementById('clock');
     const glow  = document.getElementById('clock-glow');
     if (!clock || !glow) return;
     if (state.clockStyle === 'analog') return;
-    const w = clock.offsetWidth, h = clock.offsetHeight;
-    if (!w || !h) return;
-    const bw = w * 1.7;   // reach ~35% beyond each side of the digits
-    const bh = h * 1.9;   // reach ~45% above/below the digits
-    glow.style.width  = bw.toFixed(1) + 'px';
-    glow.style.height = bh.toFixed(1) + 'px';
-    glow.style.left   = '50%';
-    glow.style.top    = '50%';
-    glow.style.transform = 'translate(-50%, -50%)';
-    glow.style.background = 'radial-gradient(ellipse 80% 45% at 50% 50%, var(--accent) 0%, transparent 72%)';
+
+    const text = (optText !== undefined) ? optText : clock.textContent;
+    if (glow.textContent !== text) glow.textContent = text;
+
+    const cs = getComputedStyle(clock);
+    glow.style.fontFamily    = cs.fontFamily;
+    glow.style.fontSize      = cs.fontSize;
+    glow.style.fontWeight    = cs.fontWeight;
+    glow.style.fontStyle     = cs.fontStyle;
+    glow.style.fontVariant   = cs.fontVariant;
+    glow.style.letterSpacing = cs.letterSpacing;
+    glow.style.lineHeight    = cs.lineHeight;
+    glow.style.textTransform = cs.textTransform;
+    glow.style.fontFeatureSettings = cs.fontFeatureSettings;
+
+    const fs = parseFloat(cs.fontSize);
+    if (fs > 0) glow.style.filter = 'blur(' + Math.max(6, fs * 0.12).toFixed(1) + 'px)';
 }
 // Align clock tick to actual second boundary to prevent drift
 (function scheduleClock() {
@@ -3953,6 +3963,12 @@ function applyAll() {
     if (state.lowPowerMode)  document.body.classList.add('low-power');
     if (state.glassMode)      document.body.classList.add('glass-mode');
     if (state.transparentBg)  document.body.classList.add('transparent-bg');
+    const swLP = document.getElementById('sw-lowPowerMode');
+    if (swLP) swLP.classList.toggle('active', !!state.lowPowerMode);
+    const swGM = document.getElementById('sw-glassMode');
+    if (swGM) swGM.classList.toggle('active', !!state.glassMode);
+    const swTBg = document.getElementById('sw-transparentBg');
+    if (swTBg) swTBg.classList.toggle('active', !!state.transparentBg);
     const swGlow = document.getElementById('sw-clockGlow');
     if (swGlow) swGlow.classList.toggle('active', state.clockGlow !== false);
     const glowSlider = document.getElementById('range-glow');
