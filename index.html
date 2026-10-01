@@ -871,6 +871,30 @@
             font-size: 0.4rem; letter-spacing: 3px; opacity: 0.22;
             text-transform: uppercase; text-align: right; margin-top: 3px;
         }
+
+        /* ── INDEPENDENT IMAGE WIDGETS ── */
+        .image-widget { max-width: 96vw; max-height: 90vh; opacity: 1; }
+        .image-widget .widget-pill {
+            display: block; padding: 0; overflow: hidden; border-radius: 16px;
+            max-width: 96vw; max-height: 90vh; line-height: 0;
+            background: transparent; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+        }
+        .image-widget-content {
+            display: block; width: min(320px, 80vw); height: min(320px, 60vh);
+            object-fit: contain; object-position: center; opacity: 1;
+            border-radius: 16px; pointer-events: none; -webkit-user-drag: none;
+        }
+        body.show-pills .image-widget .widget-pill {
+            padding: 0; background: transparent; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
+        }
+        .image-widget-empty {
+            display: none; width: 240px; height: 180px; align-items: center; justify-content: center;
+            color: rgba(255,255,255,0.4); font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase;
+        }
+        .image-widget-settings { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); }
+        .image-widget-settings:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+        .image-widget-title { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; font-size:0.63rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; }
+        .image-widget-filename { font-size:0.58rem; opacity:0.45; overflow-wrap:anywhere; margin-top:6px; }
         /* settings ticker tags */
         .ticker-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
         .ticker-tag {
@@ -1086,6 +1110,21 @@
         <div class="widget-pill">
             <div id="stocks-list"><!-- rows injected by JS --></div>
         </div>
+    </div>
+    <div id="image1-widget" class="widget image-widget" style="display:none;" aria-label="Image widget 1">
+        <div class="widget-pill"><img id="image1-widget-content" class="image-widget-content" alt="Uploaded image widget 1" draggable="false"><div id="image1-widget-empty" class="image-widget-empty">Choose an Image</div></div>
+    </div>
+    <div id="image2-widget" class="widget image-widget" style="display:none;" aria-label="Image widget 2">
+        <div class="widget-pill"><img id="image2-widget-content" class="image-widget-content" alt="Uploaded image widget 2" draggable="false"><div id="image2-widget-empty" class="image-widget-empty">Choose an Image</div></div>
+    </div>
+    <div id="image3-widget" class="widget image-widget" style="display:none;" aria-label="Image widget 3">
+        <div class="widget-pill"><img id="image3-widget-content" class="image-widget-content" alt="Uploaded image widget 3" draggable="false"><div id="image3-widget-empty" class="image-widget-empty">Choose an Image</div></div>
+    </div>
+    <div id="image4-widget" class="widget image-widget" style="display:none;" aria-label="Image widget 4">
+        <div class="widget-pill"><img id="image4-widget-content" class="image-widget-content" alt="Uploaded image widget 4" draggable="false"><div id="image4-widget-empty" class="image-widget-empty">Choose an Image</div></div>
+    </div>
+    <div id="image5-widget" class="widget image-widget" style="display:none;" aria-label="Image widget 5">
+        <div class="widget-pill"><img id="image5-widget-content" class="image-widget-content" alt="Uploaded image widget 5" draggable="false"><div id="image5-widget-empty" class="image-widget-empty">Choose an Image</div></div>
     </div>
     <div id="worldclock-widget" class="widget" style="display:none;">
         <div class="widget-pill">
@@ -1397,6 +1436,15 @@
             </div>
         </div>
 
+        <!-- Image widgets -->
+        <div class="control-group collapsed">
+            <div class="group-header" onclick="toggleGroup(this)">
+                <div class="row" style="flex:1;margin-bottom:0;"><label>Image Widgets <span style="opacity:.4;">· 5 max</span></label></div>
+                <span class="group-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+            </div>
+            <div class="group-body" id="image-widget-controls"></div>
+        </div>
+
         <!-- World Clock -->
         <div class="control-group collapsed">
             <div class="group-header" onclick="toggleGroup(this)">
@@ -1524,6 +1572,9 @@ let state = {
     showClock: true, showDate: true, showWeather: true, showBattery: true, showNowplaying: false, showStocks: false,
     showWorldclock: false, showMoon: false, showCountdown: false,
     showSeconds: false, weatherUnit: 'C', artAsBg: false, showPills: false,
+    showImage: false, showImage1: false, showImage2: false, showImage3: false, showImage4: false, showImage5: false,
+    imageWidgetName: '', imageWidgetFit: 'contain', imageWidgetOpacity: 100,
+    imageWidgets: Array.from({ length: 5 }, () => ({ name: '', fit: 'contain', opacity: 100, radius: 16 })),
     tickers: [],
     timezones: ['America/New_York', 'Europe/London', 'Asia/Tokyo'],
     countdownName: 'Event', countdownDate: '',
@@ -1536,8 +1587,14 @@ let state = {
         stocks:     { x: 17, y: 50 },
         worldclock: { x: 83, y: 50 },
         moon:       { x: 17, y: 25 },
-        countdown:  { x: 83, y: 25 }
+        countdown:  { x: 83, y: 25 },
+        image1:     { x: 78, y: 78 },
+        image2:     { x: 22, y: 78 },
+        image3:     { x: 78, y: 22 },
+        image4:     { x: 22, y: 22 },
+        image5:     { x: 50, y: 92 }
     },
+
     scale: 1, accent: '#ffffff', accentAuto: true, showNextUp: true, nowplayingLarge: false,
     widgetScales: {},
     city: 'Calgary', bg: '', history: [],
@@ -1599,10 +1656,39 @@ function load() {
     }
 
     const saved = localStorage.getItem('prism_ultra_v3');
+    let hasSavedImageWidgets = false;
     if (saved) {
-        try { state = Object.assign(state, JSON.parse(saved)); }
-        catch (e) { localStorage.removeItem('prism_ultra_v3'); }
+        try {
+            const parsed = JSON.parse(saved);
+            hasSavedImageWidgets = Array.isArray(parsed.imageWidgets);
+            state = Object.assign(state, parsed);
+        } catch (e) { localStorage.removeItem('prism_ultra_v3'); }
     }
+    if (!Array.isArray(state.imageWidgets)) state.imageWidgets = [];
+    state.imageWidgets = Array.from({ length: 5 }, (_, i) => ({
+        name: '', fit: 'contain', opacity: 100, radius: 16,
+        ...(state.imageWidgets[i] || {})
+    }));
+    if (!hasSavedImageWidgets) {
+        state.imageWidgets[0] = {
+            name: state.imageWidgetName || '', fit: state.imageWidgetFit || 'contain',
+            opacity: state.imageWidgetOpacity ?? 100, radius: 16
+        };
+        if (state.showImage) state.showImage1 = true;
+        if (state.widgetPos && state.widgetPos.image && !state.widgetPos.image1) {
+            state.widgetPos.image1 = { ...state.widgetPos.image };
+        }
+        if (state.widgetScales && state.widgetScales.image !== undefined && state.widgetScales.image1 === undefined) {
+            state.widgetScales.image1 = state.widgetScales.image;
+        }
+    }
+    delete state.showImage;
+    delete state.imageWidgetName;
+    delete state.imageWidgetFit;
+    delete state.imageWidgetOpacity;
+    // Image blobs and object URLs are device-local transient data, never JSON settings.
+    delete state.imageWidgetData;
+    delete state.imageWidgetBlobUrl;
 
     // Handle Spotify OAuth callback
     // Browser path: check if code is in current URL (non-Electron)
@@ -1612,6 +1698,7 @@ function load() {
         handleSpotifyCallback(_urlCode);
     }
 
+    renderImageWidgetControls();
     applyAll();
     renderHistory();
     renderThemeList();
@@ -1623,6 +1710,7 @@ function load() {
     wakeNav();
     loadStoredSpotifyTokens();
     updateSpotifyUI();
+    loadImageWidget();
 
     if (spotify.accessToken) {
         const npw = document.getElementById('nowplaying-widget');
@@ -2442,84 +2530,159 @@ async function updateBattery() {
 // ─────────────────────────────────────────────────
 // STOCKS
 // ─────────────────────────────────────────────────
+const STOCK_QUOTES_CACHE_KEY = 'prism_stock_quotes_v1';
+let stocksLastQuotes = {};
+try {
+    stocksLastQuotes = JSON.parse(localStorage.getItem(STOCK_QUOTES_CACHE_KEY) || '{}') || {};
+} catch (_) { }
+
 let stocksRefreshTimer = null;
+let stocksFetchInFlight = false;
+let stocksPollingEnabled = false;
+let stocksFetchingTickers = [];
+let stocksRefreshRequested = false;
 
 async function fetchStocks() {
-    if (!state.tickers || state.tickers.length === 0) {
-        const list2 = document.getElementById('stocks-list');
-        if (list2) list2.innerHTML = '<div style="font-size:0.58rem;opacity:0.3;text-align:center;padding:8px;letter-spacing:1px;text-transform:uppercase;">Add tickers in settings</div>';
+    const requestedTickers = (state.tickers || []).slice();
+    if (stocksFetchInFlight) {
+        if (requestedTickers.join() !== stocksFetchingTickers.join()) stocksRefreshRequested = true;
         return;
     }
+    const tickers = requestedTickers;
     const list = document.getElementById('stocks-list');
     if (!list) return;
-
-    // Fetch each ticker individually via Yahoo Finance v8 chart endpoint
-    // Try multiple CORS proxies in order until one works
-    const PROXIES = [
-        url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-        url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-        url => `https://thingproxy.freeboard.io/fetch/${url}`,
-    ];
-
-    async function fetchTicker(symbol) {
-        const target = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?interval=1d&range=2d`;
-        for (const makeUrl of PROXIES) {
-            try {
-                const ctrl2 = new AbortController(); setTimeout(() => ctrl2.abort(), 6000);
-                const res = await fetch(makeUrl(target), { signal: ctrl2.signal });
-                if (!res.ok) continue;
-                const json = await res.json();
-                const meta = json?.chart?.result?.[0]?.meta;
-                if (!meta) continue;
-                const price  = meta.regularMarketPrice;
-                const prev   = meta.chartPreviousClose ?? meta.previousClose;
-                const change = price - prev;
-                const pct    = (change / prev) * 100;
-                return { symbol, price, change, pct, ok: true };
-            } catch (_) { continue; }
-        }
-        return { symbol, ok: false };
+    if (tickers.length === 0) {
+        list.innerHTML = '<div style="font-size:0.58rem;opacity:0.3;text-align:center;padding:8px;letter-spacing:1px;text-transform:uppercase;">Add tickers in settings</div>';
+        return;
     }
 
-    // Build the initial structure if needed (first load or ticker list changed)
-    const existingTickers = [...list.querySelectorAll('.stock-ticker')].map(el => el.textContent);
-    const tickersChanged = state.tickers.join() !== existingTickers.join();
-    if (list.children.length === 0 || tickersChanged) {
-        list.innerHTML = state.tickers.map((t, i) => `
-            <div class="stock-row" data-ticker="${t}">
-                <span class="stock-ticker">${t}</span>
-                <span class="stock-price" style="opacity:0.3">…</span>
-                <span class="stock-change" style="opacity:0.2">—</span>
-            </div>${i < state.tickers.length - 1 ? '<div class="stock-divider"></div>' : ''}
-        `).join('');
-    }
+    stocksFetchInFlight = true;
+    stocksFetchingTickers = tickers;
+    try {
+        // Fetch each ticker via Yahoo's chart endpoint. Limit concurrent proxy
+        // requests: public CORS relays throttle bursts, which caused only some
+        // of a watchlist to return quotes.
+        const PROXIES = [
+            url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
+            url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
+            url => `https://thingproxy.freeboard.io/fetch/${url}`,
+        ];
 
-    // Fetch all tickers in parallel — DOM is untouched until results arrive
-    const results = await Promise.all(state.tickers.map(fetchTicker));
-
-    // Update each row's price/change in-place — structure never changes, no blank flash
-    results.forEach(q => {
-        const row = list.querySelector(`.stock-row[data-ticker="${q.symbol}"]`);
-        if (!row) return;
-        const priceEl  = row.querySelector('.stock-price');
-        const changeEl = row.querySelector('.stock-change');
-        if (q.ok) {
-            const up   = q.change >= 0;
-            const sign = up ? '+' : '';
-            const cls  = up ? 'up' : 'down';
-            const arrow = up ? '▲' : '▼';
-            priceEl.textContent  = '$' + q.price.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
-            priceEl.style.opacity = '';
-            changeEl.textContent = `${arrow} ${sign}${q.pct.toFixed(2)}%`;
-            changeEl.className   = `stock-change ${cls}`;
-            changeEl.style.opacity = '';
-        } else {
-            priceEl.textContent  = 'N/A';
-            priceEl.style.opacity = '0.35';
-            changeEl.textContent = '—';
-            changeEl.style.opacity = '0.3';
+        async function fetchTicker(symbol) {
+            const target = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=2d`;
+            let lastError = 'No quote returned';
+            // Try each CORS relay once with a capped timeout; do not repeat a
+            // full relay cycle, which made mobile startup take several minutes.
+            for (const makeUrl of PROXIES) {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 12000);
+                try {
+                    const res = await fetch(makeUrl(target), { signal: controller.signal, cache: 'no-store' });
+                    if (!res.ok) {
+                        lastError = `HTTP ${res.status}`;
+                        continue;
+                    }
+                    const json = await res.json();
+                    const meta = json?.chart?.result?.[0]?.meta;
+                    const price = Number(meta?.regularMarketPrice);
+                    const prev = Number(meta?.chartPreviousClose ?? meta?.previousClose);
+                    if (!meta || !Number.isFinite(price) || !Number.isFinite(prev) || prev <= 0) {
+                        lastError = json?.chart?.error?.description || 'Invalid quote response';
+                        continue;
+                    }
+                    const change = price - prev;
+                    const quote = { symbol, price, change, pct: (change / prev) * 100, cachedAt: Date.now() };
+                    stocksLastQuotes[symbol] = quote;
+                    try { localStorage.setItem(STOCK_QUOTES_CACHE_KEY, JSON.stringify(stocksLastQuotes)); } catch (_) { }
+                    return { ...quote, ok: true, cached: false };
+                } catch (error) {
+                    lastError = error instanceof Error ? error.message : String(error);
+                } finally {
+                    clearTimeout(timeout);
+                }
+            }
+            const cached = stocksLastQuotes[symbol];
+            if (cached && Number.isFinite(cached.price) && Number.isFinite(cached.pct)) {
+                console.warn(`Live stock quote unavailable for ${symbol}; showing its last saved quote: ${lastError}`);
+                return { ...cached, ok: true, cached: true };
+            }
+            console.warn(`Stock quote unavailable for ${symbol}: ${lastError}`);
+            return { symbol, ok: false };
         }
-    });
+
+        function renderStockQuote(q) {
+            const row = list.querySelector(`.stock-row[data-ticker="${q.symbol}"]`);
+            if (!row) return;
+            const priceEl = row.querySelector('.stock-price');
+            const changeEl = row.querySelector('.stock-change');
+            if (q.ok) {
+                const up = q.change >= 0;
+                const sign = up ? '+' : '';
+                const cls = up ? 'up' : 'down';
+                const arrow = up ? '▲' : '▼';
+                priceEl.textContent = '$' + q.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + (q.cached ? '*' : '');
+                priceEl.style.opacity = q.cached ? '0.65' : '';
+                priceEl.title = q.cached ? `Last saved quote from ${new Date(q.cachedAt).toLocaleString()}; live refresh failed.` : '';
+                changeEl.textContent = `${arrow} ${sign}${q.pct.toFixed(2)}%`;
+                changeEl.className = `stock-change ${cls}`;
+                changeEl.style.opacity = q.cached ? '0.65' : '';
+                changeEl.title = q.cached ? priceEl.title : '';
+            } else {
+                priceEl.textContent = 'N/A';
+                priceEl.style.opacity = '0.35';
+                priceEl.title = 'No live quote or previously saved quote is available.';
+                changeEl.textContent = '—';
+                changeEl.style.opacity = '0.3';
+                changeEl.title = priceEl.title;
+            }
+        }
+
+        // Build the initial structure if needed (first load or ticker list changed)
+        const existingTickers = [...list.querySelectorAll('.stock-ticker')].map(el => el.textContent);
+        const tickersChanged = tickers.join() !== existingTickers.join();
+        if (list.children.length === 0 || tickersChanged) {
+            list.innerHTML = tickers.map((t, i) => `
+                <div class="stock-row" data-ticker="${t}">
+                    <span class="stock-ticker">${t}</span>
+                    <span class="stock-price" style="opacity:0.3">…</span>
+                    <span class="stock-change" style="opacity:0.2">—</span>
+                </div>${i < tickers.length - 1 ? '<div class="stock-divider"></div>' : ''}
+            `).join('');
+        }
+
+        // Reuse this device's cached values immediately while live quotes refresh.
+        tickers.forEach(symbol => {
+            const cached = stocksLastQuotes[symbol];
+            if (cached && Number.isFinite(cached.price) && Number.isFinite(cached.pct)) {
+                renderStockQuote({ ...cached, ok: true, cached: true });
+            }
+        });
+
+        // Two workers reduce proxy throttling versus launching every ticker at once.
+        let nextIndex = 0;
+        async function fetchWorker() {
+            while (nextIndex < tickers.length) {
+                const index = nextIndex++;
+                const symbol = tickers[index];
+                const quote = await fetchTicker(symbol);
+                // Render each completed symbol independently; don't wait for
+                // slower requests or paint a symbol removed from the watchlist.
+                if ((state.tickers || []).includes(symbol)) renderStockQuote(quote);
+                else stocksRefreshRequested = true;
+            }
+        }
+        await Promise.all(Array.from({ length: Math.min(2, tickers.length) }, fetchWorker));
+    } finally {
+        stocksFetchInFlight = false;
+        stocksFetchingTickers = [];
+        if (stocksRefreshRequested && state.showStocks) {
+            stocksRefreshRequested = false;
+            fetchStocks();
+        } else if (stocksPollingEnabled && state.showStocks && (state.tickers || []).length) {
+            clearTimeout(stocksRefreshTimer);
+            stocksRefreshTimer = setTimeout(fetchStocks, 120000);
+        }
+    }
 }
 
 function renderStockError() {
@@ -2528,9 +2691,274 @@ function renderStockError() {
 }
 
 function startStocksPolling() {
-    clearInterval(stocksRefreshTimer);
+    clearTimeout(stocksRefreshTimer);
+    stocksPollingEnabled = true;
     fetchStocks();
-    stocksRefreshTimer = setInterval(fetchStocks, 60000); // refresh every minute
+}
+
+// ─────────────────────────────────────────────────
+// IMAGE WIDGETS — five independent, device-local GIF/PNG slots.
+// ─────────────────────────────────────────────────
+const IMAGE_WIDGET_DB = 'prism_image_widget_v1';
+const IMAGE_WIDGET_COUNT = 5;
+let imageWidgetDbPromise = null;
+const imageWidgetBlobUrls = {};
+
+function openImageWidgetDb() {
+    if (imageWidgetDbPromise) return imageWidgetDbPromise;
+    imageWidgetDbPromise = new Promise((resolve, reject) => {
+        if (!('indexedDB' in window)) return reject(new Error('IndexedDB is unavailable'));
+        const request = indexedDB.open(IMAGE_WIDGET_DB, 1);
+        request.onupgradeneeded = () => {
+            if (!request.result.objectStoreNames.contains('images')) request.result.createObjectStore('images');
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error('Could not open image storage'));
+    });
+    return imageWidgetDbPromise;
+}
+
+function getImageWidgetSettings(slot) {
+    if (!Array.isArray(state.imageWidgets)) state.imageWidgets = [];
+    if (!state.imageWidgets[slot - 1]) state.imageWidgets[slot - 1] = { name: '', fit: 'contain', opacity: 100, radius: 16 };
+    return state.imageWidgets[slot - 1];
+}
+
+function imageWidgetKey(slot) { return 'image' + slot; }
+function imageWidgetShowKey(slot) { return 'showImage' + slot; }
+
+function renderImageWidgetControls() {
+    const container = document.getElementById('image-widget-controls');
+    if (!container) return;
+    container.innerHTML = Array.from({ length: IMAGE_WIDGET_COUNT }, (_, i) => {
+        const slot = i + 1;
+        const key = imageWidgetKey(slot);
+        return `<section class="image-widget-settings">
+            <div class="image-widget-title"><span>Image ${slot}</span><span id="st-${key}" class="status-tag">HIDDEN</span></div>
+            <div class="row"><label style="font-size:0.5rem;">Visible</label><div id="sw-showImage${slot}" class="ios-switch" onclick="toggle('showImage${slot}')"></div></div>
+            <label class="file-upload-btn" for="${key}-file" style="margin-top:10px;">Choose GIF or PNG</label>
+            <input type="file" id="${key}-file" data-slot="${slot}" accept="image/gif,image/png" style="display:none;" onchange="handleImageWidgetUpload(this)">
+            <div id="${key}-filename" class="image-widget-filename">No image selected</div>
+            <button id="${key}-remove" class="update-btn" type="button" onclick="removeImageWidgetImage(${slot})" style="display:none;background:rgba(255,70,70,0.15);color:#ff7070;">Remove Image</button>
+            <label for="${key}-fit" style="display:block;margin-top:12px;">Image Fit</label>
+            <select id="${key}-fit" onchange="setImageWidgetFit(${slot},this.value)" style="width:100%;margin-top:6px;background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:10px 12px;font-size:0.72rem;outline:none;">
+                <option value="contain">Contain</option><option value="cover">Cover</option><option value="fill">Stretch</option>
+            </select>
+            <label for="${key}-opacity" style="display:block;margin-top:12px;">Opacity <span id="${key}-opacity-label">100%</span></label>
+            <input id="${key}-opacity" type="range" min="10" max="100" value="100" oninput="setImageWidgetOpacity(${slot},this.value)">
+            <label for="${key}-radius" style="display:block;margin-top:12px;">Rounded Corners <span id="${key}-radius-label">16px</span></label>
+            <input id="${key}-radius" type="range" min="0" max="48" value="16" oninput="setImageWidgetRadius(${slot},this.value)">
+            <button type="button" class="reset-link" style="margin-top:8px;" onclick="resetWidget('${key}')">Reset Position &amp; Scale</button>
+        </section>`;
+    }).join('');
+    for (let slot = 1; slot <= IMAGE_WIDGET_COUNT; slot++) applyImageWidgetSettings(slot);
+    container.querySelectorAll('input[type=range]').forEach(input => {
+        updateRangeFill(input);
+        input.addEventListener('input', () => updateRangeFill(input), { passive: true });
+    });
+}
+
+async function storeImageWidgetBlob(blob, slot) {
+    const db = await openImageWidgetDb();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction('images', 'readwrite');
+        tx.objectStore('images').put(blob, imageWidgetKey(slot));
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error || new Error('Could not save image'));
+        tx.onabort = () => reject(tx.error || new Error('Image save was cancelled'));
+    });
+}
+
+async function loadImageWidgetBlob(slot) {
+    const db = await openImageWidgetDb();
+    const store = db.transaction('images', 'readonly').objectStore('images');
+    const result = await new Promise((resolve, reject) => {
+        const request = store.get(imageWidgetKey(slot));
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error || new Error('Could not load saved image'));
+    });
+    if (result || slot !== 1) return result;
+    // Migrate the original single-image slot without losing its stored GIF/PNG.
+    return new Promise((resolve, reject) => {
+        const request = db.transaction('images', 'readonly').objectStore('images').get('active');
+        request.onsuccess = () => resolve(request.result || null);
+        request.onerror = () => reject(request.error || new Error('Could not load saved image'));
+    });
+}
+
+async function deleteImageWidgetBlob(slot) {
+    const db = await openImageWidgetDb();
+    return new Promise((resolve, reject) => {
+        const tx = db.transaction('images', 'readwrite');
+        const store = tx.objectStore('images');
+        store.delete(imageWidgetKey(slot));
+        if (slot === 1) store.delete('active');
+        tx.oncomplete = () => resolve();
+        tx.onerror = () => reject(tx.error || new Error('Could not remove saved image'));
+    });
+}
+
+function showImageWidgetBlob(blob, slot) {
+    const img = document.getElementById(imageWidgetKey(slot) + '-content');
+    if (!img || !blob) return;
+    if (imageWidgetBlobUrls[slot]) URL.revokeObjectURL(imageWidgetBlobUrls[slot]);
+    imageWidgetBlobUrls[slot] = URL.createObjectURL(blob);
+    img.src = imageWidgetBlobUrls[slot];
+    applyImageWidgetSettings(slot);
+}
+
+function applyImageWidgetSettings(slot) {
+    const settings = getImageWidgetSettings(slot);
+    const key = imageWidgetKey(slot);
+    const fit = ['contain', 'cover', 'fill'].includes(settings.fit) ? settings.fit : 'contain';
+    const opacity = Math.max(10, Math.min(100, Number(settings.opacity) || 100));
+    const radius = Math.max(0, Math.min(48, Number(settings.radius) || 0));
+    const img = document.getElementById(key + '-content');
+    const widget = document.getElementById(key + '-widget');
+    const pill = widget && widget.querySelector('.widget-pill');
+    const hasImage = !!(img && img.hasAttribute('src'));
+    if (widget) {
+        widget.style.opacity = String(opacity / 100);
+        widget.style.setProperty('--widget-opacity', String(opacity / 100));
+    }
+    if (pill) pill.style.borderRadius = radius + 'px';
+    if (img) {
+        img.style.display = hasImage ? 'block' : 'none';
+        img.style.objectFit = fit;
+        img.style.opacity = '1';
+        img.style.borderRadius = radius + 'px';
+    }
+    const empty = document.getElementById(key + '-empty');
+    if (empty) empty.style.display = hasImage ? 'none' : 'flex';
+    const select = document.getElementById(key + '-fit');
+    if (select) select.value = fit;
+    const opacitySlider = document.getElementById(key + '-opacity');
+    if (opacitySlider) opacitySlider.value = opacity;
+    const opacityLabel = document.getElementById(key + '-opacity-label');
+    if (opacityLabel) opacityLabel.textContent = opacity + '%';
+    const radiusSlider = document.getElementById(key + '-radius');
+    if (radiusSlider) radiusSlider.value = radius;
+    const radiusLabel = document.getElementById(key + '-radius-label');
+    if (radiusLabel) radiusLabel.textContent = radius + 'px';
+    const filename = document.getElementById(key + '-filename');
+    if (filename) filename.textContent = settings.name || 'No image selected';
+    const removeButton = document.getElementById(key + '-remove');
+    if (removeButton) removeButton.style.display = settings.name ? 'block' : 'none';
+}
+
+async function handleImageWidgetUpload(input) {
+    const slot = Math.max(1, Math.min(IMAGE_WIDGET_COUNT, Number(input.dataset.slot) || 1));
+    const file = input.files && input.files[0];
+    if (!file) return;
+    if (!['image/gif', 'image/png'].includes(file.type)) {
+        showToast('Please choose a GIF or PNG'); input.value = ''; return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+        showToast('Choose an image smaller than 10 MB'); input.value = ''; return;
+    }
+    try {
+        await storeImageWidgetBlob(file, slot);
+        getImageWidgetSettings(slot).name = file.name;
+        state[imageWidgetShowKey(slot)] = true;
+        showImageWidgetBlob(file, slot);
+        const widget = document.getElementById(imageWidgetKey(slot) + '-widget');
+        if (widget) widget.style.display = 'flex';
+        const switchEl = document.getElementById('sw-' + imageWidgetShowKey(slot));
+        if (switchEl) switchEl.classList.add('active');
+        const status = document.getElementById('st-' + imageWidgetKey(slot));
+        if (status) { status.textContent = 'SHOWN'; status.className = 'status-tag on'; }
+        positionWidget(imageWidgetKey(slot));
+        clampWidgetPosition(imageWidgetKey(slot));
+        save();
+        showToast('Image ' + slot + ' added');
+    } catch (error) {
+        console.error('Image widget upload failed:', error);
+        showToast('Could not save image on this device');
+    } finally { input.value = ''; }
+}
+
+function setImageWidgetFit(slot, value) {
+    getImageWidgetSettings(slot).fit = ['contain', 'cover', 'fill'].includes(value) ? value : 'contain';
+    applyImageWidgetSettings(slot); save();
+}
+
+function setImageWidgetOpacity(slot, value) {
+    getImageWidgetSettings(slot).opacity = Math.max(10, Math.min(100, Number(value) || 100));
+    applyImageWidgetSettings(slot); save();
+}
+
+function setImageWidgetRadius(slot, value) {
+    getImageWidgetSettings(slot).radius = Math.max(0, Math.min(48, Number(value) || 0));
+    applyImageWidgetSettings(slot); save();
+}
+
+function setImageWidgetVisibility(slot, show) {
+    const key = imageWidgetKey(slot);
+    state[imageWidgetShowKey(slot)] = !!show;
+    const widget = document.getElementById(key + '-widget');
+    if (widget) {
+        widget.style.display = show ? 'flex' : 'none';
+        widget.style.pointerEvents = show ? 'all' : 'none';
+    }
+    const switchEl = document.getElementById('sw-' + imageWidgetShowKey(slot));
+    if (switchEl) switchEl.classList.toggle('active', !!show);
+    const status = document.getElementById('st-' + key);
+    if (status) { status.textContent = show ? 'SHOWN' : 'HIDDEN'; status.className = show ? 'status-tag on' : 'status-tag off'; }
+    if (show) loadImageWidget(slot);
+    applyImageWidgetSettings(slot);
+    save();
+}
+
+async function removeImageWidgetImage(slot) {
+    try { await deleteImageWidgetBlob(slot); } catch (error) { console.warn('Could not remove image from local storage:', error); }
+    const key = imageWidgetKey(slot);
+    const img = document.getElementById(key + '-content');
+    if (img) img.removeAttribute('src');
+    if (imageWidgetBlobUrls[slot]) URL.revokeObjectURL(imageWidgetBlobUrls[slot]);
+    delete imageWidgetBlobUrls[slot];
+    getImageWidgetSettings(slot).name = '';
+    state[imageWidgetShowKey(slot)] = false;
+    const widget = document.getElementById(key + '-widget');
+    if (widget) widget.style.display = 'none';
+    const switchEl = document.getElementById('sw-' + imageWidgetShowKey(slot));
+    if (switchEl) switchEl.classList.remove('active');
+    const status = document.getElementById('st-' + key);
+    if (status) { status.textContent = 'HIDDEN'; status.className = 'status-tag off'; }
+    applyImageWidgetSettings(slot); save();
+}
+
+async function loadImageWidget(slot) {
+    const slots = slot ? [slot] : Array.from({ length: IMAGE_WIDGET_COUNT }, (_, i) => i + 1);
+    for (const current of slots) {
+        const key = imageWidgetKey(current);
+        const show = !!state[imageWidgetShowKey(current)];
+        applyImageWidgetSettings(current);
+        if (show) {
+            try {
+                const blob = await loadImageWidgetBlob(current);
+                if (blob) {
+                    showImageWidgetBlob(blob, current);
+                    const widget = document.getElementById(key + '-widget');
+                    if (widget) widget.style.display = 'flex';
+                    // Persist the old single-image key as the first new slot.
+                    if (current === 1) await storeImageWidgetBlob(blob, 1);
+                } else state[imageWidgetShowKey(current)] = false;
+            } catch (error) {
+                console.warn('Saved image widget could not be loaded:', error);
+                state[imageWidgetShowKey(current)] = false;
+            }
+        }
+        const widget = document.getElementById(key + '-widget');
+        if (widget) widget.style.display = state[imageWidgetShowKey(current)] ? 'flex' : 'none';
+        const switchEl = document.getElementById('sw-' + imageWidgetShowKey(current));
+        if (switchEl) switchEl.classList.toggle('active', !!state[imageWidgetShowKey(current)]);
+        const status = document.getElementById('st-' + key);
+        if (status) {
+            status.textContent = state[imageWidgetShowKey(current)] ? 'SHOWN' : 'HIDDEN';
+            status.className = state[imageWidgetShowKey(current)] ? 'status-tag on' : 'status-tag off';
+        }
+        applyImageWidgetSettings(current);
+    }
 }
 
 function renderTickerTags() {
@@ -3950,7 +4378,7 @@ function applyAll() {
     if (unitC) unitC.classList.toggle('active', state.weatherUnit !== 'F');
     if (unitF) unitF.classList.toggle('active', state.weatherUnit === 'F');
 
-    const widgets = ['clock', 'date', 'weather', 'battery', 'nowplaying', 'stocks', 'worldclock', 'moon', 'countdown'];
+    const widgets = ['clock', 'date', 'weather', 'battery', 'nowplaying', 'stocks', 'image1', 'image2', 'image3', 'image4', 'image5', 'worldclock', 'moon', 'countdown'];
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     widgets.forEach(key => {
         const el   = document.getElementById(key + '-widget');
@@ -3962,6 +4390,7 @@ function applyAll() {
         const wasHidden = el.style.opacity === '0' || el.style.display === 'none';
         el.style.opacity = show ? '' : '0'; // '' clears inline, falls back to CSS var(--widget-opacity)
         el.style.pointerEvents = show ? 'all' : 'none';
+        if (key.startsWith('image')) applyImageWidgetSettings(Number(key.slice(5)));
         if (show) el.style.display = 'flex';
         else      el.style.display = 'none';
         if (iosUnsupported) {
@@ -4083,7 +4512,7 @@ const ZONES = (() => {
     return z;
 })(); // 23×31 = 713 zones
 
-const WIDGET_KEYS = ['clock', 'date', 'weather', 'battery', 'nowplaying', 'stocks', 'worldclock', 'moon', 'countdown'];
+const WIDGET_KEYS = ['clock', 'date', 'weather', 'battery', 'nowplaying', 'stocks', 'image1', 'image2', 'image3', 'image4', 'image5', 'worldclock', 'moon', 'countdown'];
 const DEFAULT_POS = {
     clock:      { x: 50, y: 28 },
     date:       { x: 50, y: 50 },
@@ -4093,7 +4522,12 @@ const DEFAULT_POS = {
     stocks:     { x: 17, y: 50 },
     worldclock: { x: 83, y: 50 },
     moon:       { x: 17, y: 25 },
-    countdown:  { x: 83, y: 25 }
+    countdown:  { x: 83, y: 25 },
+    image1:     { x: 78, y: 78 },
+    image2:     { x: 22, y: 78 },
+    image3:     { x: 78, y: 22 },
+    image4:     { x: 22, y: 22 },
+    image5:     { x: 50, y: 92 }
 };
 
 function positionWidget(key) {
@@ -4680,7 +5114,7 @@ function _tempWakeHandler() {
 function optimizeScale() {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const WIDGET_KEYS_VIS = ['clock','date','weather','battery','nowplaying','stocks','worldclock','moon','countdown']
+    const WIDGET_KEYS_VIS = ['clock','date','weather','battery','nowplaying','stocks','image1','image2','image3','image4','image5','worldclock','moon','countdown']
         .filter(k => state['show' + k.charAt(0).toUpperCase() + k.slice(1)]);
 
     if (!WIDGET_KEYS_VIS.length) return;
@@ -4770,6 +5204,7 @@ function toggle(key) {
             el.style.opacity = show ? '' : '0';
             el.style.pointerEvents = show ? 'all' : 'none';
             el.style.display = (show && !el.dataset.iosDisabled) ? 'flex' : 'none';
+            if (/^image[1-5]$/.test(widgetKey)) applyImageWidgetSettings(Number(widgetKey.slice(5)));
             if (el.dataset.iosDisabled) {
                 el.style.opacity = '0';
                 el.style.display = 'none';
@@ -4791,7 +5226,15 @@ function toggle(key) {
         const st = document.getElementById('st-' + widgetKey);
         if (st) { st.innerText = show ? 'SHOWN' : 'HIDDEN'; st.className = show ? 'status-tag on' : 'status-tag off'; }
         // Extra per-widget side effects
-        if (key === 'showStocks') { if (show) startStocksPolling(); else clearInterval(stocksRefreshTimer); }
+        if (key === 'showStocks') {
+            if (show) startStocksPolling();
+            else {
+                stocksPollingEnabled = false;
+                clearTimeout(stocksRefreshTimer);
+            }
+        }
+        const imageSlot = key.match(/^showImage([1-5])$/);
+        if (imageSlot) setImageWidgetVisibility(Number(imageSlot[1]), show);
         if (key === 'showWorldclock' && show) updateWorldClock();
         if (key === 'showMoon' && show) updateMoon();
         if (key === 'showCountdown' && show) updateCountdownDisplay();
@@ -5065,8 +5508,11 @@ const CTX_WIDGET_ACTIONS = {
 const CTX_WIDGET_LABELS = {
     clock: 'Clock', date: 'Date', weather: 'Weather', battery: 'Battery',
     nowplaying: 'Now Playing', stocks: 'Stocks', worldclock: 'World Clock',
-    moon: 'Moon Phase', countdown: 'Countdown'
+    moon: 'Moon Phase', countdown: 'Countdown',
+    image1: 'Image Widget 1', image2: 'Image Widget 2', image3: 'Image Widget 3',
+    image4: 'Image Widget 4', image5: 'Image Widget 5'
 };
+
 
 function showCtxMenu(key, x, y) {
     _ctxKey = key;
@@ -5670,7 +6116,7 @@ function initPinchScale(key) {
 }
 
 function initAllPinch() {
-    ['clock','date','weather','battery','nowplaying','stocks','worldclock','moon','countdown']
+    ['clock','date','weather','battery','nowplaying','stocks','image1','image2','image3','image4','image5','worldclock','moon','countdown']
         .forEach(initPinchScale);
 }
 
@@ -5733,6 +6179,6 @@ window.addEventListener('error', () => {
     if (o) { o.classList.add('hidden'); setTimeout(() => o.remove(), 700); }
 });
 </script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"82216019171e452a9aa94300393e69a4","r":1}' crossorigin="anonymous"></script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"82216019171e452a9aa94300393e69a4","r":1,"spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>
