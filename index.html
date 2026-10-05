@@ -240,16 +240,21 @@
             transform-origin: center center;
         }
         .widget.dragging {
-            /* No will-change here: the widget already has a transform, so it's
-               already on its own GPU layer. Adding will-change causes iOS WebKit
-               to re-rasterize the layer at the CURRENT (pre-scale) layout size
-               — which made scaled widgets briefly snap to ~1× size when a drag
-               began, then pop back to full size on release. The existing
-               transform keeps the layer alive and changing the transform on
-               each move already triggers the re-rasterization we want. */
+            /* Keep movement compositor-friendly: backdrop blur and text shadows
+               force expensive repaints as a widget crosses the full screen. */
             cursor: grabbing; z-index: 500;
-            opacity: 0.88;
+            opacity: 0.95;
         }
+        .widget.dragging .widget-pill {
+            transition: none !important;
+            backdrop-filter: none !important;
+            -webkit-backdrop-filter: none !important;
+        }
+        .widget.dragging .stock-ticker,
+        .widget.dragging .stock-price,
+        .widget.dragging .stock-change { text-shadow: none !important; }
+        .widget.dragging .widget-pill,
+        .widget.dragging .widget-pill * { box-shadow: none !important; text-shadow: none !important; }
         .widget.snapping {
             transition: transform 0.42s cubic-bezier(0.34, 1.4, 0.64, 1), opacity 0.2s ease;
         }
@@ -422,18 +427,30 @@
         #battery-widget .widget-pill { padding: 4px 10px !important; }
         #battery-icon svg { display: block; vertical-align: middle; }
         #battery { line-height: 1; display: flex; align-items: center; }
-        .integration-widget { max-width: min(92vw, 370px); width: max-content; font-size: 0.82rem; }
-        .integration-widget .widget-pill { width: 100%; padding: 12px 14px; box-sizing: border-box; }
-        .integration-heading { display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:9px; }
-        .integration-title { font-size:0.5rem;letter-spacing:2.4px;text-transform:uppercase;font-weight:700;opacity:.55; }
-        .integration-meta { font-size:0.48rem;letter-spacing:1px;text-transform:uppercase;opacity:.38; }
+        .integration-widget { width: max-content; max-width: none; min-width: 0; flex-direction: column; align-items: stretch; font-size: 0.82rem; }
+        #calendar-widget .integration-list { padding: 2px 1px 6px; }
+        #calendar-widget .integration-empty { max-width: none; }
+        .integration-widget .widget-pill { width: min(92vw, 420px); max-width: min(92vw, 420px); min-width: 0; padding: 16px 20px; box-sizing: border-box; }
+        #sports-widget .widget-pill { display: block; }
+        #sports-widget .integration-heading { display:flex; flex-direction:column; align-items:stretch; justify-content:flex-start; gap:5px; }
+        #sports-widget .integration-meta { flex:0 0 auto; text-align:left; } 
+        .integration-heading { display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px;width:100%;min-width:0;box-sizing:border-box; }
+        .integration-list { width:100%;min-width:0;box-sizing:border-box; }
+        .integration-heading .integration-action { flex-shrink:0; margin-right:4px; }
+        .integration-title { flex:1 1 auto;min-width:0;overflow-wrap:anywhere;white-space:normal;font-size:0.5rem;letter-spacing:2.4px;text-transform:uppercase;font-weight:700;opacity:.55; }
+        .integration-meta { flex:0 1 auto;min-width:0;max-width:100%;text-align:right;overflow-wrap:anywhere;white-space:normal;font-size:0.48rem;letter-spacing:1px;text-transform:uppercase;opacity:.38; }
         .integration-list { display:flex;flex-direction:column;gap:8px;max-height:210px;overflow:auto; }
         .integration-row { display:flex;align-items:center;gap:10px;min-width:0; }
         .integration-row + .integration-row { padding-top:8px;border-top:1px solid rgba(255,255,255,.08); }
-        .integration-row-main { min-width:0;flex:1; }
-        .integration-primary { display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.72rem;font-weight:600; }
-        .integration-secondary { display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.56rem;opacity:.48; }
-        .integration-score { font-variant-numeric:tabular-nums;font-size:.78rem;font-weight:700;white-space:nowrap; }
+        .integration-row-main { min-width:0;flex:1 1 0%; }
+        .integration-primary { display:block;min-width:0;overflow:visible;overflow-wrap:anywhere;white-space:normal;text-overflow:clip;font-size:.72rem;font-weight:600;line-height:1.35; }
+        .integration-secondary { display:block;margin-top:3px;overflow-wrap:anywhere;white-space:normal;font-size:.56rem;line-height:1.35;opacity:.48; }
+        .integration-score { flex-shrink:0;font-variant-numeric:tabular-nums;font-size:.78rem;font-weight:700;white-space:nowrap; }
+        .sports-game-row { align-items:flex-start;width:100%;min-width:0;box-sizing:border-box; }
+        .sports-game-row .integration-row-main { flex:1 1 0%;width:0;min-width:0; }
+        .sports-game-row .integration-score { flex:0 0 auto;padding-top:1px; }
+        #sports-widget .integration-heading,#sports-widget .integration-list { width:100%;min-width:0;box-sizing:border-box; }
+        #sports-widget .integration-primary { width:100%;max-width:100%; }
         .integration-empty { max-width:290px;font-size:.62rem;line-height:1.5;opacity:.5;text-align:center;padding:8px; }
         .integration-action { border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(255,255,255,.06);color:#fff;padding:6px 10px;font:600 .5rem/1 -apple-system,system-ui,sans-serif;letter-spacing:.7px;text-transform:uppercase;cursor:pointer; }
         .integration-action:hover { border-color:var(--accent);background:rgba(255,255,255,.1); }
@@ -933,7 +950,7 @@
         .image-widget-content {
             display: block; width: min(320px, 80vw); height: min(320px, 60vh);
             object-fit: contain; object-position: center; opacity: 1;
-            border-radius: 16px; pointer-events: none; -webkit-user-drag: none;
+            border-radius: 16px; pointer-events: auto; cursor: grab; -webkit-user-drag: none;
         }
         body.show-pills .image-widget .widget-pill {
             padding: 0; background: transparent; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
@@ -1576,7 +1593,7 @@
         <!-- Image widgets -->
         <div class="control-group collapsed">
             <div class="group-header" onclick="toggleGroup(this)">
-                <div class="row" style="flex:1;margin-bottom:0;"><label>Image Widgets <span style="opacity:.4;">· 5 max</span></label></div>
+                <div class="row" style="flex:1;margin-bottom:0;"><label>Image Widgets <span style="opacity:.4;">· 5 max</span></label><span class="reset-link" onclick="resetAllImageWidgets();event.stopPropagation()">Reset All</span></div>
                 <span class="group-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
             </div>
             <div class="group-body" id="image-widget-controls"></div>
@@ -2924,6 +2941,7 @@ const IMAGE_WIDGET_COUNT = 5;
 let imageWidgetDbPromise = null;
 const imageWidgetBlobUrls = {};
 const imageWidgetRenderTokens = {};
+const imageWidgetUploadTokens = {};
 
 function openImageWidgetDb() {
     if (imageWidgetDbPromise) return imageWidgetDbPromise;
@@ -3106,8 +3124,8 @@ function applyImageWidgetSettings(slot) {
     const hasImage = !!(img && img.hasAttribute('src'));
 
     if (widget) {
-        widget.style.opacity = String(opacity / 100);
         widget.style.setProperty('--widget-opacity', String(opacity / 100));
+        if (state[imageWidgetShowKey(slot)]) widget.style.opacity = String(opacity / 100);
     }
     if (pill) pill.style.borderRadius = radius + 'px';
     if (img) {
@@ -3138,19 +3156,25 @@ async function handleImageWidgetUpload(input) {
     const slot = Math.max(1, Math.min(IMAGE_WIDGET_COUNT, Number(input.dataset.slot) || 1));
     const file = input.files && input.files[0];
     if (!file) return;
+    const uploadToken = {};
+    imageWidgetUploadTokens[slot] = uploadToken;
     if (file.size > 10 * 1024 * 1024) {
         showToast('Choose an image smaller than 10 MB'); input.value = ''; return;
     }
     try {
         const imageBlob = await normalizeImageWidgetBlob(file);
+        if (imageWidgetUploadTokens[slot] !== uploadToken) return;
         await storeImageWidgetBlob(imageBlob, slot);
+        if (imageWidgetUploadTokens[slot] !== uploadToken) return;
         getImageWidgetSettings(slot).name = file.name;
-        if (!await showImageWidgetBlob(imageBlob, slot)) {
+        const displayed = await showImageWidgetBlob(imageBlob, slot);
+        if (imageWidgetUploadTokens[slot] !== uploadToken) return;
+        if (!displayed) {
             await deleteImageWidgetBlob(slot);
             getImageWidgetSettings(slot).name = '';
             state[imageWidgetShowKey(slot)] = false;
             const widget = document.getElementById(imageWidgetKey(slot) + '-widget');
-            if (widget) { widget.style.display = 'none'; widget.style.pointerEvents = 'none'; }
+            if (widget) { widget.style.display = 'none'; widget.style.opacity = '0'; widget.style.pointerEvents = 'none'; }
             const switchEl = document.getElementById('sw-' + imageWidgetShowKey(slot));
             if (switchEl) switchEl.classList.remove('active');
             const status = document.getElementById('st-' + imageWidgetKey(slot));
@@ -3160,8 +3184,9 @@ async function handleImageWidgetUpload(input) {
             return;
         }
         state[imageWidgetShowKey(slot)] = true;
+        applyImageWidgetSettings(slot);
         const widget = document.getElementById(imageWidgetKey(slot) + '-widget');
-        if (widget) widget.style.display = 'flex';
+        if (widget) { widget.style.display = 'flex'; widget.style.opacity = ''; widget.style.pointerEvents = 'all'; }
         const switchEl = document.getElementById('sw-' + imageWidgetShowKey(slot));
         if (switchEl) switchEl.classList.add('active');
         const status = document.getElementById('st-' + imageWidgetKey(slot));
@@ -3171,6 +3196,7 @@ async function handleImageWidgetUpload(input) {
         save();
         showToast('Image ' + slot + ' added');
     } catch (error) {
+        if (imageWidgetUploadTokens[slot] !== uploadToken) return;
         console.error('Image widget upload failed:', error);
         showToast(error && error.message === 'Choose a valid GIF or PNG image' ? error.message : 'Could not save image on this device');
     } finally { input.value = ''; }
@@ -3216,22 +3242,26 @@ function setImageWidgetVisibility(slot, show) {
 }
 
 async function removeImageWidgetImage(slot) {
-    try { await deleteImageWidgetBlob(slot); } catch (error) { console.warn('Could not remove image from local storage:', error); }
-    const key = imageWidgetKey(slot);
-    const img = document.getElementById(key + '-widget-content');
+    imageWidgetUploadTokens[slot] = null;
     imageWidgetRenderTokens[slot] = null;
-    if (img) img.removeAttribute('src');
-    if (imageWidgetBlobUrls[slot]) URL.revokeObjectURL(imageWidgetBlobUrls[slot]);
-    delete imageWidgetBlobUrls[slot];
-    getImageWidgetSettings(slot).name = '';
     state[imageWidgetShowKey(slot)] = false;
+    const key = imageWidgetKey(slot);
     const widget = document.getElementById(key + '-widget');
-    if (widget) widget.style.display = 'none';
+    if (widget) { widget.style.display = 'none'; widget.style.opacity = '0'; widget.style.pointerEvents = 'none'; }
     const switchEl = document.getElementById('sw-' + imageWidgetShowKey(slot));
     if (switchEl) switchEl.classList.remove('active');
     const status = document.getElementById('st-' + key);
     if (status) { status.textContent = 'HIDDEN'; status.className = 'status-tag off'; }
-    applyImageWidgetSettings(slot); save();
+    const img = document.getElementById(key + '-widget-content');
+    if (img) img.removeAttribute('src');
+    if (imageWidgetBlobUrls[slot]) URL.revokeObjectURL(imageWidgetBlobUrls[slot]);
+    delete imageWidgetBlobUrls[slot];
+    getImageWidgetSettings(slot).name = '';
+    const fileInput = document.getElementById(key + '-file');
+    if (fileInput) fileInput.value = '';
+    try { await deleteImageWidgetBlob(slot); } catch (error) { console.warn('Could not remove image from local storage:', error); }
+    applyImageWidgetSettings(slot);
+    save();
 }
 
 async function loadImageWidget(slot) {
@@ -4875,7 +4905,7 @@ function syncIntegrationControls() {
     if (importedAppleEvents.length) {
         setIntegrationStatus('calendar-widget-status', (connected ? 'Google Calendar + ' : '') + 'Apple Calendar file · ' + importedAppleEvents.length + ' upcoming events');
     } else if (!connected) {
-        setIntegrationStatus('calendar-widget-status', 'Connect Google or import an Apple Calendar file.');
+        setIntegrationStatus('calendar-widget-status', 'Google sign-in requires a valid Web OAuth client with ' + window.location.origin + ' in Authorized JavaScript origins.');
     }
     if (!connected) setIntegrationStatus('email-widget-status', 'Connect Google to show recent Inbox messages.');
     document.querySelectorAll('.sports-league-toggle').forEach(button => button.classList.toggle('active', (state.sportsLeagues || []).includes(button.dataset.league)));
@@ -4902,7 +4932,7 @@ function connectGoogleAccount() {
             callback: response => {
                 if (requestVersion !== googleConnectionVersion) return;
                 if (response.error || !response.access_token) {
-                    setIntegrationStatus('calendar-widget-status', 'Google connection was not completed. Try again.');
+                    setIntegrationStatus('calendar-widget-status', 'Google rejected this OAuth client. Verify the client ID and add ' + window.location.origin + ' as an Authorized JavaScript origin in Google Cloud Console.');
                     return;
                 }
                 googleAccessToken = response.access_token;
@@ -4914,7 +4944,7 @@ function connectGoogleAccount() {
             },
             error_callback: error => {
                 if (requestVersion !== googleConnectionVersion) return;
-                setIntegrationStatus('calendar-widget-status', 'Google connection could not open. Try again.');
+                setIntegrationStatus('calendar-widget-status', 'Google sign-in failed. In Google Cloud Console, verify this OAuth client ID and add ' + window.location.origin + ' as an Authorized JavaScript origin.');
             }
         });
         googleTokenClient.requestAccessToken();
@@ -5202,6 +5232,7 @@ function setSportsLeague(league) {
     if (selectedLeagues.has(league)) selectedLeagues.delete(league);
     else selectedLeagues.add(league);
     state.sportsLeagues = ['nhl', 'nba', 'nfl'].filter(item => selectedLeagues.has(item));
+    if (state.sportsLeagues.length) state.sportsTeams = (state.sportsTeams || []).filter(team => team.league !== league);
     state.sportsLeague = state.sportsLeagues[0] || league;
     save();
     syncIntegrationControls();
@@ -5250,6 +5281,10 @@ function searchSportsTeams(query) {
     const box = document.getElementById('sports-team-results');
     const input = document.getElementById('sports-team-input');
     if (!box || !input) return;
+    if (!box._prismClickGuard) {
+        box.addEventListener('pointerdown', event => event.stopPropagation());
+        box._prismClickGuard = true;
+    }
     const q = String(query || '').trim().toLowerCase();
     if (!q) { box.style.display = 'none'; box.replaceChildren(); input.setAttribute('aria-expanded', 'false'); _sportsTeamHighlight = -1; return; }
     const selected = new Set((state.sportsTeams || []).map(team => team.id));
@@ -5267,7 +5302,7 @@ function searchSportsTeams(query) {
         const label = document.createElement('span'); label.textContent = team.name + ' · ' + team.abbreviation;
         const league = document.createElement('span'); league.className = 'sports-team-league'; league.textContent = team.leagueName;
         option.append(label, league);
-        option.addEventListener('pointerdown', event => { event.preventDefault(); addSportsTeam(team.id); });
+        option.addEventListener('pointerdown', event => { event.preventDefault(); event.stopPropagation(); addSportsTeam(team.id); });
         option.addEventListener('pointermove', () => {
             _sportsTeamHighlight = index;
             box.querySelectorAll('.sports-team-item').forEach((item, itemIndex) => item.classList.toggle('active', itemIndex === index));
@@ -5285,16 +5320,20 @@ function addSportsTeam(id) {
     if (!team) return;
     if (!Array.isArray(state.sportsTeams)) state.sportsTeams = [];
     if (!state.sportsTeams.some(item => item.id === id)) state.sportsTeams.push({ ...team });
+    // Team selection is an exact filter; clear the default/all-league choices
+    // so unrelated games do not remain visible alongside the selected team.
+    state.sportsLeagues = [];
+    state.sportsLeague = team.league;
     state.sportsTeamFilter = '';
     renderSportsTeamTags();
     const input = document.getElementById('sports-team-input');
     const box = document.getElementById('sports-team-results');
-    if (input) { input.value = ''; input.focus(); }
+    if (input) { input.value = ''; input.setAttribute('aria-expanded', 'false'); }
     if (box) box.style.display = 'none';
-    if (input) input.setAttribute('aria-expanded', 'false');
     save();
+    syncIntegrationControls();
     if (sportsScoresCache.length) renderSportsScores(sportsScoresCache);
-    else if (state.showSports) refreshSportsScores();
+    if (state.showSports) refreshSportsScores();
 }
 
 function removeSportsTeam(id) {
@@ -5302,7 +5341,7 @@ function removeSportsTeam(id) {
     renderSportsTeamTags();
     save();
     if (sportsScoresCache.length) renderSportsScores(sportsScoresCache);
-    else if (state.showSports) refreshSportsScores();
+    if (state.showSports) refreshSportsScores();
 }
 
 function sportsTeamInputKey(event) {
@@ -5330,7 +5369,9 @@ function sportsTeamInputKey(event) {
 
 function setSportsTeamFilter(value) {
     state.sportsTeamFilter = String(value || '');
+    if (state.sportsTeamFilter.trim()) state.sportsLeagues = [];
     save();
+    syncIntegrationControls();
     if (sportsScoresCache.length) renderSportsScores(sportsScoresCache);
 }
 
@@ -5474,15 +5515,16 @@ function renderSportsScores(results) {
         }
         const games = selected?.games || [];
         const leagueTeams = selectedTeams.filter(team => team.league === league);
-        const filteredGames = selectedLeagues.includes(league) ? games : leagueTeams.length
+        const filteredGames = leagueTeams.length
             ? games.filter(game => {
                 const teams = game.teams || {};
                 const gameTeams = [teams.home, teams.away || teams.visitors].filter(Boolean);
                 return leagueTeams.some(selectedTeam => gameTeams.some(team =>
-                    String(team.abbreviation || '').toUpperCase() === selectedTeam.abbreviation
-                    || [team.name, team.displayName, team.shortDisplayName].filter(Boolean).some(name => String(name).toLowerCase() === selectedTeam.name.toLowerCase())
+                    String(team.abbreviation || '').toUpperCase() === String(selectedTeam.abbreviation || '').toUpperCase()
+                    || [team.name, team.displayName, team.shortDisplayName].filter(Boolean).some(name => String(name).trim().toLowerCase() === String(selectedTeam.name || '').trim().toLowerCase())
                 ));
             })
+            : selectedLeagues.includes(league) ? games
             : teamTerms.length
                 ? games.filter(game => {
                     const teams = game.teams || {};
@@ -5508,7 +5550,9 @@ function renderSportsScores(results) {
             const stateText = game.status?.short || game.status?.long || game.status?.name || game.time?.status || game.time?.to || '';
             const row = document.createElement('div'); row.className = 'integration-row sports-game-row';
             const main = document.createElement('div'); main.className = 'integration-row-main';
-            const title = document.createElement('span'); title.className = 'integration-primary'; title.textContent = (away.name || away.abbreviation || 'Away') + '  ·  ' + (home.name || home.abbreviation || 'Home');
+            const awayName = away.displayName || [away.location, away.name].filter(Boolean).join(' ') || away.shortDisplayName || away.abbreviation || 'Away';
+            const homeName = home.displayName || [home.location, home.name].filter(Boolean).join(' ') || home.shortDisplayName || home.abbreviation || 'Home';
+            const title = document.createElement('span'); title.className = 'integration-primary'; title.textContent = awayName + '  ·  ' + homeName;
             const secondary = document.createElement('span'); secondary.className = 'integration-secondary'; secondary.textContent = stateText;
             const score = document.createElement('span'); score.className = 'integration-score'; score.textContent = String(awayScore) + ' – ' + String(homeScore);
             main.append(title, secondary); row.append(main, score); rendered.push(row);
@@ -5636,6 +5680,13 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
     const { cx: startX, cy: startY } = getXY(startEvent);
     if (!state.widgetPos) state.widgetPos = JSON.parse(JSON.stringify(DEFAULT_POS));
     const origPos = { ...state.widgetPos[key] };
+    // Read the rendered bounds once at drag start. Measuring on every move
+    // forces style/layout work while the widget transform is changing.
+    const dragBounds = el.getBoundingClientRect();
+    const dragHalfWidth = dragBounds.width / 2;
+    const dragHalfHeight = dragBounds.height / 2;
+    const dragViewportWidth = window.innerWidth;
+    const dragViewportHeight = window.innerHeight;
     let moved = alreadyActivated;
     let ended = false; // CRITICAL: prevents stale RAF from writing after drag ends
     _activeDragCancel = () => { if (!ended) onEnd(); };
@@ -5686,12 +5737,15 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
                 lineV.style.display = 'block';
             }
 
-            // Clamp to viewport using widget's actual rendered size
-            const rect = el.getBoundingClientRect();
-            const hw = rect.width / 2, hh = rect.height / 2;
+            // Clamp using the drag-start dimensions; widget size does not
+            // change during a drag, so avoid a forced layout read per frame.
+            const widthRatio = window.innerWidth / Math.max(1, dragViewportWidth);
+            const heightRatio = window.innerHeight / Math.max(1, dragViewportHeight);
+            const halfWidth = dragHalfWidth * widthRatio;
+            const halfHeight = dragHalfHeight * heightRatio;
             const margin = 8;
-            const rawX = Math.min(window.innerWidth  - hw - margin, Math.max(hw + margin, anchorX + dx));
-            const rawY = Math.min(window.innerHeight - hh - margin, Math.max(hh + margin, anchorY + dy));
+            const rawX = Math.min(window.innerWidth - halfWidth - margin, Math.max(halfWidth + margin, anchorX + dx));
+            const rawY = Math.min(window.innerHeight - halfHeight - margin, Math.max(halfHeight + margin, anchorY + dy));
 
             const midX = window.innerWidth  / 2;
             const midY = window.innerHeight / 2;
@@ -6219,7 +6273,42 @@ function resetWidget(key) {
     }
     state.widgetScales[key] = 1; // also reset per-widget scale
     positionWidget(key);
+    const imageSlot = key.match(/^image([1-5])$/);
+    if (imageSlot) {
+        const settings = getImageWidgetSettings(Number(imageSlot[1]));
+        settings.fit = 'contain';
+        settings.opacity = 100;
+        settings.radius = 16;
+        removeImageWidgetImage(Number(imageSlot[1]));
+        return;
+    }
     save();
+}
+
+async function resetAllImageWidgets() {
+    if (!state.widgetPos) state.widgetPos = {};
+    if (!state.widgetScales) state.widgetScales = {};
+    const removals = [];
+    for (let slot = 1; slot <= IMAGE_WIDGET_COUNT; slot++) {
+        const key = imageWidgetKey(slot);
+        state.widgetPos[key] = { ...DEFAULT_POS[key] };
+        state.widgetScales[key] = 1;
+        const settings = getImageWidgetSettings(slot);
+        settings.fit = 'contain';
+        settings.opacity = 100;
+        settings.radius = 16;
+        if (state.widgetPosByOrientation) {
+            ['portrait', 'landscape'].forEach(orientation => {
+                const positions = state.widgetPosByOrientation[orientation];
+                if (positions) positions[key] = { ...DEFAULT_POS[key] };
+            });
+        }
+        positionWidget(key);
+        removals.push(removeImageWidgetImage(slot));
+    }
+    await Promise.all(removals);
+    save();
+    showToast('All image widgets reset');
 }
 function toggle(key) {
     const imageSlot = key.match(/^showImage([1-5])$/);
@@ -6415,10 +6504,12 @@ function initInteractions() {
     // ── DISMISS CONTEXT MENU ON OUTSIDE CLICK ──
     document.addEventListener('mousedown', (e) => {
         if (e.button === 2) return; // right-click: contextmenu event handles it
-        if (!e.target.closest('#widget-ctx-menu')) setTimeout(() => hideCtxMenu(), 0);
+        if (e.target.closest('#widget-ctx-menu') || e.target.closest('#sports-team-results')) return;
+        setTimeout(() => hideCtxMenu(), 0);
     });
     document.addEventListener('touchstart', (e) => {
-        if (!e.target.closest('#widget-ctx-menu')) setTimeout(() => hideCtxMenu(), 0);
+        if (e.target.closest('#widget-ctx-menu') || e.target.closest('#sports-team-results')) return;
+        setTimeout(() => hideCtxMenu(), 0);
     }, { passive: true });
 }
 
@@ -6439,7 +6530,7 @@ function initWidgetDrag(key) {
     // ── MOUSE: instant drag, hold 380ms still = context menu, right-click = context menu ──
     let _mouseTimer = null, _mouseMoved = false;
     el.addEventListener('mousedown', (e) => {
-        if (e.target.closest('button, input, a')) return;
+        if (e.target.closest('button, input, a') || e.target.closest('.sports-game-row')) return;
         if (e.button !== 0) return;
         _mouseMoved = false;
         _mouseTimer = setTimeout(() => {
@@ -6457,7 +6548,7 @@ function initWidgetDrag(key) {
     let _sx = 0, _sy = 0;
 
     el.addEventListener('touchstart', (e) => {
-        if (e.target.closest('button, input, a')) return;
+        if (e.target.closest('button, input, a') || e.target.closest('.sports-game-row')) return;
         if (document.getElementById('widget-ctx-menu').classList.contains('visible')) return;
         if (e.touches.length > 1) return; // two-finger pinch is handled by initPinchScale
 
@@ -6550,6 +6641,11 @@ const CTX_WIDGET_ACTIONS = {
         <button class="ctx-item" onclick="event.stopPropagation();focusCountdownName();hideCtxMenu();">
             <span class="ctx-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></span>
             Set Event
+        </button>`,
+    sports: () => `
+        <button class="ctx-item" onclick="event.stopPropagation();focusManageTeams();hideCtxMenu();">
+            <span class="ctx-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 0 20M12 2a15 15 0 0 0 0 20"/></svg></span>
+            Manage Teams
         </button>`
 };
 
@@ -6558,7 +6654,7 @@ const CTX_WIDGET_LABELS = {
     nowplaying: 'Now Playing', stocks: 'Stocks', worldclock: 'World Clock',
     moon: 'Moon Phase', countdown: 'Countdown',
     image1: 'Image Widget 1', image2: 'Image Widget 2', image3: 'Image Widget 3',
-    image4: 'Image Widget 4', image5: 'Image Widget 5'
+    image4: 'Image Widget 4', image5: 'Image Widget 5', sports: 'Sports Scores'
 };
 
 
@@ -6662,6 +6758,10 @@ function focusManageTickers() {
 
 function focusCountdownName() {
     _focusInputInPanel('cd-name-input', '#side-panel .control-group:has(#cd-name-input)');
+}
+
+function focusManageTeams() {
+    _focusInputInPanel('sports-team-input', '#side-panel .control-group:has(#sports-team-input)');
 }
 
 // ctxLockToggle removed — lock moved to settings panel only
@@ -6923,7 +7023,7 @@ function clampAllWidgetPositions() {
 document.addEventListener('click', (e) => {
     const panel = document.getElementById('side-panel');
     if (!panel || !panel.classList.contains('open')) return;
-    if (panel.contains(e.target) || e.target.closest('#sports-team-results')) return;
+    if (panel.contains(e.target) || (e.target instanceof Element && e.target.closest('#sports-team-results'))) return;
     // Defensive: trigger might not exist if the markup is changed
     const trigger = document.getElementById('nav-trigger');
     if (trigger && trigger.contains(e.target)) return;
@@ -7133,6 +7233,7 @@ function initPinchScale(key) {
     }, { passive: false });
 
     let _pinchRaf = false;
+    let _pinchPendingScale = 1;
     el.addEventListener('touchmove', (e) => {
         if (!_isPinching || e.touches.length !== 2) return;
         e.preventDefault();
@@ -7148,13 +7249,14 @@ function initPinchScale(key) {
 
         if (!state.widgetScales) state.widgetScales = {};
         state.widgetScales[key] = newScale;
+        _pinchPendingScale = newScale;
 
         if (_pinchRaf) return;
         _pinchRaf = true;
         requestAnimationFrame(() => {
             _pinchRaf = false;
-            _applyWidgetScalePreview(key, newScale, _pinchStartScale);
-            if (_ctxKey === key) _updateCtxScaleBar(newScale);
+            _applyWidgetScalePreview(key, _pinchPendingScale, _pinchStartScale);
+            if (_ctxKey === key) _updateCtxScaleBar(_pinchPendingScale);
         });
     }, { passive: false });
 
