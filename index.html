@@ -12,6 +12,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Outfit:wght@100;300;400;900&display=block" rel="stylesheet">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
     <link rel="icon" type="image/png" href="logo.png">
     <link rel="apple-touch-icon" href="logo.png">
     <title>Prism OS</title>
@@ -421,6 +422,56 @@
         #battery-widget .widget-pill { padding: 4px 10px !important; }
         #battery-icon svg { display: block; vertical-align: middle; }
         #battery { line-height: 1; display: flex; align-items: center; }
+        .integration-widget { max-width: min(92vw, 370px); width: max-content; font-size: 0.82rem; }
+        .integration-widget .widget-pill { width: 100%; padding: 12px 14px; box-sizing: border-box; }
+        .integration-heading { display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:9px; }
+        .integration-title { font-size:0.5rem;letter-spacing:2.4px;text-transform:uppercase;font-weight:700;opacity:.55; }
+        .integration-meta { font-size:0.48rem;letter-spacing:1px;text-transform:uppercase;opacity:.38; }
+        .integration-list { display:flex;flex-direction:column;gap:8px;max-height:210px;overflow:auto; }
+        .integration-row { display:flex;align-items:center;gap:10px;min-width:0; }
+        .integration-row + .integration-row { padding-top:8px;border-top:1px solid rgba(255,255,255,.08); }
+        .integration-row-main { min-width:0;flex:1; }
+        .integration-primary { display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.72rem;font-weight:600; }
+        .integration-secondary { display:block;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:.56rem;opacity:.48; }
+        .integration-score { font-variant-numeric:tabular-nums;font-size:.78rem;font-weight:700;white-space:nowrap; }
+        .integration-empty { max-width:290px;font-size:.62rem;line-height:1.5;opacity:.5;text-align:center;padding:8px; }
+        .integration-action { border:1px solid rgba(255,255,255,.14);border-radius:999px;background:rgba(255,255,255,.06);color:#fff;padding:6px 10px;font:600 .5rem/1 -apple-system,system-ui,sans-serif;letter-spacing:.7px;text-transform:uppercase;cursor:pointer; }
+        .integration-action:hover { border-color:var(--accent);background:rgba(255,255,255,.1); }
+        .sports-options { margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.07); }
+        .sports-option-label { display:block;margin-bottom:7px;font-size:.5rem;letter-spacing:.7px;text-transform:uppercase;opacity:.55; }
+        .sports-choice-row { display:flex;flex-wrap:wrap;gap:6px; }
+        .sports-choice { border:1px solid rgba(255,255,255,.12);border-radius:999px;background:rgba(255,255,255,.04);color:#fff;padding:7px 10px;font:600 .52rem/1 -apple-system,system-ui,sans-serif;opacity:.6;cursor:pointer; }
+        .sports-choice.active { border-color:var(--accent);color:var(--accent);background:rgba(255,255,255,.08);opacity:1; }
+        .sports-layout-cards .sports-game-row { padding:9px 10px;background:rgba(255,255,255,.055);border:1px solid rgba(255,255,255,.08);border-radius:11px; }
+        .sports-layout-cards .sports-game-row + .sports-game-row { padding-top:9px;border-top:1px solid rgba(255,255,255,.08); }
+        .sports-layout-compact { gap:3px; }
+        .sports-layout-compact .sports-game-row { gap:7px; }
+        .sports-layout-compact .sports-game-row + .sports-game-row { padding-top:4px; }
+        .sports-layout-compact .integration-primary { font-size:.64rem; }
+        .sports-layout-compact .integration-secondary { font-size:.5rem;margin-top:0; }
+        .sports-layout-compact .integration-score { font-size:.68rem; }
+        .sports-league-label { padding:7px 0 2px;font-size:.48rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);opacity:.7; }
+        .sports-league-label:first-child { padding-top:0; }
+        .sports-layout-cards .sports-league-label:not(:first-child) { margin-top:6px; }
+        .sports-filter-note { margin:6px 0 0;font-size:.46rem;line-height:1.45;opacity:.38; }
+        .sports-team-picker { position:relative;margin-top:8px; }
+        .sports-team-results { position:fixed;top:0;left:0;z-index:9001;display:none;max-height:220px;overflow-y:auto;border:1px solid rgba(255,255,255,.12);border-radius:13px;background:rgba(18,18,20,.98);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:0 12px 40px rgba(0,0,0,.8);isolation:isolate; }
+        .sports-team-results .sports-team-item[role="option"] { min-height:38px; }
+        .sports-team-input { width:100%;box-sizing:border-box;margin-top:8px;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px;font-size:.7rem;outline:none; }
+        .sports-team-input:focus { border-color:var(--accent); }
+        .sports-team-tags { display:flex;flex-wrap:wrap;gap:6px; }
+        .sports-team-item { display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;font-size:.65rem;text-align:left;transition:background .08s ease; }
+        .sports-team-item:last-child { border-bottom:0; }
+        .sports-team-item:hover,.sports-team-item.active { background:var(--accent);color:var(--accent-fg); }
+        .sports-team-league { font-size:.48rem;letter-spacing:1px;opacity:.56;text-transform:uppercase;white-space:nowrap; }
+        .sports-team-item:hover .sports-team-league,.sports-team-item.active .sports-team-league { opacity:.75; }
+        .sports-team-tag { display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);border-radius:8px;padding:4px 8px;font-size:.58rem; }
+        .sports-team-tag button { padding:1px 3px;margin:-2px;background:none;border:0;color:rgba(255,255,255,.5);font-size:.75rem;cursor:pointer; }
+        .sports-team-tag button:hover { color:#ff7070; }
+        .integration-note { margin:8px 0 0;font-size:.46rem;line-height:1.45;opacity:.36; }
+        .integration-input { width:100%;box-sizing:border-box;margin-top:8px;background:rgba(255,255,255,.06);color:#fff;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 12px;font-size:.7rem;outline:none; }
+        .integration-input:focus { border-color:var(--accent); }
+        .integration-controls { display:flex;flex-wrap:wrap;gap:7px;margin-top:9px; }
         .charging-pulse { animation: batteryPulse 2s infinite ease-in-out; }
         @keyframes batteryPulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
 
@@ -888,8 +939,8 @@
             padding: 0; background: transparent; border: 0; box-shadow: none; backdrop-filter: none; -webkit-backdrop-filter: none;
         }
         .image-widget-empty {
-            display: none; width: 240px; height: 180px; align-items: center; justify-content: center;
-            color: rgba(255,255,255,0.4); font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase;
+            display: none; width: min(240px, 78vw); height: min(180px, 36vh); align-items: center; justify-content: center;
+            color: rgba(255,255,255,0.4); font-size: 0.65rem; letter-spacing: 2px; text-transform: uppercase; line-height: 1.4;
         }
         .image-widget-settings { margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.06); }
         .image-widget-settings:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
@@ -1016,6 +1067,7 @@
 <div id="weather-tint"></div>
 <div id="vignette"></div>
 <div id="ticker-results"></div>
+<div id="sports-team-results" class="sports-team-results" role="listbox" aria-label="Team suggestions"></div>
 <div id="center-h" style="display:none;position:fixed;left:0;right:0;top:50%;height:1px;z-index:800;pointer-events:none;transform:translateY(-0.5px);background:rgba(255,255,255,0.7);"></div>
 <div id="center-v" style="display:none;position:fixed;top:0;bottom:0;left:50%;width:1px;z-index:800;pointer-events:none;transform:translateX(-0.5px);background:rgba(255,255,255,0.7);"></div>
 <div id="overlay" onclick="toggleNav()"></div>
@@ -1109,6 +1161,27 @@
     <div id="stocks-widget" class="widget" style="display:none;">
         <div class="widget-pill">
             <div id="stocks-list"><!-- rows injected by JS --></div>
+        </div>
+    </div>
+    <div id="sports-widget" class="widget integration-widget" style="display:none;">
+        <div class="widget-pill">
+            <div class="integration-heading"><span class="integration-title">Scoreboard</span><span id="sports-updated" class="integration-meta">SCORES</span></div>
+            <div id="sports-score-list" class="integration-list"><div class="integration-empty">Choose leagues or teams in Settings.</div></div>
+        </div>
+    </div>
+    <div id="calendar-widget" class="widget integration-widget" style="display:none;">
+        <div class="widget-pill">
+            <div class="integration-heading"><span class="integration-title">Calendar</span><button class="integration-action" onclick="refreshGoogleData()">Sync</button></div>
+            <div id="calendar-event-list" class="integration-list">            <div class="integration-empty">Connect Google or import an Apple Calendar file.</div>
+</div>
+            <div id="calendar-widget-footnote" class="integration-note">UPCOMING EVENTS</div>
+        </div>
+    </div>
+    <div id="email-widget" class="widget integration-widget" style="display:none;">
+        <div class="widget-pill">
+            <div class="integration-heading"><span class="integration-title">Recent Mail</span><button class="integration-action" onclick="refreshGoogleData()">Sync</button></div>                <div id="email-message-list" class="integration-list"><div class="integration-empty">Connect Google to see recent messages.</div></div>
+
+            <div id="email-widget-footnote" class="integration-note">LATEST MESSAGES</div>
         </div>
     </div>
     <div id="image1-widget" class="widget image-widget" style="display:none;" aria-label="Image widget 1">
@@ -1383,6 +1456,7 @@
             </div>
             <div class="group-body">
                 <div class="row" style="margin-top:14px;"><label style="font-size:0.5rem;">Colour by Charge Level</label><div id="sw-batteryDynamic" class="ios-switch active" onclick="toggle('batteryDynamic')"></div></div>
+                <p style="margin:10px 0 0;font-size:0.55rem;line-height:1.5;color:rgba(255,255,255,0.48);">iOS browsers don’t expose battery level to websites, so this widget is available only on supported browsers and devices.</p>
                 <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Visible</label><div style="display:flex;align-items:center;"><span id="st-battery" class="status-tag">SHOWN</span><div id="sw-showBattery" class="ios-switch active" onclick="toggle('showBattery')"></div></div></div>
             </div>
         </div>
@@ -1390,7 +1464,7 @@
         <!-- Spotify -->
         <div class="control-group collapsed">
             <div class="group-header" onclick="toggleGroup(this)">
-                <div class="row" style="flex:1;margin-bottom:0;"><label>Spotify</label><span class="reset-link" onclick="resetWidget('nowplaying');event.stopPropagation()">Reset</span></div>
+                <div class="row" style="flex:1;margin-bottom:0;"><label>Spotify</label><span class="reset-link" onclick="    resetWidget('nowplaying');event.stopPropagation()">Reset</span></div>
                 <span class="group-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
             </div>
             <div class="group-body">
@@ -1433,6 +1507,69 @@
                     <div id="ticker-tags" class="ticker-tags"></div>
                     <input type="text" id="ticker-input" placeholder="Search by name or symbol..." style="margin-top:10px;width:100%;" oninput="searchTickers(this.value)" onkeydown="tickerInputKey(event)" autocomplete="off">
                 </div>
+            </div>
+        </div>
+
+        <!-- Sports Scores -->
+        <div class="control-group collapsed">
+            <div class="group-header" onclick="toggleGroup(this)">
+                <div class="row" style="flex:1;margin-bottom:0;"><label>Sports Scores</label><span class="reset-link" onclick="resetWidget('sports');event.stopPropagation()">Reset</span></div>
+                <span class="group-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+            </div>
+            <div class="group-body">
+                <div class="row" style="margin-top:14px;"><label style="font-size:0.5rem;">Visible</label><div style="display:flex;align-items:center;"><span id="st-sports" class="status-tag off">HIDDEN</span><div id="sw-showSports" class="ios-switch" onclick="toggle('showSports')"></div></div></div>
+                <div class="sports-options">
+                    <span class="sports-option-label">Leagues to show · tap to select</span>
+                    <div class="sports-choice-row" role="group" aria-label="Sports leagues to show">
+                        <button type="button" class="sports-choice sports-league-toggle" data-league="nhl" onclick="setSportsLeague('nhl')">NHL</button>
+                        <button type="button" class="sports-choice sports-league-toggle" data-league="nba" onclick="setSportsLeague('nba')">NBA</button>
+                        <button type="button" class="sports-choice sports-league-toggle" data-league="nfl" onclick="setSportsLeague('nfl')">NFL</button>
+                    </div>
+                    <span class="sports-option-label" style="margin-top:12px;">Teams · across any league</span>
+                    <div id="sports-team-tags" class="sports-team-tags"></div>
+                    <div class="sports-team-picker">
+                        <input id="sports-team-input" class="sports-team-input" type="text" placeholder="Search teams…" oninput="searchSportsTeams(this.value)" onkeydown="sportsTeamInputKey(event)" autocomplete="off" role="combobox" aria-controls="sports-team-results" aria-autocomplete="list" aria-expanded="false">
+                    </div>
+                    <p class="sports-filter-note">Select a league for all its games, or add specific teams from any league.</p>
+                    <span class="sports-option-label" style="margin-top:12px;">Widget layout</span>
+                    <div class="sports-choice-row" role="group" aria-label="Sports widget layout">
+                        <button type="button" class="sports-choice sports-layout-toggle" data-layout="list" onclick="setSportsLayout('list')">List</button>
+                        <button type="button" class="sports-choice sports-layout-toggle" data-layout="cards" onclick="setSportsLayout('cards')">Cards</button>
+                        <button type="button" class="sports-choice sports-layout-toggle" data-layout="compact" onclick="setSportsLayout('compact')">Compact</button>
+                    </div>
+                </div>
+                <div class="integration-controls"><button class="integration-action" onclick="refreshSportsScores(true)">Refresh scores</button></div>
+            </div>
+        </div>
+
+        <!-- Calendar -->
+        <div class="control-group collapsed">
+            <div class="group-header" onclick="toggleGroup(this)">
+                <div class="row" style="flex:1;margin-bottom:0;"><label>Calendar</label><span class="reset-link" onclick="resetWidget('calendar');event.stopPropagation()">Reset</span></div>
+                <span class="group-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+            </div>
+            <div class="group-body">
+                <div class="row" style="margin-top:14px;"><label style="font-size:0.5rem;">Visible</label><div style="display:flex;align-items:center;"><span id="st-calendar" class="status-tag off">HIDDEN</span><div id="sw-showCalendar" class="ios-switch" onclick="toggle('showCalendar')"></div></div></div>
+                <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Account</label><span id="calendar-account-status" class="status-tag off">NOT CONNECTED</span></div>
+                <div id="calendar-widget-status" class="integration-note">Connect Google or import an Apple Calendar file.</div>
+                <div class="integration-controls"><button class="integration-action" onclick="connectGoogleAccount()">Connect Google</button><button class="integration-action" onclick="clearGoogleConnection()">Disconnect</button></div>
+                <label for="apple-calendar-file" class="integration-action" style="display:inline-block;margin-top:10px;cursor:pointer;">Import Apple Calendar (.ics)</label>
+                <input id="apple-calendar-file" type="file" accept=".ics,text/calendar" class="integration-input" style="padding:8px;" onchange="importAppleCalendar(this)">
+                <div class="integration-note">Import an Apple Calendar file to add events.</div>
+            </div>
+        </div>
+
+        <!-- Email -->
+        <div class="control-group collapsed">
+            <div class="group-header" onclick="toggleGroup(this)">
+                <div class="row" style="flex:1;margin-bottom:0;"><label>Email</label><span class="reset-link" onclick="resetWidget('email');event.stopPropagation()">Reset</span></div>
+                <span class="group-chevron"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></span>
+            </div>
+            <div class="group-body">
+                <div class="row" style="margin-top:14px;"><label style="font-size:0.5rem;">Visible</label><div style="display:flex;align-items:center;"><span id="st-email" class="status-tag off">HIDDEN</span><div id="sw-showEmail" class="ios-switch" onclick="toggle('showEmail')"></div></div></div>
+                <div class="row" style="margin-top:10px;"><label style="font-size:0.5rem;">Mailbox</label><span id="email-account-status" class="status-tag off">NOT CONNECTED</span></div>
+                <div id="email-widget-status" class="integration-note">Connect Google to show recent Inbox messages.</div>
+                <div class="integration-controls"><button class="integration-action" onclick="connectGoogleAccount()">Connect Google</button><button class="integration-action" onclick="clearGoogleConnection()">Disconnect</button></div>
             </div>
         </div>
 
@@ -1578,6 +1715,9 @@ let state = {
     tickers: [],
     timezones: ['America/New_York', 'Europe/London', 'Asia/Tokyo'],
     countdownName: 'Event', countdownDate: '',
+    showSports: false, showCalendar: false, showEmail: false,
+    sportsLeague: 'nhl', sportsLeagues: ['nhl'], sportsTeams: [], sportsTeamFilter: '', sportsLayout: 'list', sportsLastUpdated: 0,
+    googleClientId: '845756379905-0e5i1ao70ljrlv6952nkiv65vlrrod1l.apps.googleusercontent.com', appleCalendarEvents: [],
     widgetPos: {
         clock:      { x: 50, y: 50 },
         date:       { x: 50, y: 72 },
@@ -1592,11 +1732,15 @@ let state = {
         image2:     { x: 22, y: 78 },
         image3:     { x: 78, y: 22 },
         image4:     { x: 22, y: 22 },
-        image5:     { x: 50, y: 92 }
+        image5:     { x: 50, y: 92 },
+        sports:     { x: 16, y: 62 },
+        calendar:   { x: 50, y: 84 },
+        email:      { x: 84, y: 62 }
     },
 
     scale: 1, accent: '#ffffff', accentAuto: true, showNextUp: true, nowplayingLarge: false,
     widgetScales: {},
+    widgetPosByOrientation: { portrait: null, landscape: null },
     city: 'Calgary', bg: '', history: [],
     isStatic: true, staticColor: '#000000', blur: 0, bgOpacity: 1,
     presets: {}, posLocked: false, activeGradient: '',
@@ -1614,11 +1758,35 @@ let state = {
 // ─────────────────────────────────────────────────
 // PERSIST
 // ─────────────────────────────────────────────────
+function getWidgetPositionOrientation() {
+    return window.innerWidth >= window.innerHeight ? 'landscape' : 'portrait';
+}
+
+function cloneWidgetPositions(positions) {
+    return Object.fromEntries(WIDGET_KEYS.map(key => [
+        key,
+        { ...(DEFAULT_POS[key] || { x: 50, y: 50 }), ...((positions && positions[key]) || {}) }
+    ]));
+}
+
+let _widgetPositionOrientation = getWidgetPositionOrientation();
+
+function rememberActiveWidgetPositions() {
+    if (!state.widgetPosByOrientation || typeof state.widgetPosByOrientation !== 'object') {
+        state.widgetPosByOrientation = { portrait: null, landscape: null };
+    }
+    state.widgetPosByOrientation[_widgetPositionOrientation] = cloneWidgetPositions(state.widgetPos);
+}
+
 let _saveTimer = null;
 let _pendingSave = null; // holds the JSON string when a debounced save is queued
+function serializeSettings() {
+    return JSON.stringify(state);
+}
 function save() {
+    rememberActiveWidgetPositions();
     clearTimeout(_saveTimer);
-    _pendingSave = JSON.stringify(state);
+    _pendingSave = serializeSettings();
     _saveTimer = setTimeout(() => {
         if (_pendingSave !== null) {
             localStorage.setItem('prism_ultra_v3', _pendingSave);
@@ -1627,8 +1795,9 @@ function save() {
     }, 300);
 }
 function saveNow() {
+    rememberActiveWidgetPositions();
     clearTimeout(_saveTimer);
-    localStorage.setItem('prism_ultra_v3', JSON.stringify(state));
+    localStorage.setItem('prism_ultra_v3', serializeSettings());
     _pendingSave = null;
 }
 // Flush any pending debounced save immediately. Used on visibilitychange / pagehide
@@ -1661,9 +1830,47 @@ function load() {
         try {
             const parsed = JSON.parse(saved);
             hasSavedImageWidgets = Array.isArray(parsed.imageWidgets);
+            delete parsed.nylasClientId;
+            delete parsed.nylasAccounts;
+            delete parsed.nylasCalendarId;
             state = Object.assign(state, parsed);
         } catch (e) { localStorage.removeItem('prism_ultra_v3'); }
     }
+    // Use the embedded shared Google client if no client is stored in older settings.
+    if (!state.googleClientId) state.googleClientId = '845756379905-0e5i1ao70ljrlv6952nkiv65vlrrod1l.apps.googleusercontent.com';
+    const validSportsLeagues = ['nhl', 'nba', 'nfl'];
+    if (!Array.isArray(state.sportsLeagues)) state.sportsLeagues = [state.sportsLeague || 'nhl'];
+    state.sportsLeagues = [...new Set(state.sportsLeagues.filter(league => validSportsLeagues.includes(league)))];
+    state.sportsLeague = state.sportsLeagues[0] || (validSportsLeagues.includes(state.sportsLeague) ? state.sportsLeague : 'nhl');
+    state.sportsTeams = Array.isArray(state.sportsTeams) ? state.sportsTeams.filter(team => team && ['nhl', 'nba', 'nfl'].includes(team.league) && typeof team.abbreviation === 'string' && typeof team.name === 'string') : [];
+    state.sportsTeamFilter = typeof state.sportsTeamFilter === 'string' ? state.sportsTeamFilter : '';
+    if (!['list', 'cards', 'compact'].includes(state.sportsLayout)) state.sportsLayout = 'list';
+    // Remove legacy connector credentials from any old settings version, not just v3.
+    for (const key of ['prism_ultra_v3', 'prism_ultra_v2', 'prism_ultra_v1']) {
+        try {
+            const raw = localStorage.getItem(key);
+            if (!raw) continue;
+            const stored = JSON.parse(raw);
+            if (!stored || typeof stored !== 'object' || Array.isArray(stored)) continue;
+            if (!(stored.nylasClientId || stored.nylasAccounts || stored.nylasCalendarId)) continue;
+            delete stored.nylasClientId;
+            delete stored.nylasAccounts;
+            delete stored.nylasCalendarId;
+            localStorage.setItem(key, JSON.stringify(stored));
+        } catch (_) {}
+    }
+    const savedAppleEvents = Array.isArray(state.appleCalendarEvents) ? state.appleCalendarEvents : [];
+    const now = Date.now();
+    const weekAhead = now + 7 * 24 * 60 * 60 * 1000;
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    importedAppleEvents = savedAppleEvents.map(event => ({
+        title: event?.title || 'Untitled event',
+        dateOnly: !!event?.dateOnly,
+        timeZone: event?.timeZone || '',
+        when: { startDate: parseIcsDate(event?.startDate, !!event?.dateOnly, event?.timeZone) }
+    })).filter(event => event.when.startDate && Number.isFinite(event.when.startDate.getTime())
+        && event.when.startDate.getTime() >= (event.dateOnly ? today.getTime() : now - 60 * 60 * 1000)
+        && event.when.startDate.getTime() <= weekAhead);
     if (!Array.isArray(state.imageWidgets)) state.imageWidgets = [];
     state.imageWidgets = Array.from({ length: 5 }, (_, i) => ({
         name: '', fit: 'contain', opacity: 100, radius: 16,
@@ -1682,6 +1889,15 @@ function load() {
             state.widgetScales.image1 = state.widgetScales.image;
         }
     }
+    if (!state.widgetPosByOrientation || typeof state.widgetPosByOrientation !== 'object') {
+        state.widgetPosByOrientation = { portrait: null, landscape: null };
+    }
+    const activeOrientationPositions = state.widgetPosByOrientation[_widgetPositionOrientation];
+    if (activeOrientationPositions && Object.keys(activeOrientationPositions).length) {
+        state.widgetPos = cloneWidgetPositions(activeOrientationPositions);
+    } else {
+        state.widgetPosByOrientation[_widgetPositionOrientation] = cloneWidgetPositions(state.widgetPos);
+    }
     delete state.showImage;
     delete state.imageWidgetName;
     delete state.imageWidgetFit;
@@ -1692,14 +1908,17 @@ function load() {
 
     // Handle Spotify OAuth callback
     // Browser path: check if code is in current URL (non-Electron)
-    const _urlCode = new URLSearchParams(window.location.search).get('code');
-    if (_urlCode) {
+    const _callbackParams = new URLSearchParams(window.location.search);
+    const _urlCode = _callbackParams.get('code');
+    if (_urlCode && !_callbackParams.has('state')) {
         history.replaceState({}, '', window.location.pathname);
         handleSpotifyCallback(_urlCode);
     }
 
     renderImageWidgetControls();
     applyAll();
+    syncIntegrationControls();
+    if (importedAppleEvents.length) renderCalendarEvents(importedAppleEvents);
     renderHistory();
     renderThemeList();
     updateClock();
@@ -1765,6 +1984,7 @@ function load() {
         document.getElementById('stocks-widget').style.display = 'flex';
         startStocksPolling();
     }
+    if (state.showSports) startSportsPolling();
     renderTickerTags();
 
     // World clock
@@ -2703,6 +2923,7 @@ const IMAGE_WIDGET_DB = 'prism_image_widget_v1';
 const IMAGE_WIDGET_COUNT = 5;
 let imageWidgetDbPromise = null;
 const imageWidgetBlobUrls = {};
+const imageWidgetRenderTokens = {};
 
 function openImageWidgetDb() {
     if (imageWidgetDbPromise) return imageWidgetDbPromise;
@@ -2734,7 +2955,7 @@ function renderImageWidgetControls() {
         const slot = i + 1;
         const key = imageWidgetKey(slot);
         return `<section class="image-widget-settings">
-            <div class="image-widget-title"><span>Image ${slot}</span><span id="st-${key}" class="status-tag">HIDDEN</span></div>
+            <div class="image-widget-title"><span>Image ${slot}</span><span style="display:flex;align-items:center;gap:8px;"><span id="st-${key}" class="status-tag">HIDDEN</span><span class="reset-link" onclick="resetWidget('${key}');event.stopPropagation()">Reset</span></span></div>
             <div class="row"><label style="font-size:0.5rem;">Visible</label><div id="sw-showImage${slot}" class="ios-switch" onclick="toggle('showImage${slot}')"></div></div>
             <label class="file-upload-btn" for="${key}-file" style="margin-top:10px;">Choose GIF or PNG</label>
             <input type="file" id="${key}-file" data-slot="${slot}" accept="image/gif,image/png" style="display:none;" onchange="handleImageWidgetUpload(this)">
@@ -2748,7 +2969,6 @@ function renderImageWidgetControls() {
             <input id="${key}-opacity" type="range" min="10" max="100" value="100" oninput="setImageWidgetOpacity(${slot},this.value)">
             <label for="${key}-radius" style="display:block;margin-top:12px;">Rounded Corners <span id="${key}-radius-label">16px</span></label>
             <input id="${key}-radius" type="range" min="0" max="48" value="16" oninput="setImageWidgetRadius(${slot},this.value)">
-            <button type="button" class="reset-link" style="margin-top:8px;" onclick="resetWidget('${key}')">Reset Position &amp; Scale</button>
         </section>`;
     }).join('');
     for (let slot = 1; slot <= IMAGE_WIDGET_COUNT; slot++) applyImageWidgetSettings(slot);
@@ -2798,13 +3018,80 @@ async function deleteImageWidgetBlob(slot) {
     });
 }
 
-function showImageWidgetBlob(blob, slot) {
-    const img = document.getElementById(imageWidgetKey(slot) + '-content');
-    if (!img || !blob) return;
+async function normalizeImageWidgetBlob(blob) {
+    if (!(blob instanceof Blob)) throw new Error('Saved image is not a Blob');
+    const header = new Uint8Array(await blob.slice(0, 8).arrayBuffer());
+    const isPng = header.length === 8 && header[0] === 0x89 && header[1] === 0x50 && header[2] === 0x4e && header[3] === 0x47 && header[4] === 0x0d && header[5] === 0x0a && header[6] === 0x1a && header[7] === 0x0a;
+    const isGif = header.length >= 6 && header[0] === 0x47 && header[1] === 0x49 && header[2] === 0x46 && header[3] === 0x38 && (header[4] === 0x37 || header[4] === 0x39) && header[5] === 0x61;
+    const mime = isPng ? 'image/png' : isGif ? 'image/gif' : '';
+    if (!mime) throw new Error('Choose a valid GIF or PNG image');
+    return blob.type === mime ? blob : new Blob([blob], { type: mime });
+}
+
+async function showImageWidgetBlob(blob, slot) {
+    const img = document.getElementById(imageWidgetKey(slot) + '-widget-content');
+    if (!img || !blob) return false;
     if (imageWidgetBlobUrls[slot]) URL.revokeObjectURL(imageWidgetBlobUrls[slot]);
-    imageWidgetBlobUrls[slot] = URL.createObjectURL(blob);
-    img.src = imageWidgetBlobUrls[slot];
-    applyImageWidgetSettings(slot);
+    delete imageWidgetBlobUrls[slot];
+    const token = {};
+    imageWidgetRenderTokens[slot] = token;
+    const clearImage = () => {
+        if (imageWidgetRenderTokens[slot] !== token) return;
+        img.onload = null;
+        img.onerror = null;
+        img.removeAttribute('src');
+        if (imageWidgetBlobUrls[slot]) URL.revokeObjectURL(imageWidgetBlobUrls[slot]);
+        delete imageWidgetBlobUrls[slot];
+        imageWidgetRenderTokens[slot] = null;
+        applyImageWidgetSettings(slot);
+    };
+    const setImageSource = source => new Promise(resolve => {
+        const finish = loaded => {
+            if (imageWidgetRenderTokens[slot] !== token) { resolve(false); return; }
+            img.onload = null;
+            img.onerror = null;
+            if (loaded) applyImageWidgetSettings(slot);
+            resolve(!!loaded);
+        };
+        img.onload = () => finish(img.naturalWidth > 0 && img.naturalHeight > 0);
+        img.onerror = () => {
+            if (imageWidgetRenderTokens[slot] === token) img.removeAttribute('src');
+            finish(false);
+        };
+        img.src = source;
+        // Apply after assigning src so async decoding cannot leave the image hidden.
+        applyImageWidgetSettings(slot);
+    });
+
+    try {
+        const imageBlob = await normalizeImageWidgetBlob(blob);
+        if (imageWidgetRenderTokens[slot] !== token) return false;
+
+        const objectUrl = URL.createObjectURL(imageBlob);
+        imageWidgetBlobUrls[slot] = objectUrl;
+        if (await setImageSource(objectUrl)) return true;
+        if (imageWidgetBlobUrls[slot] === objectUrl) {
+            URL.revokeObjectURL(objectUrl);
+            delete imageWidgetBlobUrls[slot];
+        }
+        if (imageWidgetRenderTokens[slot] !== token) return false;
+
+        const dataUrl = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => typeof reader.result === 'string' ? resolve(reader.result) : reject(new Error('Could not read image'));
+            reader.onerror = () => reject(reader.error || new Error('Could not read image'));
+            reader.readAsDataURL(imageBlob);
+        });
+        if (imageWidgetRenderTokens[slot] !== token) return false;
+        if (await setImageSource(dataUrl)) return true;
+        throw new Error('Image decoding failed');
+    } catch (error) {
+        if (imageWidgetRenderTokens[slot] !== token) return false;
+        console.warn('Image widget data could not be displayed:', error);
+        clearImage();
+        showToast('This image could not be displayed. Please choose another GIF or PNG.');
+        return false;
+    }
 }
 
 function applyImageWidgetSettings(slot) {
@@ -2813,10 +3100,11 @@ function applyImageWidgetSettings(slot) {
     const fit = ['contain', 'cover', 'fill'].includes(settings.fit) ? settings.fit : 'contain';
     const opacity = Math.max(10, Math.min(100, Number(settings.opacity) || 100));
     const radius = Math.max(0, Math.min(48, Number(settings.radius) || 0));
-    const img = document.getElementById(key + '-content');
+    const img = document.getElementById(key + '-widget-content');
     const widget = document.getElementById(key + '-widget');
     const pill = widget && widget.querySelector('.widget-pill');
     const hasImage = !!(img && img.hasAttribute('src'));
+
     if (widget) {
         widget.style.opacity = String(opacity / 100);
         widget.style.setProperty('--widget-opacity', String(opacity / 100));
@@ -2828,8 +3116,8 @@ function applyImageWidgetSettings(slot) {
         img.style.opacity = '1';
         img.style.borderRadius = radius + 'px';
     }
-    const empty = document.getElementById(key + '-empty');
-    if (empty) empty.style.display = hasImage ? 'none' : 'flex';
+    const empty = document.getElementById(key + '-widget-empty');
+    if (empty) empty.style.display = hasImage || !state[imageWidgetShowKey(slot)] ? 'none' : 'flex';
     const select = document.getElementById(key + '-fit');
     if (select) select.value = fit;
     const opacitySlider = document.getElementById(key + '-opacity');
@@ -2850,17 +3138,28 @@ async function handleImageWidgetUpload(input) {
     const slot = Math.max(1, Math.min(IMAGE_WIDGET_COUNT, Number(input.dataset.slot) || 1));
     const file = input.files && input.files[0];
     if (!file) return;
-    if (!['image/gif', 'image/png'].includes(file.type)) {
-        showToast('Please choose a GIF or PNG'); input.value = ''; return;
-    }
     if (file.size > 10 * 1024 * 1024) {
         showToast('Choose an image smaller than 10 MB'); input.value = ''; return;
     }
     try {
-        await storeImageWidgetBlob(file, slot);
+        const imageBlob = await normalizeImageWidgetBlob(file);
+        await storeImageWidgetBlob(imageBlob, slot);
         getImageWidgetSettings(slot).name = file.name;
+        if (!await showImageWidgetBlob(imageBlob, slot)) {
+            await deleteImageWidgetBlob(slot);
+            getImageWidgetSettings(slot).name = '';
+            state[imageWidgetShowKey(slot)] = false;
+            const widget = document.getElementById(imageWidgetKey(slot) + '-widget');
+            if (widget) { widget.style.display = 'none'; widget.style.pointerEvents = 'none'; }
+            const switchEl = document.getElementById('sw-' + imageWidgetShowKey(slot));
+            if (switchEl) switchEl.classList.remove('active');
+            const status = document.getElementById('st-' + imageWidgetKey(slot));
+            if (status) { status.textContent = 'HIDDEN'; status.className = 'status-tag off'; }
+            applyImageWidgetSettings(slot);
+            save();
+            return;
+        }
         state[imageWidgetShowKey(slot)] = true;
-        showImageWidgetBlob(file, slot);
         const widget = document.getElementById(imageWidgetKey(slot) + '-widget');
         if (widget) widget.style.display = 'flex';
         const switchEl = document.getElementById('sw-' + imageWidgetShowKey(slot));
@@ -2873,7 +3172,7 @@ async function handleImageWidgetUpload(input) {
         showToast('Image ' + slot + ' added');
     } catch (error) {
         console.error('Image widget upload failed:', error);
-        showToast('Could not save image on this device');
+        showToast(error && error.message === 'Choose a valid GIF or PNG image' ? error.message : 'Could not save image on this device');
     } finally { input.value = ''; }
 }
 
@@ -2894,17 +3193,24 @@ function setImageWidgetRadius(slot, value) {
 
 function setImageWidgetVisibility(slot, show) {
     const key = imageWidgetKey(slot);
-    state[imageWidgetShowKey(slot)] = !!show;
+    show = !!show;
+    state[imageWidgetShowKey(slot)] = show;
+    if (!show) imageWidgetRenderTokens[slot] = null;
     const widget = document.getElementById(key + '-widget');
     if (widget) {
         widget.style.display = show ? 'flex' : 'none';
+        widget.style.opacity = show ? '' : '0';
         widget.style.pointerEvents = show ? 'all' : 'none';
     }
     const switchEl = document.getElementById('sw-' + imageWidgetShowKey(slot));
     if (switchEl) switchEl.classList.toggle('active', !!show);
     const status = document.getElementById('st-' + key);
     if (status) { status.textContent = show ? 'SHOWN' : 'HIDDEN'; status.className = show ? 'status-tag on' : 'status-tag off'; }
-    if (show) loadImageWidget(slot);
+    if (show) {
+        positionWidget(key);
+        clampWidgetPosition(key);
+        loadImageWidget(slot);
+    }
     applyImageWidgetSettings(slot);
     save();
 }
@@ -2912,7 +3218,8 @@ function setImageWidgetVisibility(slot, show) {
 async function removeImageWidgetImage(slot) {
     try { await deleteImageWidgetBlob(slot); } catch (error) { console.warn('Could not remove image from local storage:', error); }
     const key = imageWidgetKey(slot);
-    const img = document.getElementById(key + '-content');
+    const img = document.getElementById(key + '-widget-content');
+    imageWidgetRenderTokens[slot] = null;
     if (img) img.removeAttribute('src');
     if (imageWidgetBlobUrls[slot]) URL.revokeObjectURL(imageWidgetBlobUrls[slot]);
     delete imageWidgetBlobUrls[slot];
@@ -2936,16 +3243,18 @@ async function loadImageWidget(slot) {
         if (show) {
             try {
                 const blob = await loadImageWidgetBlob(current);
+                if (state[imageWidgetShowKey(current)] !== show) continue;
                 if (blob) {
-                    showImageWidgetBlob(blob, current);
-                    const widget = document.getElementById(key + '-widget');
-                    if (widget) widget.style.display = 'flex';
-                    // Persist the old single-image key as the first new slot.
-                    if (current === 1) await storeImageWidgetBlob(blob, 1);
-                } else state[imageWidgetShowKey(current)] = false;
+                    const rendered = await showImageWidgetBlob(blob, current);
+                    if (rendered && state[imageWidgetShowKey(current)] === show) {
+                        const widget = document.getElementById(key + '-widget');
+                        if (widget) widget.style.display = 'flex';
+                        // Persist the old single-image key as the first new slot.
+                        if (current === 1) await storeImageWidgetBlob(blob, 1);
+                    }
+                }
             } catch (error) {
                 console.warn('Saved image widget could not be loaded:', error);
-                state[imageWidgetShowKey(current)] = false;
             }
         }
         const widget = document.getElementById(key + '-widget');
@@ -3253,14 +3562,20 @@ function addTicker() {
 document.getElementById('side-panel').addEventListener('scroll', () => {
     const box = document.getElementById('ticker-results');
     if (box && box.style.display !== 'none') positionTickerDropdown();
+    const sportsBox = document.getElementById('sports-team-results');
+    if (sportsBox && sportsBox.style.display !== 'none') positionSportsTeamDropdown();
 }, { passive: true });
-
 document.addEventListener('pointerdown', e => {
     if (!e.target.closest('#ticker-input') && !e.target.closest('#ticker-results')) {
         const box = document.getElementById('ticker-results');
         if (box) { box.style.display = 'none'; _tickerHighlight = -1; }
     }
+    if (!e.target.closest('#sports-team-input') && !e.target.closest('#sports-team-results')) {
+        const box = document.getElementById('sports-team-results');
+        if (box) { box.style.display = 'none'; document.getElementById('sports-team-input')?.setAttribute('aria-expanded', 'false'); _sportsTeamHighlight = -1; }
+    }
     if (!e.target.closest('#city-input') && !e.target.closest('#weather-results')) {
+
         const box = document.getElementById('weather-results');
         if (box) box.style.display = 'none';
     }
@@ -3496,7 +3811,13 @@ setInterval(updateCountdownDisplay, 60000);
 // EXPORT / IMPORT SETTINGS
 // ─────────────────────────────────────────────────
 function exportSettings() {
-    const data = JSON.stringify(state, null, 2);
+    const exportState = { ...state };
+    delete exportState.nylasClientId;
+    delete exportState.nylasAccounts;
+    delete exportState.nylasCalendarId;
+    delete exportState.googleClientId;
+    delete exportState.appleCalendarEvents;
+    const data = JSON.stringify(exportState, null, 2);
     const blob = new Blob([data], { type: 'application/json' });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement('a');
@@ -3513,14 +3834,33 @@ function importSettings(input) {
     reader.onload = e => {
         try {
             const imported = JSON.parse(e.target.result);
-            // Merge carefully — don't overwrite keys that don't exist in new format
+            // Keep OAuth identifiers and any legacy connector values out of imports.
             state = Object.assign(state, imported);
-            // Reset transient Spotify art state so the imported accent applies cleanly
+            delete state.nylasClientId;
+            delete state.nylasAccounts;
+            delete state.nylasCalendarId;
+            delete state.googleClientId;
+            if (!Array.isArray(state.appleCalendarEvents)) state.appleCalendarEvents = [];
+            importedAppleEvents = state.appleCalendarEvents.map(event => ({
+                title: event?.title || 'Untitled event',
+                dateOnly: !!event?.dateOnly,
+                timeZone: event?.timeZone || '',
+                when: { startDate: parseIcsDate(event?.startDate, !!event?.dateOnly, event?.timeZone) }
+            })).filter(event => event.when.startDate && Number.isFinite(event.when.startDate.getTime()));
+            if (!state.widgetPosByOrientation || typeof state.widgetPosByOrientation !== 'object') {
+                state.widgetPosByOrientation = { portrait: null, landscape: null };
+            }
+            if (state.widgetPosByOrientation[_widgetPositionOrientation]) {
+                state.widgetPos = cloneWidgetPositions(state.widgetPosByOrientation[_widgetPositionOrientation]);
+            }
+            // Reset transient Spotify art state so the imported accent applies cleanly.
             accentFromArt = false;
             _lastArtUrl = null;
             _lastTrackId = null;
             save();
             applyAll();
+            syncIntegrationControls();
+            renderCalendarEvents(importedAppleEvents);
             renderHistory();
             renderThemeList();
             fetchWeather();
@@ -3528,7 +3868,7 @@ function importSettings(input) {
             updateCountdownDisplay();
             updateWorldClock();
             if (state.showStocks) fetchStocks();
-            // Reset the input so same file can be re-imported
+            // Reset the input so the same file can be re-imported.
             input.value = '';
         } catch (err) {
             alert('Invalid settings file.');
@@ -4378,22 +4718,22 @@ function applyAll() {
     if (unitC) unitC.classList.toggle('active', state.weatherUnit !== 'F');
     if (unitF) unitF.classList.toggle('active', state.weatherUnit === 'F');
 
-    const widgets = ['clock', 'date', 'weather', 'battery', 'nowplaying', 'stocks', 'image1', 'image2', 'image3', 'image4', 'image5', 'worldclock', 'moon', 'countdown'];
+    const widgets = ['clock', 'date', 'weather', 'battery', 'nowplaying', 'stocks', 'sports', 'calendar', 'email', 'image1', 'image2', 'image3', 'image4', 'image5', 'worldclock', 'moon', 'countdown'];
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     widgets.forEach(key => {
         const el   = document.getElementById(key + '-widget');
         if (!el) return;
         const showFlag = 'show' + key.charAt(0).toUpperCase() + key.slice(1);
-        const iosUnsupported = (key === 'battery') && (isIOS || !navigator.getBattery);
-        if (iosUnsupported) el.dataset.iosDisabled = 'true';
-        const show = state[showFlag] && !iosUnsupported;
+        const batteryUnsupported = key === 'battery' && (isIOS || !navigator.getBattery);
+        if (batteryUnsupported) el.dataset.iosDisabled = 'true';
+        const show = state[showFlag] && !batteryUnsupported;
         const wasHidden = el.style.opacity === '0' || el.style.display === 'none';
         el.style.opacity = show ? '' : '0'; // '' clears inline, falls back to CSS var(--widget-opacity)
         el.style.pointerEvents = show ? 'all' : 'none';
         if (key.startsWith('image')) applyImageWidgetSettings(Number(key.slice(5)));
         if (show) el.style.display = 'flex';
         else      el.style.display = 'none';
-        if (iosUnsupported) {
+        if (batteryUnsupported) {
             state[showFlag] = false;
             const sw2 = document.getElementById('sw-' + key);
             if (sw2) sw2.classList.remove('active');
@@ -4409,7 +4749,10 @@ function applyAll() {
         const sw = document.getElementById('sw-show' + key.charAt(0).toUpperCase() + key.slice(1));
         if (sw) sw.classList.toggle('active', show);
         const st = document.getElementById('st-' + key);
-        if (st) { st.innerText = show ? 'SHOWN' : 'HIDDEN'; st.className = show ? 'status-tag on' : 'status-tag off'; }
+        if (st) {
+            st.innerText = batteryUnsupported ? (isIOS ? 'iOS LIMIT' : 'UNAVAILABLE') : (show ? 'SHOWN' : 'HIDDEN');
+            st.className = show ? 'status-tag on' : 'status-tag off';
+        }
     });
 
     // Accent CSS transition on :root
@@ -4498,6 +4841,688 @@ function applyAll() {
 // SNAP ZONES — 23×31 invisible grid (713 points)
 // 23 columns × 31 rows — odd numbers give a true center point at 50%,50%
 // ─────────────────────────────────────────────────
+try {
+    sessionStorage.removeItem('prism_sports_api_key');
+    localStorage.removeItem('prism_sports_request_usage');
+} catch (_) {}
+let sportsRefreshInFlight = false;
+let sportsScoresCache = [];
+let sportsPollTimer = null;
+let googleTokenClient = null;
+let googleAccessToken = '';
+let googleTokenExpiresAt = 0;
+let googleRefreshInFlight = false;
+let googleConnectionVersion = 0;
+let importedAppleEvents = [];
+
+function setIntegrationStatus(id, message) {
+    const el = document.getElementById(id);
+    if (el) el.textContent = message;
+}
+
+function syncIntegrationControls() {
+    const connected = !!googleAccessToken && googleTokenExpiresAt > Date.now();
+    const statusLabel = connected ? 'CONNECTED' : 'NOT CONNECTED';
+    ['calendar', 'email'].forEach(kind => {
+        const status = document.getElementById(kind + '-account-status');
+        if (status) {
+            status.textContent = kind === 'calendar' && importedAppleEvents.length
+                ? (connected ? 'GOOGLE + APPLE FILE' : 'APPLE FILE')
+                : statusLabel;
+            status.className = 'status-tag ' + (connected || (kind === 'calendar' && importedAppleEvents.length) ? 'on' : 'off');
+        }
+    });
+    if (importedAppleEvents.length) {
+        setIntegrationStatus('calendar-widget-status', (connected ? 'Google Calendar + ' : '') + 'Apple Calendar file · ' + importedAppleEvents.length + ' upcoming events');
+    } else if (!connected) {
+        setIntegrationStatus('calendar-widget-status', 'Connect Google or import an Apple Calendar file.');
+    }
+    if (!connected) setIntegrationStatus('email-widget-status', 'Connect Google to show recent Inbox messages.');
+    document.querySelectorAll('.sports-league-toggle').forEach(button => button.classList.toggle('active', (state.sportsLeagues || []).includes(button.dataset.league)));
+    document.querySelectorAll('.sports-layout-toggle').forEach(button => button.classList.toggle('active', button.dataset.layout === (state.sportsLayout || 'list')));
+    const sportsList = document.getElementById('sports-score-list');
+    if (sportsList) sportsList.className = 'integration-list sports-layout-' + (['list', 'cards', 'compact'].includes(state.sportsLayout) ? state.sportsLayout : 'list');
+    renderSportsTeamTags();
+}
+
+function connectGoogleAccount() {
+    if (!state.googleClientId) {
+        showToast('Google connection is unavailable right now.');
+        return;
+    }
+    if (!window.google?.accounts?.oauth2) {
+        showToast('Google is still loading. Try again in a moment.');
+        return;
+    }
+    try {
+        const requestVersion = googleConnectionVersion;
+        googleTokenClient = window.google.accounts.oauth2.initTokenClient({
+            client_id: state.googleClientId,
+            scope: 'https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/gmail.readonly',
+            callback: response => {
+                if (requestVersion !== googleConnectionVersion) return;
+                if (response.error || !response.access_token) {
+                    setIntegrationStatus('calendar-widget-status', 'Google connection was not completed. Try again.');
+                    return;
+                }
+                googleAccessToken = response.access_token;
+                googleTokenExpiresAt = Date.now() + (Number(response.expires_in) || 3600) * 1000;
+                googleConnectionVersion++;
+                googleRefreshInFlight = false;
+                syncIntegrationControls();
+                refreshGoogleData();
+            },
+            error_callback: error => {
+                if (requestVersion !== googleConnectionVersion) return;
+                setIntegrationStatus('calendar-widget-status', 'Google connection could not open. Try again.');
+            }
+        });
+        googleTokenClient.requestAccessToken();
+    } catch (error) {
+        console.error('Google connection failed:', error);
+        showToast('Could not connect Google. Try again.');
+    }
+}
+
+function clearGoogleConnection(notify = true) {
+    const oldToken = googleAccessToken;
+    googleConnectionVersion++;
+    googleRefreshInFlight = false;
+    if (oldToken && window.google?.accounts?.oauth2) {
+        try { window.google.accounts.oauth2.revoke(oldToken, () => {}); } catch (_) {}
+    }
+    googleAccessToken = '';
+    googleTokenExpiresAt = 0;
+    googleTokenClient = null;
+    renderInboxMessages([]);
+    const mailList = document.getElementById('email-message-list');
+    if (mailList) mailList.innerHTML = '<div class="integration-empty">Connect Google to see recent messages.</div>';
+    if (importedAppleEvents.length) renderCalendarEvents(importedAppleEvents);
+    else {
+        renderCalendarEvents([]);
+        const calendarList = document.getElementById('calendar-event-list');
+        if (calendarList) calendarList.innerHTML = '<div class="integration-empty">Connect Google or import an Apple Calendar file.</div>';
+    }
+    syncIntegrationControls();
+    if (notify) showToast('Google access disconnected from this tab');
+}
+
+async function fetchGoogleJson(url) {
+    if (!googleAccessToken || googleTokenExpiresAt <= Date.now()) throw new Error('Reconnect Google to refresh your data.');
+    const response = await fetch(url, { headers: { Authorization: 'Bearer ' + googleAccessToken, Accept: 'application/json' } });
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        const message = 'Google data could not refresh. Reconnect Google and try again.';
+        if (response.status === 401) {
+            googleAccessToken = '';
+            googleTokenExpiresAt = 0;
+            googleConnectionVersion++;
+            googleRefreshInFlight = false;
+            syncIntegrationControls();
+        }
+        throw new Error(message);
+    }
+    return payload;
+}
+
+async function refreshGoogleData() {
+    if (googleRefreshInFlight) return;
+    if (googleAccessToken && googleTokenExpiresAt <= Date.now()) {
+        googleAccessToken = '';
+        googleTokenExpiresAt = 0;
+        syncIntegrationControls();
+    }
+    if (!googleAccessToken) {
+        if (state.googleClientId) connectGoogleAccount();
+        return;
+    }
+    googleRefreshInFlight = true;
+    const connectionVersion = googleConnectionVersion;
+    try {
+        const now = new Date();
+        const calendarParams = new URLSearchParams({
+            timeMin: now.toISOString(),
+            timeMax: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+            singleEvents: 'true', orderBy: 'startTime', maxResults: '8'
+        });
+        const [calendarResult, mailResult] = await Promise.allSettled([
+            fetchGoogleJson('https://www.googleapis.com/calendar/v3/calendars/primary/events?' + calendarParams.toString()),
+            fetchGoogleJson('https://gmail.googleapis.com/gmail/v1/users/me/messages?labelIds=INBOX&maxResults=6')
+        ]);
+        if (connectionVersion !== googleConnectionVersion) return;
+        if (calendarResult.status === 'fulfilled') {
+            const events = calendarResult.value.items || [];
+            renderCalendarEvents([...events.map(event => ({ title: event.summary, when: event.start || {} })), ...importedAppleEvents]
+                .sort((a, b) => getCalendarEventDate(a) - getCalendarEventDate(b))
+                .slice(0, 8));
+            setIntegrationStatus('calendar-widget-status', importedAppleEvents.length ? 'Google Calendar + Apple Calendar file · next 7 days' : 'Google Calendar · next 7 days');
+        } else {
+            setIntegrationStatus('calendar-widget-status', 'Calendar could not refresh. Reconnect Google and try again.');
+        }
+        if (mailResult.status === 'fulfilled') {
+            const messageIds = (mailResult.value.messages || []).slice(0, 6);
+            const messageResults = await Promise.allSettled(messageIds.map(async item => {
+                const details = await fetchGoogleJson('https://gmail.googleapis.com/gmail/v1/users/me/messages/' + encodeURIComponent(item.id) + '?format=metadata&metadataHeaders=From&metadataHeaders=Subject');
+                const headers = details.payload?.headers || [];
+                const getHeader = name => headers.find(header => header.name?.toLowerCase() === name.toLowerCase())?.value || '';
+                return { subject: getHeader('Subject'), from: [{ email: getHeader('From') }], internalDate: details.internalDate };
+            }));
+            if (connectionVersion !== googleConnectionVersion) return;
+            const messages = messageResults.filter(result => result.status === 'fulfilled').map(result => result.value);
+            renderInboxMessages(messages);
+            const failedMessage = messageResults.find(result => result.status === 'rejected');
+            setIntegrationStatus('email-widget-status', failedMessage
+                ? (messages.length ? 'Inbox · partial results (' + messages.length + '/' + messageIds.length + ')' : 'Inbox could not refresh. Reconnect Google and try again.')
+                : 'Google Inbox · latest messages');
+        } else {
+            setIntegrationStatus('email-widget-status', 'Inbox could not refresh. Reconnect Google and try again.');
+        }
+        syncIntegrationControls();
+    } catch (error) {
+        console.error('Google Calendar/Gmail refresh failed:', error);
+        showToast(error?.message || 'Google data could not refresh');
+    } finally {
+        if (connectionVersion === googleConnectionVersion) googleRefreshInFlight = false;
+    }
+}
+
+function parseIcsDate(value, isDateOnly, timeZone) {
+    if (!value) return null;
+    if (isDateOnly) {
+        const match = value.match(/^([0-9]{4})([0-9]{2})([0-9]{2})$/);
+        if (!match) return null;
+        const date = new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+        return date.getFullYear() === Number(match[1]) && date.getMonth() === Number(match[2]) - 1 && date.getDate() === Number(match[3]) ? date : null;
+    }
+    const match = value.match(/^([0-9]{4})([0-9]{2})([0-9]{2})T([0-9]{2})([0-9]{2})([0-9]{2})?(Z)?$/);
+    if (!match) return new Date(value);
+    const [, y, mo, d, h, mi, sec = '00', utc] = match;
+    const parts = [Number(y), Number(mo), Number(d), Number(h), Number(mi), Number(sec)];
+    if (parts[1] < 1 || parts[1] > 12 || parts[2] < 1 || parts[2] > 31 || parts[3] > 23 || parts[4] > 59 || parts[5] > 59) return null;
+    const expected = [parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]];
+    if (utc || timeZone) {
+        let date = new Date(Date.UTC(...[parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]]));
+        if (timeZone && !utc) {
+            try {
+                const formatter = new Intl.DateTimeFormat('en-US', {
+                    timeZone, year: 'numeric', month: '2-digit', day: '2-digit',
+                    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23'
+                });
+                for (let attempt = 0; attempt < 2; attempt++) {
+                    const partsByType = Object.fromEntries(formatter.formatToParts(date).map(part => [part.type, Number(part.value)]));
+                    const actualAsUtc = Date.UTC(partsByType.year, partsByType.month - 1, partsByType.day, partsByType.hour, partsByType.minute, partsByType.second);
+                    const desiredAsUtc = Date.UTC(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
+                    date = new Date(date.getTime() + desiredAsUtc - actualAsUtc);
+                }
+            } catch (_) { return null; }
+            return date;
+        }
+        const getters = ['getUTCFullYear', 'getUTCMonth', 'getUTCDate', 'getUTCHours', 'getUTCMinutes', 'getUTCSeconds'];
+        const actual = getters.map(getter => date[getter]());
+        return expected.every((part, index) => part === actual[index]) ? date : null;
+    }
+    const date = new Date(parts[0], parts[1] - 1, parts[2], parts[3], parts[4], parts[5]);
+    const getters = ['getFullYear', 'getMonth', 'getDate', 'getHours', 'getMinutes', 'getSeconds'];
+    const actual = getters.map(getter => date[getter]());
+    return expected.every((part, index) => part === actual[index]) ? date : null;
+}
+
+function parseIcsCalendar(text) {
+    const newline = String.fromCharCode(10);
+    const carriageReturn = String.fromCharCode(13);
+    const lines = text.split(carriageReturn + newline).join(newline).split(carriageReturn).join(newline).split(newline);
+    const unfolded = [];
+    for (const line of lines) {
+        if ((line.startsWith(' ') || line.startsWith(String.fromCharCode(9))) && unfolded.length) unfolded[unfolded.length - 1] += line.slice(1);
+        else unfolded.push(line);
+    }
+    const events = [];
+    let current = null;
+    for (const line of unfolded) {
+        if (line === 'BEGIN:VEVENT') { current = {}; continue; }
+        if (line === 'END:VEVENT') { if (current) events.push(current); current = null; continue; }
+        if (!current) continue;
+        const split = line.indexOf(':');
+        if (split < 0) continue;
+        const descriptor = line.slice(0, split);
+        const rawValue = line.slice(split + 1);
+        const slash = String.fromCharCode(92);
+        let value = '';
+        for (let index = 0; index < rawValue.length; index++) {
+            const character = rawValue[index];
+            if (character !== slash || index + 1 >= rawValue.length) {
+                value += character;
+                continue;
+            }
+            const escaped = rawValue[++index];
+            if (escaped === 'n' || escaped === 'N') value += newline;
+            else if (escaped === ',' || escaped === ';' || escaped === slash) value += escaped;
+            else value += slash + escaped;
+        }
+        const key = descriptor.split(';')[0].toUpperCase();
+        if (key === 'SUMMARY') current.title = value;
+        if (key === 'DTSTART') {
+            current.start = value;
+            current.dateOnly = /VALUE=DATE/i.test(descriptor) || /^[0-9]{8}$/.test(value);
+            current.timeZone = descriptor.match(/(?:^|;)TZID=([^;:]+)/i)?.[1] || '';
+        }
+    }
+    const now = Date.now();
+    const today = new Date(); today.setHours(0, 0, 0, 0);
+    const week = now + 7 * 24 * 60 * 60 * 1000;
+    return events.map(event => ({ ...event, startDate: parseIcsDate(event.start, event.dateOnly, event.timeZone) }))
+        .filter(event => event.startDate && event.startDate.getTime() >= (event.dateOnly ? today.getTime() : now - 60 * 60 * 1000) && event.startDate.getTime() <= week)
+        .sort((a, b) => a.startDate - b.startDate)
+        .slice(0, 8);
+}
+
+async function importAppleCalendar(input) {
+    const file = input?.files?.[0];
+    if (!file) return;
+    try {
+        const events = parseIcsCalendar(await file.text());
+        importedAppleEvents = events.map(event => ({ title: event.title, dateOnly: event.dateOnly, timeZone: event.timeZone, when: { startDate: event.startDate } }));
+        state.appleCalendarEvents = importedAppleEvents.map(event => ({
+            title: event.title,
+            dateOnly: !!event.dateOnly,
+            timeZone: event.timeZone || '',
+            startDate: event.dateOnly
+                ? String(event.when.startDate.getFullYear()).padStart(4, '0')
+                    + String(event.when.startDate.getMonth() + 1).padStart(2, '0')
+                    + String(event.when.startDate.getDate()).padStart(2, '0')
+                : event.when.startDate.toISOString()
+        }));
+        save();
+        renderCalendarEvents(importedAppleEvents);
+        setIntegrationStatus('calendar-widget-status', 'Apple Calendar file · ' + events.length + ' upcoming events');
+        syncIntegrationControls();
+        showToast('Apple calendar imported on this device');
+    } catch (error) {
+        console.error('Apple calendar import failed:', error);
+        setIntegrationStatus('calendar-widget-status', 'Could not read that .ics calendar file.');
+    } finally {
+        if (input) input.value = '';
+    }
+}
+
+function getCalendarEventDate(event) {
+    const when = event?.when || {};
+    if (when.startDate instanceof Date) return when.startDate.getTime();
+    if (when.dateTime) return Date.parse(when.dateTime);
+    if (when.date) return new Date(when.date + 'T00:00:00').getTime();
+    if (when.start_time) return Number(when.start_time) * 1000;
+    if (when.startTime) return Number(when.startTime) * 1000;
+    return Number.POSITIVE_INFINITY;
+}
+
+function renderCalendarEvents(events) {
+    const list = document.getElementById('calendar-event-list');
+    if (!list) return;
+    if (!events.length) {
+        list.innerHTML = '<div class="integration-empty">No upcoming events this week.</div>';
+        return;
+    }
+    list.replaceChildren(...events.slice(0, 8).map(event => {
+        const row = document.createElement('div'); row.className = 'integration-row';
+        const main = document.createElement('div'); main.className = 'integration-row-main';
+        const title = document.createElement('span'); title.className = 'integration-primary'; title.textContent = event.title || 'Untitled event';
+        const secondary = document.createElement('span'); secondary.className = 'integration-secondary';
+        const when = event.when || {};
+        let date = when.startDate instanceof Date ? when.startDate : null;
+        if (!date && when.date) date = new Date(when.date + 'T00:00:00');
+        const timestamp = when.dateTime ? Date.parse(when.dateTime) : when.start_time ? Number(when.start_time) * 1000 : when.startTime ? Number(when.startTime) * 1000 : NaN;
+        if (!date && Number.isFinite(timestamp)) date = new Date(timestamp);
+        secondary.textContent = date && !Number.isNaN(date.getTime())
+            ? date.toLocaleString([], { weekday: 'short', month: 'short', day: 'numeric', ...(event.dateOnly || when.date || (when.startDate instanceof Date && when.startDate.getHours() === 0) ? {} : { hour: 'numeric', minute: '2-digit' }) })
+            : 'Upcoming';
+        main.append(title, secondary); row.append(main); return row;
+    }));
+}
+
+function renderInboxMessages(messages) {
+    const list = document.getElementById('email-message-list');
+    if (!list) return;
+    if (!messages.length) {
+        list.innerHTML = '<div class="integration-empty">No recent Inbox messages.</div>';
+        return;
+    }
+    list.replaceChildren(...messages.slice(0, 6).map(message => {
+        const row = document.createElement('div'); row.className = 'integration-row';
+        const main = document.createElement('div'); main.className = 'integration-row-main';
+        const sender = message.from?.[0]?.name || message.from?.[0]?.email || 'Unknown sender';
+        const subject = document.createElement('span'); subject.className = 'integration-primary'; subject.textContent = message.subject || '(no subject)';
+        const secondary = document.createElement('span'); secondary.className = 'integration-secondary'; secondary.textContent = sender;
+        main.append(subject, secondary); row.append(main); return row;
+    }));
+}
+
+function setSportsLeague(league) {
+    if (!['nhl', 'nba', 'nfl'].includes(league)) return;
+    const selectedLeagues = new Set(Array.isArray(state.sportsLeagues) ? state.sportsLeagues : [state.sportsLeague || 'nhl']);
+    if (selectedLeagues.has(league)) selectedLeagues.delete(league);
+    else selectedLeagues.add(league);
+    state.sportsLeagues = ['nhl', 'nba', 'nfl'].filter(item => selectedLeagues.has(item));
+    state.sportsLeague = state.sportsLeagues[0] || league;
+    save();
+    syncIntegrationControls();
+    if (Array.isArray(sportsScoresCache) && sportsScoresCache.length) renderSportsScores(sportsScoresCache);
+    else if (state.showSports) refreshSportsScores(true);
+}
+
+const SPORTS_TEAMS = [
+    { league: 'nhl', name: 'NHL', teams: [['ANA','Anaheim Ducks'],['BOS','Boston Bruins'],['BUF','Buffalo Sabres'],['CGY','Calgary Flames'],['CAR','Carolina Hurricanes'],['CHI','Chicago Blackhawks'],['COL','Colorado Avalanche'],['CBJ','Columbus Blue Jackets'],['DAL','Dallas Stars'],['DET','Detroit Red Wings'],['EDM','Edmonton Oilers'],['FLA','Florida Panthers'],['LAK','Los Angeles Kings'],['MIN','Minnesota Wild'],['MTL','Montreal Canadiens'],['NSH','Nashville Predators'],['NJD','New Jersey Devils'],['NYI','New York Islanders'],['NYR','New York Rangers'],['OTT','Ottawa Senators'],['PHI','Philadelphia Flyers'],['PIT','Pittsburgh Penguins'],['SJS','San Jose Sharks'],['SEA','Seattle Kraken'],['STL','St. Louis Blues'],['TBL','Tampa Bay Lightning'],['TOR','Toronto Maple Leafs'],['UTA','Utah Mammoth'],['VAN','Vancouver Canucks'],['VGK','Vegas Golden Knights'],['WSH','Washington Capitals'],['WPG','Winnipeg Jets']] },
+    { league: 'nba', name: 'NBA', teams: [['ATL','Atlanta Hawks'],['BOS','Boston Celtics'],['BKN','Brooklyn Nets'],['CHA','Charlotte Hornets'],['CHI','Chicago Bulls'],['CLE','Cleveland Cavaliers'],['DAL','Dallas Mavericks'],['DEN','Denver Nuggets'],['DET','Detroit Pistons'],['GSW','Golden State Warriors'],['HOU','Houston Rockets'],['IND','Indiana Pacers'],['LAC','LA Clippers'],['LAL','Los Angeles Lakers'],['MEM','Memphis Grizzlies'],['MIA','Miami Heat'],['MIL','Milwaukee Bucks'],['MIN','Minnesota Timberwolves'],['NOP','New Orleans Pelicans'],['NYK','New York Knicks'],['OKC','Oklahoma City Thunder'],['ORL','Orlando Magic'],['PHI','Philadelphia 76ers'],['PHX','Phoenix Suns'],['POR','Portland Trail Blazers'],['SAC','Sacramento Kings'],['SAS','San Antonio Spurs'],['TOR','Toronto Raptors'],['UTA','Utah Jazz'],['WAS','Washington Wizards']] },
+    { league: 'nfl', name: 'NFL', teams: [['ARI','Arizona Cardinals'],['ATL','Atlanta Falcons'],['BAL','Baltimore Ravens'],['BUF','Buffalo Bills'],['CAR','Carolina Panthers'],['CHI','Chicago Bears'],['CIN','Cincinnati Bengals'],['CLE','Cleveland Browns'],['DAL','Dallas Cowboys'],['DEN','Denver Broncos'],['DET','Detroit Lions'],['GB','Green Bay Packers'],['HOU','Houston Texans'],['IND','Indianapolis Colts'],['JAX','Jacksonville Jaguars'],['KC','Kansas City Chiefs'],['LAC','Los Angeles Chargers'],['LAR','Los Angeles Rams'],['LV','Las Vegas Raiders'],['MIA','Miami Dolphins'],['MIN','Minnesota Vikings'],['NE','New England Patriots'],['NO','New Orleans Saints'],['NYG','New York Giants'],['NYJ','New York Jets'],['PHI','Philadelphia Eagles'],['PIT','Pittsburgh Steelers'],['SF','San Francisco 49ers'],['SEA','Seattle Seahawks'],['TB','Tampa Bay Buccaneers'],['TEN','Tennessee Titans'],['WSH','Washington Commanders']] }
+].flatMap(group => group.teams.map(([abbreviation, name]) => ({ league: group.league, leagueName: group.name, abbreviation, name, id: group.league + ':' + abbreviation })));
+let _sportsTeamHighlight = -1;
+
+function renderSportsTeamTags() {
+    const container = document.getElementById('sports-team-tags');
+    if (!container) return;
+    container.replaceChildren(...(state.sportsTeams || []).map(team => {
+        const tag = document.createElement('div'); tag.className = 'sports-team-tag';
+        const label = document.createElement('span'); label.textContent = team.name + ' · ' + team.league.toUpperCase();
+        const remove = document.createElement('button'); remove.type = 'button'; remove.textContent = '×'; remove.title = 'Remove ' + team.name;
+        remove.addEventListener('click', () => removeSportsTeam(team.id));
+        tag.append(label, remove); return tag;
+    }));
+}
+
+function positionSportsTeamDropdown() {
+    const input = document.getElementById('sports-team-input');
+    const box = document.getElementById('sports-team-results');
+    if (!input || !box) return;
+    const rect = input.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const width = Math.min(rect.width, window.innerWidth - 16);
+    const left = Math.max(8, Math.min(rect.left, window.innerWidth - width - 8));
+    const below = window.innerHeight - rect.bottom - 12;
+    const above = rect.top - 12;
+    const openBelow = below >= 120 || below >= above;
+    const maxHeight = Math.max(80, Math.min(220, openBelow ? below : above));
+    box.style.left = left + 'px';
+    box.style.width = width + 'px';
+    box.style.maxHeight = maxHeight + 'px';
+    box.style.top = openBelow ? (rect.bottom + 6) + 'px' : Math.max(8, rect.top - maxHeight - 6) + 'px';
+}
+
+function searchSportsTeams(query) {
+    const box = document.getElementById('sports-team-results');
+    const input = document.getElementById('sports-team-input');
+    if (!box || !input) return;
+    const q = String(query || '').trim().toLowerCase();
+    if (!q) { box.style.display = 'none'; box.replaceChildren(); input.setAttribute('aria-expanded', 'false'); _sportsTeamHighlight = -1; return; }
+    const selected = new Set((state.sportsTeams || []).map(team => team.id));
+    const results = SPORTS_TEAMS.filter(team => !selected.has(team.id)
+        && (team.name.toLowerCase().includes(q) || team.abbreviation.toLowerCase().includes(q) || team.leagueName.toLowerCase().includes(q)))
+        .slice(0, 12);
+    box.replaceChildren();
+    if (!results.length) {
+        const empty = document.createElement('div'); empty.className = 'sports-team-item'; empty.textContent = 'No teams found';
+        box.appendChild(empty); positionSportsTeamDropdown(); box.style.display = 'block'; input.setAttribute('aria-expanded', 'true'); return;
+    }
+    results.forEach((team, index) => {
+        const option = document.createElement('div'); option.className = 'sports-team-item'; option.setAttribute('role', 'option');
+        option.dataset.teamId = team.id;
+        const label = document.createElement('span'); label.textContent = team.name + ' · ' + team.abbreviation;
+        const league = document.createElement('span'); league.className = 'sports-team-league'; league.textContent = team.leagueName;
+        option.append(label, league);
+        option.addEventListener('pointerdown', event => { event.preventDefault(); addSportsTeam(team.id); });
+        option.addEventListener('pointermove', () => {
+            _sportsTeamHighlight = index;
+            box.querySelectorAll('.sports-team-item').forEach((item, itemIndex) => item.classList.toggle('active', itemIndex === index));
+        });
+        box.appendChild(option);
+    });
+    _sportsTeamHighlight = -1;
+    positionSportsTeamDropdown();
+    box.style.display = 'block';
+    input.setAttribute('aria-expanded', 'true');
+}
+
+function addSportsTeam(id) {
+    const team = SPORTS_TEAMS.find(item => item.id === id);
+    if (!team) return;
+    if (!Array.isArray(state.sportsTeams)) state.sportsTeams = [];
+    if (!state.sportsTeams.some(item => item.id === id)) state.sportsTeams.push({ ...team });
+    state.sportsTeamFilter = '';
+    renderSportsTeamTags();
+    const input = document.getElementById('sports-team-input');
+    const box = document.getElementById('sports-team-results');
+    if (input) { input.value = ''; input.focus(); }
+    if (box) box.style.display = 'none';
+    if (input) input.setAttribute('aria-expanded', 'false');
+    save();
+    if (sportsScoresCache.length) renderSportsScores(sportsScoresCache);
+    else if (state.showSports) refreshSportsScores();
+}
+
+function removeSportsTeam(id) {
+    state.sportsTeams = (state.sportsTeams || []).filter(team => team.id !== id);
+    renderSportsTeamTags();
+    save();
+    if (sportsScoresCache.length) renderSportsScores(sportsScoresCache);
+    else if (state.showSports) refreshSportsScores();
+}
+
+function sportsTeamInputKey(event) {
+    const box = document.getElementById('sports-team-results');
+    const input = document.getElementById('sports-team-input');
+    if (!box || !input) return;
+    const options = box.style.display === 'block' ? [...box.querySelectorAll('.sports-team-item[role="option"]')] : [];
+    if (event.key === 'ArrowDown' && options.length) {
+        event.preventDefault(); _sportsTeamHighlight = Math.min(_sportsTeamHighlight + 1, options.length - 1);
+    } else if (event.key === 'ArrowUp' && options.length) {
+        event.preventDefault(); _sportsTeamHighlight = Math.max(_sportsTeamHighlight - 1, 0);
+    } else if (event.key === 'Enter' && options.length) {
+        event.preventDefault();
+        const active = options[_sportsTeamHighlight] || options[0];
+        if (active) addSportsTeam(active.dataset.teamId);
+        return;
+    } else if (event.key === 'Escape') {
+        box.style.display = 'none';
+        input.setAttribute('aria-expanded', 'false');
+        _sportsTeamHighlight = -1;
+        return;
+    } else return;
+    options.forEach((option, index) => option.classList.toggle('active', index === _sportsTeamHighlight));
+}
+
+function setSportsTeamFilter(value) {
+    state.sportsTeamFilter = String(value || '');
+    save();
+    if (sportsScoresCache.length) renderSportsScores(sportsScoresCache);
+}
+
+function setSportsLayout(layout) {
+    if (!['list', 'cards', 'compact'].includes(layout)) return;
+    state.sportsLayout = layout;
+    syncIntegrationControls();
+    if (sportsScoresCache.length) renderSportsScores(sportsScoresCache);
+    save();
+}
+
+function startSportsPolling() {
+    clearInterval(sportsPollTimer);
+    if (!state.showSports) return;
+    refreshSportsScores();
+    sportsPollTimer = setInterval(() => refreshSportsScores(), 20 * 60 * 1000);
+}
+
+async function refreshSportsScores(manual = false) {
+    if (sportsRefreshInFlight) return;
+    sportsRefreshInFlight = true;
+    const list = document.getElementById('sports-score-list');
+    if (list && manual) list.innerHTML = '<div class="integration-empty">Updating scores…</div>';
+    const now = new Date();
+    const date = [now.getFullYear(), String(now.getMonth() + 1).padStart(2, '0'), String(now.getDate()).padStart(2, '0')].join('');
+    const leagueConfigs = [
+        { league: 'nhl', name: 'NHL', path: 'hockey/nhl' },
+        { league: 'nba', name: 'NBA', path: 'basketball/nba' },
+        { league: 'nfl', name: 'NFL', path: 'football/nfl' }
+    ];
+    let receivedFreshData = false;
+    try {
+        const settled = await Promise.allSettled(leagueConfigs.map(async config => {
+            const url = 'https://site.api.espn.com/apis/site/v2/sports/' + config.path + '/scoreboard?dates=' + date;
+            const response = await fetch(url, { headers: { Accept: 'application/json' } });
+            if (!response.ok) throw new Error(config.name + ' scores unavailable (' + response.status + ').');
+            const payload = await response.json();
+            if (!Array.isArray(payload.events)) throw new Error(config.name + ' scoreboard returned an unexpected response.');
+            receivedFreshData = true;
+            const games = payload.events.map(event => {
+                const competition = event.competitions?.[0] || {};
+                const competitors = competition.competitors || [];
+                const home = competitors.find(team => team.homeAway === 'home') || competitors[0] || {};
+                const away = competitors.find(team => team.homeAway === 'away') || competitors[1] || {};
+                const status = competition.status?.type || {};
+                return {
+                    date: competition.date || event.date,
+                    teams: { home: home.team || {}, away: away.team || {} },
+                    scores: { home: home.score, away: away.score },
+                    status: { short: status.shortDetail || status.detail || status.description || '' }
+                };
+            });
+            return { config, games };
+        }));
+        const results = settled.map((result, index) => {
+            if (result.status === 'fulfilled') return result.value;
+            const cached = sportsScoresCache.find(item => item.config.league === leagueConfigs[index].league);
+            return cached && !cached.error
+                ? { ...cached, staleError: result.reason?.message || 'Scores could not refresh.' }
+                : { config: leagueConfigs[index], games: [], error: result.reason?.message || 'Scores unavailable.' };
+        });
+        sportsScoresCache = results;
+        if (receivedFreshData) {
+            state.sportsLastUpdated = Date.now();
+            save();
+        }
+        renderSportsScores(results);
+        const selectedTeamLeagues = (state.sportsTeams || []).map(team => team.league);
+        const activeLeagues = new Set([...(Array.isArray(state.sportsLeagues) ? state.sportsLeagues : [state.sportsLeague || 'nhl']), ...selectedTeamLeagues]);
+        const selected = results.find(result => activeLeagues.has(result.config.league) && (result.error || result.staleError));
+        if (manual && selected) showToast(selected.error || selected.staleError);
+    } finally {
+        sportsRefreshInFlight = false;
+    }
+}
+
+function escapeHTML(value) {
+    return String(value).replace(/[&<>"']/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character]);
+}
+
+function normalizeSportsScore(value) {
+    if (value === null || value === undefined || value === '') return '–';
+    if (typeof value === 'number' || typeof value === 'string') return String(value);
+    if (typeof value !== 'object') return '–';
+    for (const key of ['total', 'goals', 'points', 'score', 'fulltime']) {
+        if (value[key] !== null && value[key] !== undefined) return String(value[key]);
+    }
+    const periods = value.periods && typeof value.periods === 'object' ? value.periods : value;
+    const periodValues = Object.entries(periods)
+        .filter(([key, score]) => {
+            const period = key.toLowerCase();
+            const isPeriod = period.startsWith('quarter_') || period.startsWith('period_')
+                || ['first', 'second', 'third', 'fourth', 'shootout'].includes(period)
+                || period.startsWith('overtime');
+            return isPeriod && Number.isFinite(Number(score)) && score !== '';
+        })
+        .map(([, score]) => Number(score));
+    return periodValues.length ? String(periodValues.reduce((sum, score) => sum + score, 0)) : '–';
+}
+
+function renderSportsScores(results) {
+    const list = document.getElementById('sports-score-list');
+    if (!list) return;
+    sportsScoresCache = results;
+    const selectedLeagues = Array.isArray(state.sportsLeagues) ? state.sportsLeagues : [state.sportsLeague || 'nhl'];
+    list.className = 'integration-list sports-layout-' + (['list', 'cards', 'compact'].includes(state.sportsLayout) ? state.sportsLayout : 'list');
+    const updated = document.getElementById('sports-updated');
+    if (updated) {
+        const latest = Number(state.sportsLastUpdated) || 0;
+        updated.textContent = latest > 0
+            ? 'UPDATED ' + new Date(latest).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+            : 'SCORES';
+    }
+    const selectedTeams = Array.isArray(state.sportsTeams) ? state.sportsTeams : [];
+    if (!selectedLeagues.length && !selectedTeams.length && !String(state.sportsTeamFilter || '').trim()) {
+        const empty = document.createElement('div');
+        empty.className = 'integration-empty';
+        empty.textContent = 'Choose leagues or teams in Settings.';
+        list.replaceChildren(empty);
+        return;
+    }
+    const teamLeagues = [...new Set(selectedTeams.map(team => team.league))];
+    const teamTerms = String(state.sportsTeamFilter || '').split(/[,;\n]+/).map(term => term.trim().toLowerCase()).filter(Boolean);
+    const leaguesToShow = ['nhl', 'nba', 'nfl'].filter(league => selectedLeagues.includes(league) || teamLeagues.includes(league) || (teamTerms.length && !selectedLeagues.length));
+    const rendered = [];
+    leaguesToShow.forEach(league => {
+        const selected = results.find(result => result.config.league === league);
+        const leagueName = selected?.config.name || ({ nhl: 'NHL', nba: 'NBA', nfl: 'NFL' }[league] || league.toUpperCase());
+        if (leaguesToShow.length > 1) {
+            const heading = document.createElement('div');
+            heading.className = 'sports-league-label';
+            heading.textContent = leagueName;
+            rendered.push(heading);
+        }
+        if (selected?.error) {
+            const error = document.createElement('div');
+            error.className = 'integration-empty';
+            error.textContent = selected.error;
+            rendered.push(error);
+            return;
+        }
+        const games = selected?.games || [];
+        const leagueTeams = selectedTeams.filter(team => team.league === league);
+        const filteredGames = selectedLeagues.includes(league) ? games : leagueTeams.length
+            ? games.filter(game => {
+                const teams = game.teams || {};
+                const gameTeams = [teams.home, teams.away || teams.visitors].filter(Boolean);
+                return leagueTeams.some(selectedTeam => gameTeams.some(team =>
+                    String(team.abbreviation || '').toUpperCase() === selectedTeam.abbreviation
+                    || [team.name, team.displayName, team.shortDisplayName].filter(Boolean).some(name => String(name).toLowerCase() === selectedTeam.name.toLowerCase())
+                ));
+            })
+            : teamTerms.length
+                ? games.filter(game => {
+                    const teams = game.teams || {};
+                    const candidates = [teams.home, teams.away || teams.visitors].flatMap(team => team
+                        ? [team.name, team.abbreviation, team.shortDisplayName, team.displayName, team.location]
+                        : []).filter(Boolean).map(value => String(value).toLowerCase());
+                    return teamTerms.some(term => candidates.some(name => name.includes(term)));
+                })
+                : games;
+        if (!filteredGames.length) {
+            const empty = document.createElement('div');
+            empty.className = 'integration-empty';
+            empty.textContent = selectedTeams.length || teamTerms.length ? 'No selected-team games today.' : 'No games scheduled today.';
+            rendered.push(empty);
+        }
+        filteredGames.slice(0, 7).forEach(game => {
+            const teams = game.teams || {};
+            const home = teams.home || {};
+            const away = teams.away || teams.visitors || {};
+            const scores = game.scores || {};
+            const homeScore = normalizeSportsScore(scores.home);
+            const awayScore = normalizeSportsScore(scores.away ?? scores.visitors);
+            const stateText = game.status?.short || game.status?.long || game.status?.name || game.time?.status || game.time?.to || '';
+            const row = document.createElement('div'); row.className = 'integration-row sports-game-row';
+            const main = document.createElement('div'); main.className = 'integration-row-main';
+            const title = document.createElement('span'); title.className = 'integration-primary'; title.textContent = (away.name || away.abbreviation || 'Away') + '  ·  ' + (home.name || home.abbreviation || 'Home');
+            const secondary = document.createElement('span'); secondary.className = 'integration-secondary'; secondary.textContent = stateText;
+            const score = document.createElement('span'); score.className = 'integration-score'; score.textContent = String(awayScore) + ' – ' + String(homeScore);
+            main.append(title, secondary); row.append(main, score); rendered.push(row);
+        });
+        if (selected?.staleError) {
+            const notice = document.createElement('div');
+            notice.className = 'integration-secondary';
+            notice.textContent = 'Showing last scores · ' + selected.staleError;
+            rendered.push(notice);
+        }
+    });
+    list.replaceChildren(...rendered);
+}
+
 const ZONES = (() => {
     const cols = 23, rows = 31;
     const z = [];
@@ -4512,7 +5537,7 @@ const ZONES = (() => {
     return z;
 })(); // 23×31 = 713 zones
 
-const WIDGET_KEYS = ['clock', 'date', 'weather', 'battery', 'nowplaying', 'stocks', 'image1', 'image2', 'image3', 'image4', 'image5', 'worldclock', 'moon', 'countdown'];
+const WIDGET_KEYS = ['clock', 'date', 'weather', 'battery', 'nowplaying', 'stocks', 'sports', 'calendar', 'email', 'image1', 'image2', 'image3', 'image4', 'image5', 'worldclock', 'moon', 'countdown'];
 const DEFAULT_POS = {
     clock:      { x: 50, y: 28 },
     date:       { x: 50, y: 50 },
@@ -4522,7 +5547,9 @@ const DEFAULT_POS = {
     stocks:     { x: 17, y: 50 },
     worldclock: { x: 83, y: 50 },
     moon:       { x: 17, y: 25 },
-    countdown:  { x: 83, y: 25 },
+    countdown:  { x: 83, y: 25 },        sports:     { x: 16, y: 62 },
+        calendar:   { x: 50, y: 84 },
+        email:      { x: 84, y: 62 },
     image1:     { x: 78, y: 78 },
     image2:     { x: 22, y: 78 },
     image3:     { x: 78, y: 22 },
@@ -5114,7 +6141,7 @@ function _tempWakeHandler() {
 function optimizeScale() {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
-    const WIDGET_KEYS_VIS = ['clock','date','weather','battery','nowplaying','stocks','image1','image2','image3','image4','image5','worldclock','moon','countdown']
+    const WIDGET_KEYS_VIS = ['clock','date','weather','battery','nowplaying','stocks','sports','calendar','email','image1','image2','image3','image4','image5','worldclock','moon','countdown']
         .filter(k => state['show' + k.charAt(0).toUpperCase() + k.slice(1)]);
 
     if (!WIDGET_KEYS_VIS.length) return;
@@ -5182,11 +6209,24 @@ function resetWidget(key) {
     if (!state.widgetPos) state.widgetPos = {};
     if (!state.widgetScales) state.widgetScales = {};
     state.widgetPos[key] = { ...DEFAULT_POS[key] };
+    if (state.widgetPosByOrientation) {
+        ['portrait', 'landscape'].forEach(orientation => {
+            const orientationPositions = state.widgetPosByOrientation[orientation];
+            if (orientationPositions && orientationPositions[key]) {
+                orientationPositions[key] = { ...DEFAULT_POS[key] };
+            }
+        });
+    }
     state.widgetScales[key] = 1; // also reset per-widget scale
     positionWidget(key);
     save();
 }
 function toggle(key) {
+    const imageSlot = key.match(/^showImage([1-5])$/);
+    if (imageSlot) {
+        setImageWidgetVisibility(Number(imageSlot[1]), !state[key]);
+        return;
+    }
     state[key] = !state[key];
     save();
     // Sync the switch
@@ -5233,8 +6273,13 @@ function toggle(key) {
                 clearTimeout(stocksRefreshTimer);
             }
         }
-        const imageSlot = key.match(/^showImage([1-5])$/);
-        if (imageSlot) setImageWidgetVisibility(Number(imageSlot[1]), show);
+        if (key === 'showSports') {
+            if (show) startSportsPolling();
+            else clearInterval(sportsPollTimer);
+        }
+        if (key === 'showCalendar' || key === 'showEmail') {
+            if (show) refreshGoogleData();
+        }
         if (key === 'showWorldclock' && show) updateWorldClock();
         if (key === 'showMoon' && show) updateMoon();
         if (key === 'showCountdown' && show) updateCountdownDisplay();
@@ -5295,7 +6340,10 @@ function toggle(key) {
 // ─────────────────────────────────────────────────
 function openModal()  { document.getElementById('confirm-modal').style.display = 'flex'; }
 function closeModal() { document.getElementById('confirm-modal').style.display = 'none'; }
-function performFactoryReset() { localStorage.clear(); location.reload(); }
+function performFactoryReset() {
+    localStorage.clear();
+    location.reload();
+}
 
 // ─────────────────────────────────────────────────
 // COLLAPSIBLE SETTINGS SECTIONS
@@ -5630,6 +6678,7 @@ function ctxHide() {
             el.style.display = 'none';
             const showKey = 'show' + key.charAt(0).toUpperCase() + key.slice(1);
             state[showKey] = false;
+            if (key === 'sports') clearInterval(sportsPollTimer);
             el.style.pointerEvents = 'none';
             const st = document.getElementById('st-' + key);
             if (st) { st.innerText = 'HIDDEN'; st.className = 'status-tag off'; }
@@ -5808,14 +6857,32 @@ function applyGradient(g) {
     renderGradients();
 }
 
-// Reposition ticker dropdown on window resize
-window.addEventListener('resize', () => {
+// Reposition ticker dropdown on window resize. Keep independent widget layouts
+// per orientation so portrait clamping never overwrites the landscape layout.
+function handleViewportResize() {
     const box = document.getElementById('ticker-results');
     if (box && box.style.display === 'block') positionTickerDropdown();
-    // Re-clamp widget positions to new viewport
+    const sportsBox = document.getElementById('sports-team-results');
+    if (sportsBox && sportsBox.style.display === 'block') positionSportsTeamDropdown();
+
+    const nextOrientation = getWidgetPositionOrientation();
+    if (nextOrientation !== _widgetPositionOrientation) {
+        if (!state.widgetPosByOrientation || typeof state.widgetPosByOrientation !== 'object') {
+            state.widgetPosByOrientation = { portrait: null, landscape: null };
+        }
+        // Save the old orientation before clamping against the new viewport.
+        state.widgetPosByOrientation[_widgetPositionOrientation] = cloneWidgetPositions(state.widgetPos);
+        _widgetPositionOrientation = nextOrientation;
+        state.widgetPos = cloneWidgetPositions(state.widgetPosByOrientation[nextOrientation] || state.widgetPos);
+        WIDGET_KEYS.forEach(positionWidget);
+        save();
+    }
+
     clampAllWidgetPositions();
     syncClockGlow();
-}, { passive: true });
+}
+window.addEventListener('resize', handleViewportResize, { passive: true });
+window.addEventListener('orientationchange', handleViewportResize, { passive: true });
 
 // Clamp all widget positions so none are off-screen
 function clampWidgetPosition(key) {
@@ -5856,7 +6923,7 @@ function clampAllWidgetPositions() {
 document.addEventListener('click', (e) => {
     const panel = document.getElementById('side-panel');
     if (!panel || !panel.classList.contains('open')) return;
-    if (panel.contains(e.target)) return;
+    if (panel.contains(e.target) || e.target.closest('#sports-team-results')) return;
     // Defensive: trigger might not exist if the markup is changed
     const trigger = document.getElementById('nav-trigger');
     if (trigger && trigger.contains(e.target)) return;
@@ -5867,13 +6934,13 @@ document.addEventListener('click', (e) => {
 // PREVENT PAGE SCROLL (all devices, especially iOS)
 // ─────────────────────────────────────────────────
 document.addEventListener('touchmove', e => {
-    // Allow scrolling inside the side panel and the fixed ticker dropdown
-    if (e.target.closest('#side-panel') || e.target.closest('#ticker-results')) return;
+    // Allow scrolling inside settings, autocomplete dropdowns, and widget lists.
+    if (e.target.closest('#side-panel') || e.target.closest('#ticker-results') || e.target.closest('#sports-team-results') || e.target.closest('.integration-list')) return;
     e.preventDefault();
 }, { passive: false });
 
 document.addEventListener('wheel', e => {
-    if (!e.target.closest('#side-panel') && !e.target.closest('#ticker-results')) e.preventDefault();
+    if (!e.target.closest('#side-panel') && !e.target.closest('#ticker-results') && !e.target.closest('#sports-team-results') && !e.target.closest('.integration-list')) e.preventDefault();
 }, { passive: false });
 
 // ─────────────────────────────────────────────────
@@ -6116,7 +7183,7 @@ function initPinchScale(key) {
 }
 
 function initAllPinch() {
-    ['clock','date','weather','battery','nowplaying','stocks','image1','image2','image3','image4','image5','worldclock','moon','countdown']
+    ['clock','date','weather','battery','nowplaying','stocks','sports','calendar','email','image1','image2','image3','image4','image5','worldclock','moon','countdown']
         .forEach(initPinchScale);
 }
 
