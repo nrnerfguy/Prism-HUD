@@ -467,7 +467,37 @@
         .sports-layout-compact .integration-primary { font-size:.64rem; }
         .sports-layout-compact .integration-secondary { font-size:.5rem;margin-top:0; }
         .sports-layout-compact .integration-score { font-size:.68rem; }
-        .sports-league-label { padding:7px 0 2px;font-size:.48rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);opacity:.7; }
+        .sports-layout-scoreline { gap:2px; }
+        .sports-layout-scoreline .sports-game-row { align-items:center;gap:6px;padding:2px 0; }
+        .sports-layout-scoreline .sports-game-row + .sports-game-row { padding-top:3px; }
+        .sports-layout-scoreline .integration-primary { overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:.58rem;line-height:1.2; }
+        .sports-layout-scoreline .integration-secondary { display:none; }
+        .sports-layout-scoreline .integration-score { font-size:.62rem; }
+        .sports-layout-scoreline .sports-league-label { padding:3px 0 1px; }
+        .sports-layout-scoreline .integration-empty { padding:3px 4px; }
+        .sports-games-limit { margin-top:9px; }
+        .sports-games-limit .sports-choice { padding:6px 9px; }
+        @media (max-width: 480px) {
+            #sports-widget .integration-widget, #sports-widget .widget-pill { max-width:92vw; }
+            .sports-layout-list .sports-game-row { gap:6px; }
+            .sports-layout-list .sports-game-row .integration-score { font-size:.68rem; }
+        }
+        @media (hover: none) and (pointer: coarse) {
+            .sports-choice { min-height:36px; }
+        }
+        .stock-freshness { color:#ffd166;font-size:.42rem;letter-spacing:.5px;text-align:right;white-space:nowrap; }
+        .stock-freshness:empty { display:none; }
+        .stock-row .stock-price { font-variant-numeric:tabular-nums;white-space:nowrap; }
+        .image-widget .widget-pill { width:max-content;max-width:96vw;min-width:0; }
+        .image-widget-content { width:min(320px,80vw);height:min(320px,60vh);object-fit:contain;max-width:96vw;max-height:90vh;aspect-ratio:1 / 1;touch-action:none; }
+        .image-widget, .image-widget .widget-pill, .image-widget-content { -webkit-user-select:none;user-select:none;-webkit-user-drag:none; }
+        @media (max-width: 480px) {
+            .image-widget-content { width:min(280px,78vw);height:min(280px,52vh); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .sports-game-row, .image-widget-content { scroll-behavior:auto; }
+        }
+                .sports-league-label { padding:7px 0 2px;font-size:.48rem;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);opacity:.7; }
         .sports-league-label:first-child { padding-top:0; }
         .sports-layout-cards .sports-league-label:not(:first-child) { margin-top:6px; }
         .sports-filter-note { margin:6px 0 0;font-size:.46rem;line-height:1.45;opacity:.38; }
@@ -921,6 +951,7 @@
             color: var(--accent); min-width: 44px;
             text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7);
         }
+        .stock-quote { display:flex;flex-direction:column;align-items:flex-end;gap:2px;min-width:0; }
         .stock-price {
             font-size: 0.95rem; font-weight: 600; color: #fff;
             text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 2px 16px rgba(0,0,0,0.7);
@@ -1553,6 +1584,15 @@
                         <button type="button" class="sports-choice sports-layout-toggle" data-layout="list" onclick="setSportsLayout('list')">List</button>
                         <button type="button" class="sports-choice sports-layout-toggle" data-layout="cards" onclick="setSportsLayout('cards')">Cards</button>
                         <button type="button" class="sports-choice sports-layout-toggle" data-layout="compact" onclick="setSportsLayout('compact')">Compact</button>
+                        <button type="button" class="sports-choice sports-layout-toggle" data-layout="scoreline" onclick="setSportsLayout('scoreline')">Scores only</button>
+                    </div>
+                    <div class="sports-games-limit">
+                        <span class="sports-option-label">Games per league</span>
+                        <div class="sports-choice-row" role="group" aria-label="Number of games per league">
+                            <button type="button" class="sports-choice sports-games-limit-toggle" data-limit="3" onclick="setSportsGameLimit(3)">3</button>
+                            <button type="button" class="sports-choice sports-games-limit-toggle" data-limit="5" onclick="setSportsGameLimit(5)">5</button>
+                            <button type="button" class="sports-choice sports-games-limit-toggle" data-limit="7" onclick="setSportsGameLimit(7)">7</button>
+                        </div>
                     </div>
                 </div>
                 <div class="integration-controls"><button class="integration-action" onclick="refreshSportsScores(true)">Refresh scores</button></div>
@@ -1733,7 +1773,7 @@ let state = {
     timezones: ['America/New_York', 'Europe/London', 'Asia/Tokyo'],
     countdownName: 'Event', countdownDate: '',
     showSports: false, showCalendar: false, showEmail: false,
-    sportsLeague: 'nhl', sportsLeagues: ['nhl'], sportsTeams: [], sportsTeamFilter: '', sportsLayout: 'list', sportsLastUpdated: 0,
+    sportsLeague: 'nhl', sportsLeagues: ['nhl'], sportsTeams: [], sportsTeamFilter: '', sportsLayout: 'list', sportsGameLimit: 7, sportsLastUpdated: 0,
     googleClientId: '845756379905-0e5i1ao70ljrlv6952nkiv65vlrrod1l.apps.googleusercontent.com', appleCalendarEvents: [],
     widgetPos: {
         clock:      { x: 50, y: 50 },
@@ -1861,7 +1901,9 @@ function load() {
     state.sportsLeague = state.sportsLeagues[0] || (validSportsLeagues.includes(state.sportsLeague) ? state.sportsLeague : 'nhl');
     state.sportsTeams = Array.isArray(state.sportsTeams) ? state.sportsTeams.filter(team => team && ['nhl', 'nba', 'nfl'].includes(team.league) && typeof team.abbreviation === 'string' && typeof team.name === 'string') : [];
     state.sportsTeamFilter = typeof state.sportsTeamFilter === 'string' ? state.sportsTeamFilter : '';
-    if (!['list', 'cards', 'compact'].includes(state.sportsLayout)) state.sportsLayout = 'list';
+    if (!['list', 'cards', 'compact', 'scoreline'].includes(state.sportsLayout)) state.sportsLayout = 'list';
+    if (![3, 5, 7].includes(Number(state.sportsGameLimit))) state.sportsGameLimit = 7;
+    else state.sportsGameLimit = Number(state.sportsGameLimit);
     // Remove legacy connector credentials from any old settings version, not just v3.
     for (const key of ['prism_ultra_v3', 'prism_ultra_v2', 'prism_ultra_v1']) {
         try {
@@ -2799,47 +2841,46 @@ async function fetchStocks() {
         // Fetch each ticker via Yahoo's chart endpoint. Limit concurrent proxy
         // requests: public CORS relays throttle bursts, which caused only some
         // of a watchlist to return quotes.
-        const PROXIES = [
-            url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-            url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-            url => `https://thingproxy.freeboard.io/fetch/${url}`,
-        ];
-
         async function fetchTicker(symbol) {
             const target = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}?interval=1d&range=2d`;
             let lastError = 'No quote returned';
-            // Try each CORS relay once with a capped timeout; do not repeat a
-            // full relay cycle, which made mobile startup take several minutes.
-            for (const makeUrl of PROXIES) {
-                const controller = new AbortController();
-                const timeout = setTimeout(() => controller.abort(), 12000);
-                try {
-                    const res = await fetch(makeUrl(target), { signal: controller.signal, cache: 'no-store' });
-                    if (!res.ok) {
-                        lastError = `HTTP ${res.status}`;
-                        continue;
-                    }
-                    const json = await res.json();
-                    const meta = json?.chart?.result?.[0]?.meta;
-                    const price = Number(meta?.regularMarketPrice);
-                    const prev = Number(meta?.chartPreviousClose ?? meta?.previousClose);
-                    if (!meta || !Number.isFinite(price) || !Number.isFinite(prev) || prev <= 0) {
-                        lastError = json?.chart?.error?.description || 'Invalid quote response';
-                        continue;
-                    }
-                    const change = price - prev;
-                    const quote = { symbol, price, change, pct: (change / prev) * 100, cachedAt: Date.now() };
-                    stocksLastQuotes[symbol] = quote;
-                    try { localStorage.setItem(STOCK_QUOTES_CACHE_KEY, JSON.stringify(stocksLastQuotes)); } catch (_) { }
-                    return { ...quote, ok: true, cached: false };
-                } catch (error) {
-                    lastError = error instanceof Error ? error.message : String(error);
-                } finally {
-                    clearTimeout(timeout);
+            // Yahoo blocks browser CORS, so use its JSON endpoint through one
+            // CORS-enabled relay. The former relay chain included dead/keyed
+            // services and could hold each symbol for 36 seconds.
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 6500);
+            try {
+                const relay = `https://api.allorigins.win/get?url=${encodeURIComponent(target)}`;
+                const res = await fetch(relay, { signal: controller.signal, cache: 'no-store', headers: { Accept: 'application/json' } });
+                if (!res.ok) throw new Error(`Quote relay HTTP ${res.status}`);
+                const envelope = await res.json();
+                const json = typeof envelope?.contents === 'string' ? JSON.parse(envelope.contents) : envelope;
+                const result = json?.chart?.result?.[0];
+                const meta = result?.meta;
+                const price = Number(meta?.regularMarketPrice);
+                let prev = Number(meta?.chartPreviousClose ?? meta?.previousClose);
+                if (!Number.isFinite(prev) || prev <= 0) {
+                    const closes = (result?.indicators?.quote?.[0]?.close || [])
+                        .map(Number).filter(value => Number.isFinite(value) && value > 0);
+                    // Last bar is usually today's close; compare it with the
+                    // preceding trading day's close rather than itself.
+                    prev = closes.length > 1 ? closes[closes.length - 2] : closes[0];
                 }
+                if (!meta || !Number.isFinite(price) || price <= 0 || !Number.isFinite(prev) || prev <= 0) {
+                    throw new Error(json?.chart?.error?.description || 'Quote response has no usable price and previous close');
+                }
+                const change = price - prev;
+                const quote = { symbol, price, change, pct: (change / prev) * 100, currency: meta.currency || 'USD', cachedAt: Date.now() };
+                stocksLastQuotes[symbol] = quote;
+                try { localStorage.setItem(STOCK_QUOTES_CACHE_KEY, JSON.stringify(stocksLastQuotes)); } catch (_) { }
+                return { ...quote, ok: true, cached: false };
+            } catch (error) {
+                lastError = error instanceof Error ? error.message : String(error);
+            } finally {
+                clearTimeout(timeout);
             }
             const cached = stocksLastQuotes[symbol];
-            if (cached && Number.isFinite(cached.price) && Number.isFinite(cached.pct)) {
+            if (cached && Number.isFinite(cached.price) && Number.isFinite(cached.pct) && Number.isFinite(cached.change)) {
                 console.warn(`Live stock quote unavailable for ${symbol}; showing its last saved quote: ${lastError}`);
                 return { ...cached, ok: true, cached: true };
             }
@@ -2848,26 +2889,37 @@ async function fetchStocks() {
         }
 
         function renderStockQuote(q) {
-            const row = list.querySelector(`.stock-row[data-ticker="${q.symbol}"]`);
+            const row = [...list.querySelectorAll('.stock-row')].find(el => el.dataset.ticker === q.symbol);
             if (!row) return;
             const priceEl = row.querySelector('.stock-price');
             const changeEl = row.querySelector('.stock-change');
+            const freshnessEl = row.querySelector('.stock-freshness');
             if (q.ok) {
                 const up = q.change >= 0;
                 const sign = up ? '+' : '';
                 const cls = up ? 'up' : 'down';
                 const arrow = up ? '▲' : '▼';
-                priceEl.textContent = '$' + q.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + (q.cached ? '*' : '');
-                priceEl.style.opacity = q.cached ? '0.65' : '';
-                priceEl.title = q.cached ? `Last saved quote from ${new Date(q.cachedAt).toLocaleString()}; live refresh failed.` : '';
+                let formattedPrice;
+                try {
+                    formattedPrice = new Intl.NumberFormat('en-US', { style: 'currency', currency: /^[A-Z]{3}$/.test(q.currency || '') ? q.currency : 'USD', maximumFractionDigits: 2 }).format(q.price);
+                } catch (_) {
+                    formattedPrice = q.price.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ' + (q.currency || '');
+                }
+                priceEl.textContent = formattedPrice;
+                priceEl.style.opacity = q.cached ? '0.72' : '';
+                const cachedAt = Number(q.cachedAt);
+                const cachedLabel = Number.isFinite(cachedAt) ? new Date(cachedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'unknown time';
+                priceEl.title = q.cached ? `Cached quote from ${cachedLabel} (${q.currency || 'USD'}); live refresh failed.` : `Live quote in ${q.currency || 'USD'}; source: Yahoo Finance.`;
+                if (freshnessEl) freshnessEl.textContent = q.cached ? `CACHED · ${cachedLabel}` : '';
                 changeEl.textContent = `${arrow} ${sign}${q.pct.toFixed(2)}%`;
                 changeEl.className = `stock-change ${cls}`;
-                changeEl.style.opacity = q.cached ? '0.65' : '';
+                changeEl.style.opacity = q.cached ? '0.72' : '';
                 changeEl.title = q.cached ? priceEl.title : '';
             } else {
                 priceEl.textContent = 'N/A';
-                priceEl.style.opacity = '0.35';
-                priceEl.title = 'No live quote or previously saved quote is available.';
+                priceEl.style.opacity = '0.45';
+                priceEl.title = 'No live quote or previously saved quote is available. Check the ticker and try refreshing.';
+                if (freshnessEl) freshnessEl.textContent = 'NO LIVE QUOTE';
                 changeEl.textContent = '—';
                 changeEl.style.opacity = '0.3';
                 changeEl.title = priceEl.title;
@@ -2879,9 +2931,9 @@ async function fetchStocks() {
         const tickersChanged = tickers.join() !== existingTickers.join();
         if (list.children.length === 0 || tickersChanged) {
             list.innerHTML = tickers.map((t, i) => `
-                <div class="stock-row" data-ticker="${t}">
-                    <span class="stock-ticker">${t}</span>
-                    <span class="stock-price" style="opacity:0.3">…</span>
+                <div class="stock-row" data-ticker="${escapeHTML(t)}">
+                    <span class="stock-ticker">${escapeHTML(t)}</span>
+                    <span class="stock-quote"><span class="stock-price" style="opacity:0.3">…</span><span class="stock-freshness"></span></span>
                     <span class="stock-change" style="opacity:0.2">—</span>
                 </div>${i < tickers.length - 1 ? '<div class="stock-divider"></div>' : ''}
             `).join('');
@@ -2895,7 +2947,8 @@ async function fetchStocks() {
             }
         });
 
-        // Two workers reduce proxy throttling versus launching every ticker at once.
+        // A small parallel batch speeds up watchlists while avoiding the old
+        // dead relay chain. Render each symbol as soon as its request completes.
         let nextIndex = 0;
         async function fetchWorker() {
             while (nextIndex < tickers.length) {
@@ -2981,7 +3034,7 @@ function renderImageWidgetControls() {
             <button id="${key}-remove" class="update-btn" type="button" onclick="removeImageWidgetImage(${slot})" style="display:none;background:rgba(255,70,70,0.15);color:#ff7070;">Remove Image</button>
             <label for="${key}-fit" style="display:block;margin-top:12px;">Image Fit</label>
             <select id="${key}-fit" onchange="setImageWidgetFit(${slot},this.value)" style="width:100%;margin-top:6px;background:rgba(255,255,255,0.06);color:#fff;border:1px solid rgba(255,255,255,0.1);border-radius:12px;padding:10px 12px;font-size:0.72rem;outline:none;">
-                <option value="contain">Contain</option><option value="cover">Cover</option><option value="fill">Stretch</option>
+                <option value="contain">Contain (keep proportions)</option><option value="cover">Cover (crop, keep proportions)</option>
             </select>
             <label for="${key}-opacity" style="display:block;margin-top:12px;">Opacity <span id="${key}-opacity-label">100%</span></label>
             <input id="${key}-opacity" type="range" min="10" max="100" value="100" oninput="setImageWidgetOpacity(${slot},this.value)">
@@ -3115,7 +3168,7 @@ async function showImageWidgetBlob(blob, slot) {
 function applyImageWidgetSettings(slot) {
     const settings = getImageWidgetSettings(slot);
     const key = imageWidgetKey(slot);
-    const fit = ['contain', 'cover', 'fill'].includes(settings.fit) ? settings.fit : 'contain';
+    const fit = ['contain', 'cover'].includes(settings.fit) ? settings.fit : 'contain';
     const opacity = Math.max(10, Math.min(100, Number(settings.opacity) || 100));
     const radius = Math.max(0, Math.min(48, Number(settings.radius) || 0));
     const img = document.getElementById(key + '-widget-content');
@@ -3129,6 +3182,7 @@ function applyImageWidgetSettings(slot) {
     }
     if (pill) pill.style.borderRadius = radius + 'px';
     if (img) {
+        settings.fit = fit;
         img.style.display = hasImage ? 'block' : 'none';
         img.style.objectFit = fit;
         img.style.opacity = '1';
@@ -3156,16 +3210,21 @@ async function handleImageWidgetUpload(input) {
     const slot = Math.max(1, Math.min(IMAGE_WIDGET_COUNT, Number(input.dataset.slot) || 1));
     const file = input.files && input.files[0];
     if (!file) return;
-    const uploadToken = {};
-    imageWidgetUploadTokens[slot] = uploadToken;
     if (file.size > 10 * 1024 * 1024) {
         showToast('Choose an image smaller than 10 MB'); input.value = ''; return;
     }
+    const uploadToken = {};
+    imageWidgetUploadTokens[slot] = uploadToken;
     try {
         const imageBlob = await normalizeImageWidgetBlob(file);
         if (imageWidgetUploadTokens[slot] !== uploadToken) return;
         await storeImageWidgetBlob(imageBlob, slot);
-        if (imageWidgetUploadTokens[slot] !== uploadToken) return;
+        if (imageWidgetUploadTokens[slot] !== uploadToken) {
+            if (imageWidgetUploadTokens[slot] === null) {
+                try { await deleteImageWidgetBlob(slot); } catch (error) { console.warn('Could not clean up cancelled image upload:', error); }
+            }
+            return;
+        }
         getImageWidgetSettings(slot).name = file.name;
         const displayed = await showImageWidgetBlob(imageBlob, slot);
         if (imageWidgetUploadTokens[slot] !== uploadToken) return;
@@ -3203,7 +3262,7 @@ async function handleImageWidgetUpload(input) {
 }
 
 function setImageWidgetFit(slot, value) {
-    getImageWidgetSettings(slot).fit = ['contain', 'cover', 'fill'].includes(value) ? value : 'contain';
+    getImageWidgetSettings(slot).fit = ['contain', 'cover'].includes(value) ? value : 'contain';
     applyImageWidgetSettings(slot); save();
 }
 
@@ -3406,11 +3465,10 @@ let _secLoadFailed = false;
 let _tickerSearchTimer = null;
 let _tickerHighlight = -1;
 
-// SEC EDGAR has CORS restrictions — try multiple proxies in order
+// SEC EDGAR has CORS restrictions. Use the same JSON-envelope relay as quotes;
+// older public relay URLs now require keys or no longer respond.
 const SEC_PROXIES = [
-    url => `https://corsproxy.io/?url=${encodeURIComponent(url)}`,
-    url => `https://api.allorigins.win/raw?url=${encodeURIComponent(url)}`,
-    url => `https://thingproxy.freeboard.io/fetch/${url}`,
+    url => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
 ];
 
 async function _loadSecDB() {
@@ -3446,7 +3504,8 @@ async function _loadSecDB() {
             const res = await fetch(url, { signal: ctrl.signal });
             clearTimeout(t);
             if (!res.ok) { continue; }
-            const json = await res.json();
+            const payload = await res.json();
+            const json = typeof payload?.contents === 'string' ? JSON.parse(payload.contents) : payload;
             const raw = typeof json === 'object' && !Array.isArray(json) ? Object.values(json) : json;
             const entries = raw.map(c => [
                 (c.ticker || c[0] || '').toUpperCase(),
@@ -4910,8 +4969,9 @@ function syncIntegrationControls() {
     if (!connected) setIntegrationStatus('email-widget-status', 'Connect Google to show recent Inbox messages.');
     document.querySelectorAll('.sports-league-toggle').forEach(button => button.classList.toggle('active', (state.sportsLeagues || []).includes(button.dataset.league)));
     document.querySelectorAll('.sports-layout-toggle').forEach(button => button.classList.toggle('active', button.dataset.layout === (state.sportsLayout || 'list')));
+    document.querySelectorAll('.sports-games-limit-toggle').forEach(button => button.classList.toggle('active', Number(button.dataset.limit) === (Number(state.sportsGameLimit) || 7)));
     const sportsList = document.getElementById('sports-score-list');
-    if (sportsList) sportsList.className = 'integration-list sports-layout-' + (['list', 'cards', 'compact'].includes(state.sportsLayout) ? state.sportsLayout : 'list');
+    if (sportsList) sportsList.className = 'integration-list sports-layout-' + (['list', 'cards', 'compact', 'scoreline'].includes(state.sportsLayout) ? state.sportsLayout : 'list');
     renderSportsTeamTags();
 }
 
@@ -5376,8 +5436,17 @@ function setSportsTeamFilter(value) {
 }
 
 function setSportsLayout(layout) {
-    if (!['list', 'cards', 'compact'].includes(layout)) return;
+    if (!['list', 'cards', 'compact', 'scoreline'].includes(layout)) return;
     state.sportsLayout = layout;
+    syncIntegrationControls();
+    if (sportsScoresCache.length) renderSportsScores(sportsScoresCache);
+    save();
+}
+
+function setSportsGameLimit(limit) {
+    limit = Number(limit);
+    if (![3, 5, 7].includes(limit)) return;
+    state.sportsGameLimit = limit;
     syncIntegrationControls();
     if (sportsScoresCache.length) renderSportsScores(sportsScoresCache);
     save();
@@ -5477,7 +5546,8 @@ function renderSportsScores(results) {
     if (!list) return;
     sportsScoresCache = results;
     const selectedLeagues = Array.isArray(state.sportsLeagues) ? state.sportsLeagues : [state.sportsLeague || 'nhl'];
-    list.className = 'integration-list sports-layout-' + (['list', 'cards', 'compact'].includes(state.sportsLayout) ? state.sportsLayout : 'list');
+    list.className = 'integration-list sports-layout-' + (['list', 'cards', 'compact', 'scoreline'].includes(state.sportsLayout) ? state.sportsLayout : 'list');
+
     const updated = document.getElementById('sports-updated');
     if (updated) {
         const latest = Number(state.sportsLastUpdated) || 0;
@@ -5540,7 +5610,8 @@ function renderSportsScores(results) {
             empty.textContent = selectedTeams.length || teamTerms.length ? 'No selected-team games today.' : 'No games scheduled today.';
             rendered.push(empty);
         }
-        filteredGames.slice(0, 7).forEach(game => {
+        const gameLimit = [3, 5, 7].includes(Number(state.sportsGameLimit)) ? Number(state.sportsGameLimit) : 7;
+        filteredGames.slice(0, gameLimit).forEach(game => {
             const teams = game.teams || {};
             const home = teams.home || {};
             const away = teams.away || teams.visitors || {};
@@ -5614,15 +5685,17 @@ function positionWidget(key) {
     // font-size scaling — text renders at native device resolution
     el.style.fontSize = '16px'; // Prevent double scaling since we are now using transform: scale()
     const mirror = state.mirrored ? -1 : 1;
+    const isImageWidget = el.classList.contains('image-widget');
     el.style.setProperty('--wmx', mirror);
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
     const bsy = el.style.getPropertyValue('--bsy') || '0px';
-    // Scale is applied to the .widget-pill via CSS `zoom` (reflows text/SVG at
-    // the target resolution); the transform below only centers and mirrors.
+    // CSS zoom reflows text widgets, but WebKit can stretch bitmap images when
+    // zoomed descendants move inside a transformed layer. Scale image widgets
+    // as a single composited layer instead, preserving the image's aspect ratio.
     const pill = el.querySelector('.widget-pill');
-    if (pill) pill.style.zoom = widgetScale;
-    el.style.transform = `translate3d(calc(-50% + ${bsx}), calc(-50% + ${bsy}), 0) scaleX(${mirror})`;
-    _kickCrispRaster(el);
+    if (pill) pill.style.zoom = isImageWidget ? 1 : widgetScale;
+    el.style.transform = `translate3d(calc(-50% + ${bsx}), calc(-50% + ${bsy}), 0) scaleX(${mirror})${isImageWidget ? ` scale(${widgetScale})` : ''}`;
+    if (!isImageWidget) _kickCrispRaster(el);
 }
 
 // Force iOS WebKit to re-rasterize a scaled widget at its current transform
@@ -5689,7 +5762,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
     const dragViewportHeight = window.innerHeight;
     let moved = alreadyActivated;
     let ended = false; // CRITICAL: prevents stale RAF from writing after drag ends
-    _activeDragCancel = () => { if (!ended) onEnd(); };
+    _activeDragCancel = (cancelled = false) => { if (!ended) onEnd(cancelled); };
 
     // Anchor the left/top at start position — only transform moves during drag
     const anchorX = origPos.x / 100 * window.innerWidth;
@@ -5700,6 +5773,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
     if (!state.widgetScales) state.widgetScales = {};
     const _ws = (state.widgetScales[key] !== undefined ? state.widgetScales[key] : 1) * parseFloat(state.scale);
     const sx = state.mirrored ? -_ws : _ws;
+    const isImageWidget = el.classList.contains('image-widget');
     el.style.setProperty('--wmx', sx);
     el.style.setProperty('--ws',  _ws);
 
@@ -5744,8 +5818,12 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
             const halfWidth = dragHalfWidth * widthRatio;
             const halfHeight = dragHalfHeight * heightRatio;
             const margin = 8;
-            const rawX = Math.min(window.innerWidth - halfWidth - margin, Math.max(halfWidth + margin, anchorX + dx));
-            const rawY = Math.min(window.innerHeight - halfHeight - margin, Math.max(halfHeight + margin, anchorY + dy));
+            const minX = Math.min(halfWidth + margin, window.innerWidth / 2);
+            const maxX = Math.max(window.innerWidth - halfWidth - margin, window.innerWidth / 2);
+            const minY = Math.min(halfHeight + margin, window.innerHeight / 2);
+            const maxY = Math.max(window.innerHeight - halfHeight - margin, window.innerHeight / 2);
+            const rawX = Math.min(maxX, Math.max(minX, anchorX + dx));
+            const rawY = Math.min(maxY, Math.max(minY, anchorY + dy));
 
             const midX = window.innerWidth  / 2;
             const midY = window.innerHeight / 2;
@@ -5762,19 +5840,23 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
 
             const offsetX = curPxX - anchorX;
             const offsetY = curPxY - anchorY;
-            el.style.transform = `translate3d(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px), 0) scaleX(${state.mirrored ? -1 : 1})`;
+            el.style.transform = `translate3d(calc(-50% + ${offsetX}px), calc(-50% + ${offsetY}px), 0) scaleX(${state.mirrored ? -1 : 1})${isImageWidget ? ` scale(${_ws})` : ''}`;
             highlightGhost(curPxX, curPxY);
         });
     };
 
-    const onEnd = () => {
+    const onEnd = (cancelled = false) => {
+        // DOM listeners receive an Event argument. Treat normal mouseup/touchend
+        // as a commit, but restore the original position when visibility is lost.
+        if (typeof cancelled !== 'boolean') cancelled = cancelled.type === 'visibilitychange';
+        if (ended) return;
         ended = true; // stop any in-flight RAF from writing transforms
         _activeDragCancel = null;
         document.removeEventListener('mousemove',   onMove);
         document.removeEventListener('mouseup',     onEnd);
         document.removeEventListener('touchmove',   onMove);
         document.removeEventListener('touchend',    onEnd);
-        document.removeEventListener('touchcancel', onEnd);
+        document.removeEventListener('touchcancel', onTouchCancel);
         document.removeEventListener('visibilitychange', onEnd);
         window.removeEventListener('mouseup',       onEnd);
         window.removeEventListener('blur',          onEnd);
@@ -5788,24 +5870,38 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         lineH.style.opacity = lineV.style.opacity = '0.6';
         lineH.style.background = lineV.style.background = 'rgba(255,255,255,0.7)';
 
+        if (cancelled) {
+            positionWidget(key);
+            return;
+        }
         if (!moved) return;
 
         // Find the nearest snap zone
-        const zone    = ZONES[nearestZoneIdx(curPxX, curPxY)];
-        state.widgetPos[key] = { x: zone.x, y: zone.y };
+        const zone = ZONES[nearestZoneIdx(curPxX, curPxY)];
+        const widthRatio = window.innerWidth / Math.max(1, dragViewportWidth);
+        const heightRatio = window.innerHeight / Math.max(1, dragViewportHeight);
+        const margin = 8;
+        const halfWidth = dragHalfWidth * widthRatio;
+        const halfHeight = dragHalfHeight * heightRatio;
+        const minX = Math.min(halfWidth + margin, window.innerWidth / 2);
+        const maxX = Math.max(window.innerWidth - halfWidth - margin, window.innerWidth / 2);
+        const minY = Math.min(halfHeight + margin, window.innerHeight / 2);
+        const maxY = Math.max(window.innerHeight - halfHeight - margin, window.innerHeight / 2);
+        const snapPxX = Math.min(maxX, Math.max(minX, zone.x / 100 * window.innerWidth));
+        const snapPxY = Math.min(maxY, Math.max(minY, zone.y / 100 * window.innerHeight));
+        const snapPosition = { x: snapPxX / window.innerWidth * 100, y: snapPxY / window.innerHeight * 100 };
+        state.widgetPos[key] = snapPosition;
         save();
 
-        const snapPxX = zone.x / 100 * window.innerWidth;
-        const snapPxY = zone.y / 100 * window.innerHeight;
 
         // Step 1: Teleport left/top to snap target, compensate with transform
         // so the widget appears to stay at its current visual position.
         el.style.transition = 'none';
-        el.style.left = zone.x + '%';
-        el.style.top  = zone.y + '%';
+        el.style.left = snapPosition.x + '%';
+        el.style.top  = snapPosition.y + '%';
         const compensateX = curPxX - snapPxX;
         const compensateY = curPxY - snapPxY;
-        el.style.transform = `translate3d(calc(-50% + ${compensateX}px), calc(-50% + ${compensateY}px), 0) scaleX(${state.mirrored ? -1 : 1})`;
+        el.style.transform = `translate3d(calc(-50% + ${compensateX}px), calc(-50% + ${compensateY}px), 0) scaleX(${state.mirrored ? -1 : 1})${isImageWidget ? ` scale(${_ws})` : ''}`;
 
         // Step 2: Force the browser to commit left/top + compensation transform
         // before we apply the spring animation
@@ -5816,7 +5912,7 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
         // The pill scale stays constant throughout — no jump
         el.style.transition = '';
         el.classList.add('snapping');
-        el.style.transform = `translate3d(-50%, -50%, 0) scaleX(${state.mirrored ? -1 : 1})`;
+        el.style.transform = `translate3d(-50%, -50%, 0) scaleX(${state.mirrored ? -1 : 1})${isImageWidget ? ` scale(${_ws})` : ''}`;
 
         // Step 4: After spring finishes, lock everything in place
         const cleanup = () => {
@@ -5843,9 +5939,10 @@ function startDrag(key, el, startEvent, isTouch, alreadyActivated = false) {
 
     document.addEventListener('mousemove',   onMove);
     document.addEventListener('mouseup',     onEnd);
+    const onTouchCancel = () => onEnd(true);
     document.addEventListener('touchmove',   onMove, { passive: false });
     document.addEventListener('touchend',    onEnd);
-    document.addEventListener('touchcancel', onEnd);
+    document.addEventListener('touchcancel', onTouchCancel);
     document.addEventListener('visibilitychange', onEnd);
     window.addEventListener('mouseup',       onEnd);   // catches mouseup outside window
     window.addEventListener('blur',          onEnd);   // window loses focus (e.g. alt-tab)
@@ -6550,7 +6647,11 @@ function initWidgetDrag(key) {
     el.addEventListener('touchstart', (e) => {
         if (e.target.closest('button, input, a') || e.target.closest('.sports-game-row')) return;
         if (document.getElementById('widget-ctx-menu').classList.contains('visible')) return;
-        if (e.touches.length > 1) return; // two-finger pinch is handled by initPinchScale
+        if (e.touches.length > 1) {
+            clearTimeout(_ctxTimer);
+            _hasMoved = true;
+            return; // two-finger pinch is handled by initPinchScale
+        }
 
         _hasMoved   = false;
         _dragStarted = false;
@@ -6572,7 +6673,7 @@ function initWidgetDrag(key) {
         _ctxTimer = setTimeout(() => {
             if (!_hasMoved) {
                 // Cancel any active drag before showing menu — prevents iOS flicker
-                if (_activeDragCancel) { _activeDragCancel(); _activeDragCancel = null; }
+                if (_activeDragCancel) { _activeDragCancel(true); _activeDragCancel = null; }
                 if (navigator.vibrate) navigator.vibrate(35);
                 showCtxMenu(key, _sx, Math.max(_sy - 170, 60));
             }
@@ -6592,7 +6693,9 @@ function initWidgetDrag(key) {
         }
     }, { passive: true });
 
-    el.addEventListener('touchend', () => clearTimeout(_ctxTimer), { passive: true });
+    const clearLongPress = () => clearTimeout(_ctxTimer);
+    el.addEventListener('touchend', clearLongPress, { passive: true });
+    el.addEventListener('touchcancel', clearLongPress, { passive: true });
 }
 // ─────────────────────────────────────────────────
 // CONTEXT MENU HELPERS
@@ -6826,7 +6929,7 @@ function ctxSetWidgetScale(val, preview) {
         save();
         if (_k) {
             const _el = document.getElementById(_k + '-widget');
-            if (_el) _kickCrispRaster(_el);
+            if (_el && !_el.classList.contains('image-widget')) _kickCrispRaster(_el);
         }
     }, 400);
 }
@@ -6857,10 +6960,12 @@ function _applyWidgetScaleDirect(key, perWidgetScale) {
     // for stocks (no inline bsx/bsy → falls through to '0px' cheaply).
     const bsx = el.style.getPropertyValue('--bsx') || '0px';
     const bsy = el.style.getPropertyValue('--bsy') || '0px';
-    // Scale via CSS `zoom` on the pill (reflows at target resolution).
+    // Scale via CSS `zoom` on text widgets (reflows at target resolution).
+    // CSS zoom can stretch image layers on iOS, so transform the image widget as one object.
+    const isImageWidget = el.classList.contains('image-widget');
     const pill = el.querySelector('.widget-pill');
-    if (pill) pill.style.zoom = widgetScale;
-    el.style.transform = `translate3d(calc(-50% + ${bsx}), calc(-50% + ${bsy}), 0) scaleX(${mirror})`;
+    if (pill) pill.style.zoom = isImageWidget ? 1 : widgetScale;
+    el.style.transform = `translate3d(calc(-50% + ${bsx}), calc(-50% + ${bsy}), 0) scaleX(${mirror})${isImageWidget ? ` scale(${widgetScale})` : ''}`;
     if (key === 'clock') _scheduleClockMarginRecompute();
     // Keep the widget fully on-screen after it grows/shrinks (the date widget
     // in particular used to get clipped at larger sizes).
@@ -6983,6 +7088,7 @@ function handleViewportResize() {
 }
 window.addEventListener('resize', handleViewportResize, { passive: true });
 window.addEventListener('orientationchange', handleViewportResize, { passive: true });
+if (window.visualViewport) window.visualViewport.addEventListener('resize', handleViewportResize, { passive: true });
 
 // Clamp all widget positions so none are off-screen
 function clampWidgetPosition(key) {
@@ -7221,7 +7327,7 @@ function initPinchScale(key) {
         e.preventDefault(); // prevent page zoom
         // A second finger landed while a one-finger drag was in progress —
         // cancel the drag so the pinch owns the gesture.
-        if (_activeDragCancel) { _activeDragCancel(); _activeDragCancel = null; }
+        if (_activeDragCancel) { _activeDragCancel(true); _activeDragCancel = null; }
         _isPinching = true;
         _pinchStartDist = Math.hypot(
             e.touches[0].clientX - e.touches[1].clientX,
@@ -7242,6 +7348,7 @@ function initPinchScale(key) {
             e.touches[0].clientX - e.touches[1].clientX,
             e.touches[0].clientY - e.touches[1].clientY
         );
+        if (!_pinchStartDist) return;
         const ratio    = dist / _pinchStartDist;
         const newScale = Math.max(CTX_SCALE_MIN, Math.min(CTX_SCALE_MAX,
             _pinchStartScale * ratio
@@ -7260,28 +7367,26 @@ function initPinchScale(key) {
         });
     }, { passive: false });
 
-    el.addEventListener('touchend', (e) => {
-        if (e.touches.length < 2) {
-            if (_isPinching) {
-                _isPinching = false;
-                positionWidget(key); // sync CSS vars and position fully
-                clampWidgetPosition(key);
-                save();
-                const finalScale = state.widgetScales[key] || 1;
-                showToast('Scale: ' + Math.round(finalScale * 100) + '%');
-            }
+    const finishPinch = (showScaleToast = false) => {
+        if (!_isPinching) return;
+        _isPinching = false;
+        _pinchStartDist = null;
+        positionWidget(key); // sync CSS vars and position fully
+        clampWidgetPosition(key);
+        save();
+        if (showScaleToast) {
+            const finalScale = state.widgetScales[key] || 1;
+            showToast('Scale: ' + Math.round(finalScale * 100) + '%');
         }
+    };
+
+    el.addEventListener('touchend', (e) => {
+        if (e.touches.length < 2) finishPinch(true);
     }, { passive: true });
 
-    // Commit the crisp zoom re-render even if the pinch is interrupted.
-    el.addEventListener('touchcancel', () => {
-        if (_isPinching) {
-            _isPinching = false;
-            positionWidget(key);
-            clampWidgetPosition(key);
-            save();
-        }
-    }, { passive: true });
+    // Commit the final geometry even if iOS interrupts the gesture (app switch,
+    // incoming system gesture, or pointer cancellation).
+    el.addEventListener('touchcancel', () => finishPinch(), { passive: true });
 }
 
 function initAllPinch() {
@@ -7348,6 +7453,6 @@ window.addEventListener('error', () => {
     if (o) { o.classList.add('hidden'); setTimeout(() => o.remove(), 700); }
 });
 </script>
-<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v31edd6df95cf4e85bb4c19e7a9bdbcba1788362987495" integrity="sha512-iIg7k2xntmwu6/uSb5tpc/hySgZc4eoL31yB29W6tJFo2akwjPWcEqnCEdJvGexCL0KEQwVYv5BlowfhVz26hg==" data-cf-beacon='{"version":"2024.11.0","token":"82216019171e452a9aa94300393e69a4","r":1,"spa":2}' crossorigin="anonymous"></script>
+<script type="module" src="https://static.cloudflareinsights.com/beacon.min.js/v4bc70e2c01a94c73b74392e4234840661791215815920" integrity="sha512-L0ha0OXavK/8okipN9F8BtP84dg9DUhPERbBXzwI6dgTA55d2+yweo3pn5CSFYs45/r8md2+xvUPtTdvTNRfjA==" data-cf-beacon='{"version":"2024.11.0","token":"82216019171e452a9aa94300393e69a4","r":1,"spa":2}' crossorigin="anonymous"></script>
 </body>
 </html>
